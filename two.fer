@@ -1,0 +1,20 @@
+domain Natural {
+    | One
+    | Next { . n  }
+}
+
+domain NaturalMath {
+    | sum {
+      . a:Natural
+      . b:Natural
+
+      > . a=One
+      $<undefined>
+
+      > . a=Next . b=One
+      $<undefined>
+
+      > . a=Next . b=Next
+      $<undefined>
+    }
+}

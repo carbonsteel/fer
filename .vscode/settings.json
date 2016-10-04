@@ -1,0 +1,15 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "editor.rulers": [
+        80, 100
+    ],
+    "editor.renderWhitespace": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/bin": true,
+        "**/*.o": true,
+        "**/*.d": true
+    },
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false
+}

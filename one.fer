@@ -1,0 +1,112 @@
+| Natural{
+    | One
+    | Next{ . n:Natural }
+}
+| NaturalMath{
+    | sum:Natural{
+        . a:Natural . b:Natural
+        > . a=One
+        $ Next( . n~b )
+
+        > . a=Next . b=One
+        $ Next( . n~a )
+
+        > . a=Next . b=Next
+        $ Next( . n=Next( . n=sum(
+            . a~a/n
+            . b~b/n
+        )))
+    }
+
+
+    | mul:Natural{
+        . a:Natural
+        . b:Natural
+        > . a=One $ b
+        > . b=One $ a
+        > . a=Next . b=Next
+        $ sum(
+            . a~a
+            . b~mul(
+                . a~a
+                . b~b/n
+            )
+        )
+    }
+}
+
+| MathImpl{
+    . Number
+    . Instance
+}
+| Void{}
+# BEGIN UNDEFINED
+# some data struct that Math would lookup to deduce to right instance for 
+# Number and NaturalMath could be inserted into
+| Map{
+    . Key
+    . Value
+    | insert:Void{ . k:Key . v:Value }
+    | lookup:Value{ . k:Key }
+}
+| MathInst{
+    . Impl=Map{ . Key=Kind . Value=Kind }
+}
+
+# END UNDEFINED
+
+| List{
+    . Value
+    | First{ . v:Value }
+    | Last{ . p:List . v:Value }
+}
+| Maybe{
+    | Nothing
+    | Just{ . j }
+}
+| ListUtil{
+    . List
+    | head:List/Value
+    $ List/v
+
+    | tail:List/Value
+    > . List=Last
+    $ ListUtil( . List=List/p )/tail
+    > . List=First
+    $ List/v
+
+    | find:Maybe{ . j=List/Value }{ .v:List/Value }
+    > . List/v=v
+    $ Just( . j~v )
+    > . List=First . List/v!v
+    $ Nothing
+    > . List=Last . List/v!v
+    $ ListUtil( . List=List/p )/find( . v~v )
+
+}
+
+| Math{
+    . Number
+    . Instance
+    | sum:Number{
+        . a:Number . b:Number 
+        >$ Instance/sum( . a~a . b~b )
+    }
+    | mul:Number{
+        . a:Number . b:Number 
+        >$ Instance/mul( . a~a . b~b )
+    }
+}
+
+| Main {
+    >$ Math( . Number=Natural . Instance=NaturalMath )/sum( . a=One . b=One )
+        # would be deducible from One
+        #  for any kind `n' `=' checks `n' itself and `:' checks `n's kind
+        #  so n=One and n:Natural are both true
+        #  so is n=MathNatural/sum and n:MathNatural
+        #  so is m=MathNatural/sum( . a=One . b=One ) and m:Natural
+        #   m would reduce to m=Next( . n=One )
+        # SO
+        #  a=One and a:Number it can be implied that Number=Natural
+        #
+}
