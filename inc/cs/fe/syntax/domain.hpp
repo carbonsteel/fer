@@ -1,7 +1,10 @@
 #ifndef CS_FE_SYNTAX_DOMAIN_HPP
 #define CS_FE_SYNTAX_DOMAIN_HPP
 
+#include <memory>
+
 #include <cs/fe/syntax/axioms.hpp>
+#include <cs/fe/util/lvalueable.hpp>
 
 
 template <class Tparser>
@@ -26,9 +29,201 @@ struct DomainDefinition {
             }
             return ss.str(); 
         }
+
+        struct VariablePrefix : public LValueable<VariablePrefix> {
+            Tparser &psr;
+            VariablePrefix(Tparser &psr) : LValueable<VariablePrefix>(*this), psr{psr} {}
+            auto operator()() {
+                using VariablePrefixResult = decltype(psr.parseString("."));
+                using VariablePrefixError = typename VariablePrefixResult::IsError;
+                psr.ignoreBlanks();
+                auto let_var = psr.parseString(".");
+                if (!let_var) {
+                    return VariablePrefixResult{
+                            std::string{}
+                            + "expected start of variable definition",
+                            VariablePrefixError{},
+                            let_var};
+                }
+
+                return let_var;
+            }
+        };
     };
     struct TransformDefinition {
+        struct ExpressionDefinition {
+            struct ArgumentDefinition {
+                IdentifierType identifier;
+                std::unique_ptr<ExpressionDefinition> value;
+                ArgumentDefinition& operator=(const ArgumentDefinition &other) {
+                    if (this != &other) {
+                        identifier = other.identifier;
+                        if (other.value.get() != nullptr) {
+                            value = std::make_unique<ExpressionDefinition>(ExpressionDefinition{*(other.value)});
+                        }
+                    }
+                    return *this;
+                }
+                ArgumentDefinition() = default;
+                ArgumentDefinition(const ArgumentDefinition &other)
+                         : identifier{}, value{} {
+                    *this = other;
+                }
+                std::string to_string() const {
+                    typename Tparser::StringStream ss{};
+                    ss << "." << identifier;
+                    if (value.get() != nullptr) {
+                        ss << "~";
+                        ss << value->to_string();
+                    }
+                    return ss.str();
+                }
+            };
+            IdentifierType identifier;
+            std::vector<ArgumentDefinition> arguments;
+            std::unique_ptr<ExpressionDefinition> lookup;
+            ExpressionDefinition& operator=(const ExpressionDefinition &other) {
+                if (this != &other) {
+                    identifier = other.identifier;
+                    arguments = other.arguments;
+                    if (other.lookup.get() != nullptr) {
+                        lookup = std::make_unique<ExpressionDefinition>(ExpressionDefinition{*(other.lookup)});
+                    }
+                }
+                return *this;
+            }
+            ExpressionDefinition() = default;
+            ExpressionDefinition(const ExpressionDefinition &other)
+                : identifier{}, arguments{} {
+                *this = other;
+            }
+            std::string to_string() const {
+                typename Tparser::StringStream ss{};
+                ss << identifier;
+                if (!arguments.empty()) {
+                    ss << "(";
+                    for (const auto &a : arguments) {
+                        ss << a.to_string();
+                    }
+
+                    ss << ")";
+                }
+
+                if (lookup != nullptr) {
+                    ss << "/";
+                    ss << lookup->to_string();
+                }
+                return ss.str();
+            }
+            static auto parse_lookup(Tparser &psr, ExpressionDefinition &ex) {
+                using ExpressionResult = ParseResult<ExpressionDefinition>;
+                using ExpressionError = typename ExpressionResult::IsError;
+                
+                psr.ignoreBlanks();
+                auto begin_lookup = psr.lookahead(ParseString<Tparser>{psr, "/"}.lvalue());
+                if (!begin_lookup) {
+                    return ExpressionResult{ex};
+                }
+
+                auto expr_lookup = parse(psr);
+                if (!expr_lookup) {
+                    return ExpressionResult{
+                            std::string{}
+                            + "expected expression lookup",
+                            ExpressionError{},
+                            expr_lookup};
+                }
+                ex.lookup = std::make_unique<ExpressionDefinition>(expr_lookup.result);
+                return ExpressionResult{ex};
+            }
+            static auto parse(Tparser &psr) {
+                using ExpressionResult = ParseResult<ExpressionDefinition>;
+                using ExpressionError = typename ExpressionResult::IsError;
+
+                psr.ignoreBlanks();
+                auto identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
+                if (!identifier) {
+                    return ExpressionResult{
+                            std::string{}
+                            + "expected expression identifier",
+                            ExpressionError{},
+                            identifier};
+                }
+                ExpressionDefinition ex{};
+                ex.identifier = identifier.result;
+
+                psr.ignoreBlanks();
+                auto open_args = psr.lookahead(ParseString<Tparser>{psr, "("}.lvalue());
+                if (!open_args) {
+                    parse_lookup(psr, ex);
+                    return ExpressionResult{ex, identifier};
+                }
+
+                auto arguments_parse = [&]() {
+                    using ArgumentResult = ParseResult<ArgumentDefinition>;
+                    using ArgumentError = typename ArgumentResult::IsError;
+
+                    psr.ignoreBlanks();
+                    auto arg_identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
+                    if (!arg_identifier) {
+                        return ArgumentResult{
+                                std::string{}
+                                + "expected argument identifier",
+                                ArgumentError{},
+                                arg_identifier};
+                    }
+                    ArgumentDefinition arg{};
+                    arg.identifier = arg_identifier.result;
+
+                    psr.ignoreBlanks();
+                    auto assign = psr.parseString("~");
+                    if (!assign) {
+                        return ArgumentResult{
+                                std::string{}
+                                + "expected argument assign expression prefix",
+                                ArgumentError{},
+                                assign};
+                    }
+
+                    auto arg_expression = parse(psr);
+                    if (!arg_expression) {
+                        return ArgumentResult{
+                                std::string{}
+                                + "expected argument assign expression",
+                                ArgumentError{},
+                                arg_expression};
+                    }
+                    arg.value = std::make_unique<ExpressionDefinition>(arg_expression.result);
+
+                    return ArgumentResult{arg};
+                };
+                auto arguments = psr.parseMany(1, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), arguments_parse);
+                if (!arguments) {
+                    return ExpressionResult{
+                            std::string{}
+                            + "expected argument definitions",
+                            ExpressionError{},
+                            arguments};
+                }
+                ex.arguments = arguments.result;
+
+                psr.ignoreBlanks();
+                auto close_args = psr.parseString(")");
+                if (!close_args) {
+                    return ExpressionResult{
+                            std::string{}
+                            + "expected end of expression arguments",
+                            ExpressionError{},
+                            arguments,
+                            close_args};
+                }
+
+                parse_lookup(psr, ex);
+                return ExpressionResult{ex};
+            }
+        };
         std::vector<VariableDefinition> variables;
+        ExpressionDefinition expression;
         // todo expression
         typename Tparser::String to_string() const {
             typename Tparser::StringStream ss{};
@@ -36,7 +231,7 @@ struct DomainDefinition {
             for (const auto& v : variables) {
                 ss << v.to_string();
             }
-            ss << "$<undefined>";
+            ss << "$" << expression.to_string();
 
             return ss.str();
         }
@@ -116,21 +311,6 @@ struct DomainDefinition {
         }
 
         /* variables */
-        auto variable_prefix = [&]() {
-            using VariablePrefixResult = decltype(psr.parseString("|"));
-            using VariablePrefixError = typename VariablePrefixResult::IsError;
-            psr.ignoreBlanks();
-            auto let_var = psr.parseString(".");
-            if (!let_var) {
-                return VariablePrefixResult{
-                        std::string{}
-                        + "expected start of variable definition",
-                        VariablePrefixError{},
-                        let_var};
-            }
-
-            return let_var;
-        };
         auto variables_parse = [&]() {
             psr.ignoreBlanks();
             auto identifier_var = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
@@ -203,7 +383,7 @@ struct DomainDefinition {
                             value_var.result,
                             domain_var.result}};
         };
-        auto variables = psr.parseMany(0, SIZE_MAX, variable_prefix, variables_parse);
+        auto variables = psr.parseMany(0, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), variables_parse);
         if (!variables) {
             return DomainResult{
                     std::string{}
@@ -251,7 +431,7 @@ struct DomainDefinition {
         auto transforms_parse = [&]() {
             using TransformResult = ParseResult<TransformDefinition>;
             using TransformError = typename TransformResult::IsError;
-            auto transform_variables = psr.parseMany(0, SIZE_MAX, variable_prefix, variables_parse);
+            auto transform_variables = psr.parseMany(0, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), variables_parse);
             if (!transform_variables) {
                 return TransformResult{
                         std::string{}
@@ -262,9 +442,8 @@ struct DomainDefinition {
             TransformDefinition td{};
             td.variables = transform_variables.result;
 
-            /* todo parse expression */
             psr.ignoreBlanks();
-            auto guard = psr.parseString("$<undefined>");
+            auto guard = psr.parseString("$");
             if (!guard) {
                 return TransformResult{
                         std::string{}
@@ -272,6 +451,16 @@ struct DomainDefinition {
                         TransformError{},
                         guard};
             }
+
+            auto transform_expression = TransformDefinition::ExpressionDefinition::parse(psr);
+            if (!transform_expression) {
+                return TransformResult{
+                        std::string{}
+                        + "expected transform expression",
+                        TransformError{},
+                        transform_expression};
+            }
+            td.expression = transform_expression.result;
 
             return TransformResult{td};
         };

@@ -2,7 +2,7 @@
     | One
     | Next{ . n:Natural }
 }
-| NaturalMath{
+| NaturalMath {
     | sum:Natural{
         . a:Natural . b:Natural
         > . a=One

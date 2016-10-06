@@ -1,20 +1,23 @@
 domain Natural {
-    | One
-    | Next { . n  }
+  | One
+  | Next { . n  }
 }
 
 domain NaturalMath {
-    | sum {
-      . a:Natural
-      . b:Natural
+  | sum {
+    . a:Natural
+    . b:Natural
 
-      > . a=One
-      $<undefined>
+    > . a=One
+    $ Next( . n~b )
 
-      > . a=Next . b=One
-      $<undefined>
+    > . a=Next . b=One
+    $ Next( . n~a )
 
-      > . a=Next . b=Next
-      $<undefined>
-    }
+    > . a=Next . b=Next
+    $ Next( . n~Next( . n~sum(
+        . a~a/n
+        . b~b/n
+    )))
+  }
 }
