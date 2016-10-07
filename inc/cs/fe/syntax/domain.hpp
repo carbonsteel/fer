@@ -10,45 +10,26 @@
 template <class Tparser>
 struct DomainDefinition {
     using IdentifierType = typename Tparser::String;
+    struct VariableDefinition;
 
-    struct VariableDefinition {
-        IdentifierType identifier, domain, value;
-        VariableDefinition(const IdentifierType &identifier,
-                const IdentifierType &value,
-                const IdentifierType &domain)
-                : identifier{identifier}, domain{domain}, value{value} {}
-        VariableDefinition() : VariableDefinition({}, {}, {}) {}
-        typename Tparser::String to_string() const {
-            typename Tparser::StringStream ss{};
-            ss << "." << identifier;
-            if (!value.empty()) {
-                ss << "=" << value;
+    struct VariablePrefix : public LValueable<VariablePrefix> {
+        Tparser &psr;
+        VariablePrefix(Tparser &psr) : LValueable<VariablePrefix>(*this), psr{psr} {}
+        auto operator()() {
+            using VariablePrefixResult = decltype(psr.parseString("."));
+            using VariablePrefixError = typename VariablePrefixResult::IsError;
+            psr.ignoreBlanks();
+            auto let_var = psr.parseString(".");
+            if (!let_var) {
+                return VariablePrefixResult{
+                        std::string{}
+                        + "expected start of variable definition",
+                        VariablePrefixError{},
+                        let_var};
             }
-            if (!domain.empty()) {
-                ss << ":" << domain;
-            }
-            return ss.str(); 
+
+            return let_var;
         }
-
-        struct VariablePrefix : public LValueable<VariablePrefix> {
-            Tparser &psr;
-            VariablePrefix(Tparser &psr) : LValueable<VariablePrefix>(*this), psr{psr} {}
-            auto operator()() {
-                using VariablePrefixResult = decltype(psr.parseString("."));
-                using VariablePrefixError = typename VariablePrefixResult::IsError;
-                psr.ignoreBlanks();
-                auto let_var = psr.parseString(".");
-                if (!let_var) {
-                    return VariablePrefixResult{
-                            std::string{}
-                            + "expected start of variable definition",
-                            VariablePrefixError{},
-                            let_var};
-                }
-
-                return let_var;
-            }
-        };
     };
     struct TransformDefinition {
         struct ExpressionDefinition {
@@ -197,7 +178,7 @@ struct DomainDefinition {
 
                     return ArgumentResult{arg};
                 };
-                auto arguments = psr.parseMany(1, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), arguments_parse);
+                auto arguments = psr.parseMany(1, SIZE_MAX, VariablePrefix{psr}.lvalue(), arguments_parse);
                 if (!arguments) {
                     return ExpressionResult{
                             std::string{}
@@ -234,6 +215,28 @@ struct DomainDefinition {
             ss << "$" << expression.to_string();
 
             return ss.str();
+        }
+    };
+
+    struct VariableDefinition {
+        IdentifierType identifier;
+        using ExpressionDefinition = typename TransformDefinition::ExpressionDefinition;
+        ExpressionDefinition domain, value;
+        VariableDefinition(const IdentifierType &identifier,
+                const ExpressionDefinition &value,
+                const ExpressionDefinition &domain)
+                : identifier{identifier}, domain{domain}, value{value} {}
+        VariableDefinition() : VariableDefinition({}, {}, {}) {}
+        typename Tparser::String to_string() const {
+            typename Tparser::StringStream ss{};
+            ss << "." << identifier;
+            if (!value.identifier.empty()) {
+                ss << "=" << value.to_string();
+            }
+            if (!domain.identifier.empty()) {
+                ss << ":" << domain.to_string();
+            }
+            return ss.str(); 
         }
     };
     DomainDefinition *domain;
@@ -323,57 +326,57 @@ struct DomainDefinition {
             }
 
             auto value_parse = [&]() {
-                using IdentifierResult = ParseResult<IdentifierType>;
-                using IdentifierError = typename IdentifierResult::IsError;
+                using ExpressionResult = ParseResult<typename TransformDefinition::ExpressionDefinition>;
+                using ExpressionError = typename ExpressionResult::IsError;
                 psr.ignoreBlanks();
                 auto begin_value = psr.parseString("=");
                 if (!begin_value) {
-                    return IdentifierResult{
+                    return ExpressionResult{
                             std::string{}
-                            + "expected variable value",
-                            IdentifierError{},
+                            + "expected variable value prefix",
+                            ExpressionError{},
                             begin_value};
                 }
 
                 psr.ignoreBlanks();
-                auto value_var = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
+                auto value_var = TransformDefinition::ExpressionDefinition::parse(psr);
                 if (!value_var) {
-                    return IdentifierResult{
+                    return ExpressionResult{
                             std::string{}
                             + "expected variable value",
-                            IdentifierError{},
+                            ExpressionError{},
                             value_var};
                 }
 
-                return IdentifierResult{value_var.result};
+                return ExpressionResult{value_var.result};
             };
             auto value_var = psr.lookahead(value_parse);
 
             DomainDefinition::IdentifierType domain{};
             auto domain_parse = [&]() {
-                using IdentifierResult = ParseResult<IdentifierType>;
-                using IdentifierError = typename IdentifierResult::IsError;
+                using ExpressionResult = ParseResult<typename TransformDefinition::ExpressionDefinition>;
+                using ExpressionError = typename ExpressionResult::IsError;
                 psr.ignoreBlanks();
-                auto begin_domain = psr.parseString(":");
-                if (!begin_domain) {
-                    return IdentifierResult{
+                auto begin_value = psr.parseString(":");
+                if (!begin_value) {
+                    return ExpressionResult{
                             std::string{}
-                            + "expected variable domain",
-                            IdentifierError{},
-                            begin_domain};
+                            + "expected variable domain prefix",
+                            ExpressionError{},
+                            begin_value};
                 }
 
                 psr.ignoreBlanks();
-                auto domain_var = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
-                if (!domain_var) {
-                    return IdentifierResult{
+                auto value_var = TransformDefinition::ExpressionDefinition::parse(psr);
+                if (!value_var) {
+                    return ExpressionResult{
                             std::string{}
                             + "expected variable domain",
-                            IdentifierError{},
-                            domain_var};
+                            ExpressionError{},
+                            value_var};
                 }
-                
-                return IdentifierResult{domain_var.result};
+
+                return ExpressionResult{value_var.result};
             };
             auto domain_var = psr.lookahead(domain_parse);
 
@@ -383,7 +386,7 @@ struct DomainDefinition {
                             value_var.result,
                             domain_var.result}};
         };
-        auto variables = psr.parseMany(0, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), variables_parse);
+        auto variables = psr.parseMany(0, SIZE_MAX, VariablePrefix{psr}.lvalue(), variables_parse);
         if (!variables) {
             return DomainResult{
                     std::string{}
@@ -431,7 +434,7 @@ struct DomainDefinition {
         auto transforms_parse = [&]() {
             using TransformResult = ParseResult<TransformDefinition>;
             using TransformError = typename TransformResult::IsError;
-            auto transform_variables = psr.parseMany(0, SIZE_MAX, typename VariableDefinition::VariablePrefix{psr}.lvalue(), variables_parse);
+            auto transform_variables = psr.parseMany(0, SIZE_MAX, VariablePrefix{psr}.lvalue(), variables_parse);
             if (!transform_variables) {
                 return TransformResult{
                         std::string{}
