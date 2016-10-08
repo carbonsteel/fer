@@ -1,6 +1,6 @@
 domain Natural {
   | One
-  | Next { . n  }
+  | Next { . n }
 }
 
 domain NaturalMath {
@@ -43,6 +43,7 @@ domain Maybe{
     | Nothing
     | Just{ . j:Value }
 }
+domain List
 domain List{
     . Value
     | Tail{ . v:Value }
