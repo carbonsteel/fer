@@ -20,6 +20,14 @@ struct ParseResult {
     bool is_error;
     ResultType result;
     std::vector<std::string> errors;
+    ParseResult() : is_error{false}, errors{} {}
+    void merge(const ParseResult &parse_result) {
+        is_error = is_error || parse_result.is_error;
+        result = parse_result.result;
+        errors.insert(end(errors),
+                begin(parse_result.errors), end(parse_result.errors));
+    }
+
     ParseResult(ResultType result)
             : is_error{false}, result{result}, errors{} {}
     ParseResult(ResultType result, const std::string& error)
@@ -60,13 +68,13 @@ struct ParseResult {
     std::string to_string() const {
         if (is_error) {
             std::stringstream ss;
-            ss << "Parse fail : " << std::endl;
+            ss << "fail : " << std::endl;
             for (const std::string &error : /*std::reverse*/(errors)) {
                 ss << " : " << error << std::endl;
             }
             return ss.str();
         } else {
-            return std::string{"Parse ok : "} + std::to_string(result);
+            return std::string{"ok : "} + std::to_string(result);
         }
     }
     bool operator!() const {
@@ -76,21 +84,28 @@ struct ParseResult {
 
 template <class Tchar>
 class Parser_ {
+public:
+    struct Coord {
+        size_t column, line;
+        Coord() : column{}, line{} {}
+        Coord(size_t column, size_t line) : column{column}, line{line} {}
+        std::string to_string() const {
+            return std::to_string(line) + ":" + std::to_string(column);
+        } 
+    };
+private:
     using FileStream = std::basic_fstream<Tchar>;
 
-    size_t column, line;
+    Coord current_position;
     FileStream fs;
 
 public:
     using StringStream = std::basic_stringstream<Tchar>;
     using String = std::basic_string<Tchar>;
-    Parser_(const std::string& file_name) : column{}, line{1}, fs{file_name} {}
+    Parser_(const std::string& file_name) : current_position{{}, 1}, fs{file_name} {}
 
-    std::string coords() const {
-        return coords(line, column);
-    }
-    std::string coords(size_t l, size_t c) const {
-        return std::to_string(l) + ":" + std::to_string(c);
+    Coord at() const {
+        return current_position;
     }
 
     auto eof() const {
@@ -99,7 +114,7 @@ public:
         if (!fs.eof()) {
             return Result{
                     std::string{}
-                    + "expected eof, there is something starting at " + coords(),
+                    + "expected eof, there is something starting at " + current_position.to_string(),
                     IsError{}};
         }
 
@@ -117,14 +132,14 @@ public:
             // unexpected eof
             return Result{
                     std::string{}
-                    + "unexpected eof at " + coords() + " : " + pred.what(),
+                    + "unexpected eof at " + current_position.to_string() + " : " + pred.what(),
                     IsError{}};
         }
         if (!fs) {
             // some error
             return Result{
                     std::string{}
-                    + "unusable fstream at " + coords() + " : " + pred.what(),
+                    + "unusable fstream at " + current_position.to_string() + " : " + pred.what(),
                     IsError{}};
         }
 
@@ -135,7 +150,7 @@ public:
                 // unexpected eof
                 return Result{
                         std::string{}
-                        + "unexpected eof at " + coords() + " : " + pred.what(),
+                        + "unexpected eof at " + current_position.to_string() + " : " + pred.what(),
                         IsError{}};
             }
 
@@ -144,7 +159,7 @@ public:
                 // read error
                 return Result{
                         std::string{}
-                        + "read error at " + coords() + " : " + pred.what(),
+                        + "read error at " + current_position.to_string() + " : " + pred.what(),
                         IsError{}};
             }
 
@@ -154,11 +169,11 @@ public:
                 ss << chr;
 
                 if (chr == '\n') {
-                    ++line;
-                    column = 0;
+                    ++current_position.line;
+                    current_position.column = 0;
                 }
 
-                ++column;
+                ++current_position.column;
             } else {
                 break;
             }
@@ -169,7 +184,7 @@ public:
             return Result{
                     std::string{}
                     + "unexpected character `" + chr + "' at "
-                    + coords() + " : " + pred.what(),
+                    + current_position.to_string() + " : " + pred.what(),
                     IsError{}};
         }
 
@@ -215,10 +230,10 @@ public:
         struct ParseStr {
             Parser_& psr;
             String str;
-            size_t index, at_column, at_line;
+            size_t index;
+            Coord at;
             ParseStr(Parser_& psr, const String& str) :
-                    psr{psr}, str{str}, index{}, at_column{psr.column},
-                    at_line{psr.line} {}
+                    psr{psr}, str{str}, index{}, at{psr.current_position} {}
 
             auto operator()(Tchar c) {
                 return c == str[index++];
@@ -228,7 +243,7 @@ public:
                 return std::string{}
                         + "expected `" + str[std::max(size_t{}, index - 1)] + "'"
                         + (str.size() > 1 ? " from string `" + str + "'" 
-                            + " starting after " + psr.coords(at_line, at_column) : "");
+                            + " starting after " + at.to_string() : "");
             }
         } parse_str{*this, str};
 
@@ -242,7 +257,7 @@ public:
             // unexpected string
             return Result{
                     std::string{}
-                    + "unexpected character at " + coords()
+                    + "unexpected character at " + current_position.to_string()
                     + " : expected `" + str + "'",
                     IsError{},
                     parsed};
@@ -296,20 +311,19 @@ public:
         if (!fs) {
             return Result{
                     std::string{}
-                    + "lookahead init failed, read error at " + coords(),
+                    + "lookahead init failed, read error at " + current_position.to_string(),
                     IsError{}};
         }
 
-        auto c = column, l = line;
+        auto previous_position = current_position;
         auto parsed = parse();
         if (!parsed) {
-            column = c;
-            line = l;
+            current_position = previous_position;
             fs.seekg(hereg);
             if (!fs) {
                 return Result{
                         std::string{}
-                        + "lookahead parse failed, read error at " + coords(),
+                        + "lookahead parse failed, read error at " + current_position.to_string(),
                         IsError{}};
             }
 

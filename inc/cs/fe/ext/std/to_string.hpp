@@ -6,6 +6,7 @@
 namespace std {
 
 string to_string(const string& str);
+string to_string(void *ptr);
 
 template <class Tstringny>
 string to_string(const Tstringny& stringny) {

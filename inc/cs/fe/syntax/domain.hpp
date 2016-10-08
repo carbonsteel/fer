@@ -10,6 +10,7 @@
 template <class Tparser>
 struct DomainDefinition {
     using IdentifierType = typename Tparser::String;
+    using Coord = typename Tparser::Coord;
     struct VariableDefinition;
 
     struct VariablePrefix : public LValueable<VariablePrefix> {
@@ -34,10 +35,12 @@ struct DomainDefinition {
     struct TransformDefinition {
         struct ExpressionDefinition {
             struct ArgumentDefinition {
+                Coord at;
                 IdentifierType identifier;
                 std::unique_ptr<ExpressionDefinition> value;
                 ArgumentDefinition& operator=(const ArgumentDefinition &other) {
                     if (this != &other) {
+                        at = other.at;
                         identifier = other.identifier;
                         if (other.value.get() != nullptr) {
                             value = std::make_unique<ExpressionDefinition>(ExpressionDefinition{*(other.value)});
@@ -47,7 +50,7 @@ struct DomainDefinition {
                 }
                 ArgumentDefinition() = default;
                 ArgumentDefinition(const ArgumentDefinition &other)
-                         : identifier{}, value{} {
+                         : at{}, identifier{}, value{} {
                     *this = other;
                 }
                 std::string to_string() const {
@@ -60,11 +63,14 @@ struct DomainDefinition {
                     return ss.str();
                 }
             };
+
+            Coord at;
             IdentifierType identifier;
             std::vector<ArgumentDefinition> arguments;
             std::unique_ptr<ExpressionDefinition> lookup;
             ExpressionDefinition& operator=(const ExpressionDefinition &other) {
                 if (this != &other) {
+                    at = other.at;
                     identifier = other.identifier;
                     arguments = other.arguments;
                     if (other.lookup.get() != nullptr) {
@@ -75,7 +81,7 @@ struct DomainDefinition {
             }
             ExpressionDefinition() = default;
             ExpressionDefinition(const ExpressionDefinition &other)
-                : identifier{}, arguments{} {
+                : at{}, identifier{}, arguments{} {
                 *this = other;
             }
             std::string to_string() const {
@@ -122,6 +128,7 @@ struct DomainDefinition {
                 using ExpressionError = typename ExpressionResult::IsError;
 
                 psr.ignoreBlanks();
+                auto expression_at = psr.at();
                 auto identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
                 if (!identifier) {
                     return ExpressionResult{
@@ -131,6 +138,7 @@ struct DomainDefinition {
                             identifier};
                 }
                 ExpressionDefinition ex{};
+                ex.at = expression_at;
                 ex.identifier = identifier.result;
 
                 psr.ignoreBlanks();
@@ -145,6 +153,7 @@ struct DomainDefinition {
                     using ArgumentError = typename ArgumentResult::IsError;
 
                     psr.ignoreBlanks();
+                    auto arg_at = psr.at();
                     auto arg_identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
                     if (!arg_identifier) {
                         return ArgumentResult{
@@ -154,6 +163,7 @@ struct DomainDefinition {
                                 arg_identifier};
                     }
                     ArgumentDefinition arg{};
+                    arg.at = arg_at;
                     arg.identifier = arg_identifier.result;
 
                     psr.ignoreBlanks();
@@ -203,9 +213,11 @@ struct DomainDefinition {
                 return ExpressionResult{ex};
             }
         };
+
+        Coord at;
         std::vector<VariableDefinition> variables;
         ExpressionDefinition expression;
-        // todo expression
+
         typename Tparser::String to_string() const {
             typename Tparser::StringStream ss{};
             ss << ">";
@@ -219,14 +231,16 @@ struct DomainDefinition {
     };
 
     struct VariableDefinition {
+        Coord at;
         IdentifierType identifier;
         using ExpressionDefinition = typename TransformDefinition::ExpressionDefinition;
         ExpressionDefinition domain, value;
-        VariableDefinition(const IdentifierType &identifier,
+        VariableDefinition(const Coord &at,
+                const IdentifierType &identifier,
                 const ExpressionDefinition &value,
                 const ExpressionDefinition &domain)
-                : identifier{identifier}, domain{domain}, value{value} {}
-        VariableDefinition() : VariableDefinition({}, {}, {}) {}
+                : at{at}, identifier{identifier}, domain{domain}, value{value} {}
+        VariableDefinition() : VariableDefinition({}, {}, {}, {}) {}
         typename Tparser::String to_string() const {
             typename Tparser::StringStream ss{};
             ss << "." << identifier;
@@ -239,15 +253,17 @@ struct DomainDefinition {
             return ss.str(); 
         }
     };
+
+    Coord at;
     DomainDefinition *domain;
     IdentifierType identifier, transform_domain;
     std::vector<VariableDefinition> variables;
     std::vector<DomainDefinition> domains;
     std::vector<TransformDefinition> transforms;
-    DomainDefinition(DomainDefinition* domain)
-            : domain{domain}, identifier{}, transform_domain{}, variables{},
+    DomainDefinition(const Coord &at, DomainDefinition* domain)
+            : at{at}, domain{domain}, identifier{}, transform_domain{}, variables{},
                 domains{}, transforms{} {}
-    DomainDefinition() : DomainDefinition(nullptr) {}
+    DomainDefinition() : DomainDefinition({}, nullptr) {}
 
     typename Tparser::String to_string() const {
         typename Tparser::StringStream ss{};
@@ -295,7 +311,7 @@ struct DomainDefinition {
         using VariableResult = ParseResult<VariableResultType>;
         using VariableError = typename VariableResult::IsError;
 
-        DomainDefinition dd{domain};
+        DomainDefinition dd{psr.at(), domain};
         psr.ignoreBlanks();
         auto identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
         if (!identifier) {
@@ -316,6 +332,7 @@ struct DomainDefinition {
         /* variables */
         auto variables_parse = [&]() {
             psr.ignoreBlanks();
+            auto at_var = psr.at();
             auto identifier_var = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
             if (!identifier_var) {
                 return VariableResult{
@@ -382,6 +399,7 @@ struct DomainDefinition {
 
             return VariableResult{
                     VariableResultType{
+                            at_var,
                             identifier_var.result,
                             value_var.result,
                             domain_var.result}};
@@ -434,6 +452,7 @@ struct DomainDefinition {
         auto transforms_parse = [&]() {
             using TransformResult = ParseResult<TransformDefinition>;
             using TransformError = typename TransformResult::IsError;
+            auto transform_at = psr.at();
             auto transform_variables = psr.parseMany(0, SIZE_MAX, VariablePrefix{psr}.lvalue(), variables_parse);
             if (!transform_variables) {
                 return TransformResult{
@@ -443,6 +462,7 @@ struct DomainDefinition {
                         transform_variables};
             }
             TransformDefinition td{};
+            td.at = transform_at;
             td.variables = transform_variables.result;
 
             psr.ignoreBlanks();

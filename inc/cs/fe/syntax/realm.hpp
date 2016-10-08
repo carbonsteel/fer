@@ -7,6 +7,7 @@
 #include <cs/fe/syntax/axioms.hpp>
 #include <cs/fe/syntax/domain.hpp>
 
+/* reads a realm from a parser */
 template <class Tparser>
 struct RealmDefinition {
     using DomainDefinitionType = DomainDefinition<Tparser>;
