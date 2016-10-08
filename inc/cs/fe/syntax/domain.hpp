@@ -255,15 +255,31 @@ struct DomainDefinition {
     };
 
     Coord at;
-    DomainDefinition *domain;
+    template <class Tpointee>
+    using PtrType = std::shared_ptr<Tpointee>;
+    using DomainPtrType = PtrType<DomainDefinition>;
+    DomainPtrType domain;
     IdentifierType identifier, transform_domain;
     std::vector<VariableDefinition> variables;
-    std::vector<DomainDefinition> domains;
+    std::vector<DomainPtrType> domains;
     std::vector<TransformDefinition> transforms;
-    DomainDefinition(const Coord &at, DomainDefinition* domain)
-            : at{at}, domain{domain}, identifier{}, transform_domain{}, variables{},
-                domains{}, transforms{} {}
-    DomainDefinition() : DomainDefinition({}, nullptr) {}
+    DomainDefinition() = default;
+    DomainDefinition& operator=(const DomainDefinition &other) {
+        if (this != &other) {
+            at = other.at;
+            identifier = other.identifier;
+            variables = other.variables;
+            domains = other.domains;
+            transforms = other.transforms;
+            domain = other.domain;
+        }
+        return *this;
+    }
+    DomainDefinition(const DomainDefinition &other)
+        : at{}, domain{}, identifier{}, transform_domain{}, variables{},
+                domains{}, transforms{} {
+        *this = other;
+    }
 
     typename Tparser::String to_string() const {
         typename Tparser::StringStream ss{};
@@ -277,7 +293,7 @@ struct DomainDefinition {
             ss << v.to_string();
         }
         for (const auto& d : domains) {
-            ss << d.to_string();
+            ss << d->to_string();
         }
         for (const auto& t : transforms) {
             ss << t.to_string();
@@ -303,15 +319,18 @@ struct DomainDefinition {
         return guard;
     }
 
-    static auto parse(Tparser &psr, DomainDefinition *domain) {
-        using DomainResultType = DomainDefinition<Tparser>;
+    static auto parse(Tparser &psr, DomainPtrType domain) {
+        using DomainResultInnerType = DomainDefinition<Tparser>;
+        using DomainResultType = typename DomainResultInnerType::template PtrType<DomainResultInnerType>;
         using DomainResult = ParseResult<DomainResultType>;
         using DomainError = typename DomainResult::IsError;
-        using VariableResultType = typename DomainResultType::VariableDefinition;
+        using VariableResultType = typename DomainResultInnerType::VariableDefinition;
         using VariableResult = ParseResult<VariableResultType>;
         using VariableError = typename VariableResult::IsError;
 
-        DomainDefinition dd{psr.at(), domain};
+        auto dd = std::make_shared<DomainDefinition>(DomainDefinition{});
+        dd->at = psr.at();
+        dd->domain = domain;
         psr.ignoreBlanks();
         auto identifier = psr.consumeString(1, SyntaxAxioms::MAX_IDENTIFIER_LENGTH, IsAlpha{}.lvalue());
         if (!identifier) {
@@ -321,7 +340,7 @@ struct DomainDefinition {
                     DomainError{},
                     identifier};
         }
-        dd.identifier = identifier.result;
+        dd->identifier = identifier.result;
         
         psr.ignoreBlanks();
         auto begin_block = psr.lookahead(ParseString<Tparser>{psr, "{"}.lvalue());
@@ -412,7 +431,7 @@ struct DomainDefinition {
                     DomainError{},
                     variables};
         }
-        dd.variables = variables.result;
+        dd->variables = variables.result;
 
 
         /* domains */
@@ -420,7 +439,7 @@ struct DomainDefinition {
             return DomainDefinition<Tparser>::prefix(psr);
         };
         auto domains_parse = [&]() {
-            return DomainDefinition<Tparser>::parse(psr, &dd);
+            return DomainDefinition<Tparser>::parse(psr, dd);
         };
         auto domains = psr.parseMany(0, SIZE_MAX, domains_prefix, domains_parse);
         if (!domains) {
@@ -430,7 +449,7 @@ struct DomainDefinition {
                     DomainError{},
                     domains};
         }
-        dd.domains = domains.result;
+        dd->domains = domains.result;
 
 
         /* transforms */
@@ -495,7 +514,7 @@ struct DomainDefinition {
                     DomainError{},
                     transforms};
         }
-        dd.transforms = transforms.result;
+        dd->transforms = transforms.result;
 
 
         psr.ignoreBlanks();

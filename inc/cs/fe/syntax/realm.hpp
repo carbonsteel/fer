@@ -1,6 +1,7 @@
 #ifndef CS_FE_SYNTAX_REALM_HPP
 #define CS_FE_SYNTAX_REALM_HPP
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,13 +13,13 @@ template <class Tparser>
 struct RealmDefinition {
     using DomainDefinitionType = DomainDefinition<Tparser>;
     std::string identifier;
-    std::vector<DomainDefinitionType> domains;
+    std::shared_ptr<DomainDefinitionType> domain;
 
     typename Tparser::String to_string() const {
         typename Tparser::StringStream ss{};
         ss << "realm " << identifier << std::endl;
-        for (const auto &d : domains) {
-            ss << d.to_string() << std::endl;
+        for (const auto &d : domain->domains) {
+            ss << d->to_string() << std::endl;
         }
         return ss.str();
     }
@@ -29,6 +30,10 @@ struct RealmDefinition {
         using RealmError = typename RealmResult::IsError;
         RealmDefinition realm{};
         realm.identifier = realm_identifier;
+        realm.domain = std::make_shared<DomainDefinitionType>(DomainDefinitionType{});
+        realm.domain->at = psr.at();
+        realm.domain->identifier = realm_identifier;
+
 
         auto domains_prefix = [&]() {
             using Result = decltype(psr.parseString("domain"));
@@ -46,7 +51,7 @@ struct RealmDefinition {
             return guard;
         };
         auto domains_parse = [&]() {
-            return DomainDefinitionType::parse(psr, nullptr);
+            return DomainDefinitionType::parse(psr, realm.domain);
         };
         auto domains = psr.parseMany(1, SIZE_MAX, domains_prefix, domains_parse);
         if (!domains) {
@@ -56,7 +61,7 @@ struct RealmDefinition {
                     RealmError{},
                     domains};
         }
-        realm.domains = domains.result;
+        realm.domain->domains = domains.result;
 
         auto eof = psr.eof();
         if (!eof) {
