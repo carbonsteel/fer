@@ -3,9 +3,15 @@ domain Natural {
   | Next { . n }
 }
 
+domain Patate {
+  . a
+  .b
+  | pelure
+}
+
 domain NaturalMath {
   | sum {
-    . a:Natural
+    . a:Patate( .a~Patate(.a~Natural.b~Natural/One))/pelule
     . b:Natural
 
     > . a=One

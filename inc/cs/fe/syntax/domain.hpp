@@ -53,6 +53,9 @@ struct DomainDefinition {
                          : at{}, identifier{}, value{} {
                     *this = other;
                 }
+                bool operator<(const ArgumentDefinition &a) {
+                    return identifier < a.identifier;
+                }
                 std::string to_string() const {
                     typename Tparser::StringStream ss{};
                     ss << "." << identifier;
@@ -241,6 +244,9 @@ struct DomainDefinition {
                 const ExpressionDefinition &domain)
                 : at{at}, identifier{identifier}, domain{domain}, value{value} {}
         VariableDefinition() : VariableDefinition({}, {}, {}, {}) {}
+        bool operator<(const VariableDefinition &a) {
+            return identifier < a.identifier;
+        }
         typename Tparser::String to_string() const {
             typename Tparser::StringStream ss{};
             ss << "." << identifier;
@@ -384,7 +390,7 @@ struct DomainDefinition {
                             value_var};
                 }
 
-                return ExpressionResult{value_var.result};
+                return ExpressionResult{value_var.result, value_var};
             };
             auto value_var = psr.lookahead(value_parse);
 
@@ -412,7 +418,7 @@ struct DomainDefinition {
                             value_var};
                 }
 
-                return ExpressionResult{value_var.result};
+                return ExpressionResult{value_var.result, value_var};
             };
             auto domain_var = psr.lookahead(domain_parse);
 
@@ -421,7 +427,14 @@ struct DomainDefinition {
                             at_var,
                             identifier_var.result,
                             value_var.result,
-                            domain_var.result}};
+                            domain_var.result},
+                    VariableResult{
+                            std::string{}
+                            + "invalid variable definition at " + at_var.to_string(),
+                            VariableError{},
+                            identifier_var,
+                            value_var,
+                            domain_var}};
         };
         auto variables = psr.parseMany(0, SIZE_MAX, VariablePrefix{psr}.lvalue(), variables_parse);
         if (!variables) {

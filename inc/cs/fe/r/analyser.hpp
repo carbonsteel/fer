@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include <cs/fe/ext/std/to_string.hpp>
 #include <cs/fe/syntax/realm.hpp>
 
 
@@ -149,36 +150,108 @@ public:
                 }
             }
             if (cur_scope.get() == nullptr) {
+                /* can't find a corresponding identifier in the scope -> it does not exist */
                 return AnalyseResult{
                         std::string{}
                         + "invalid expression identifier at " + expression.at.to_string(),
                         AnalyseError{}};
+            } else {
+                /* found the domain */
+                /* check if all its variables have arguments */
+                
+                auto vars = (*dom)->variables;
+                std::sort(std::begin(vars), std::end(vars));
+                auto itvar = std::begin(vars);
+                std::cout << "analyseExpression " << expression.to_string()
+                        << " domain variables " << std::to_string(vars) << std::endl;
+                auto args = expression.arguments;
+                std::sort(std::begin(args), std::end(args));
+                auto itarg = std::begin(args);
+                std::cout << "analyseExpression " << expression.to_string()
+                        << " domain arguments " << std::to_string(args) << std::endl;
+                
+                if (vars.empty() != args.empty()) {
+                    /* there's an argument where there are no variables */
+                    /* or there are variables but no arguments */
+                    auto verb = (vars.empty()) ? "unexpected" : "missing";
+
+                    return AnalyseResult{
+                            std::string{}
+                            + verb + " argument list for domain `"
+                            + (*dom)->identifier + "' in epxression at "
+                            + expression.at.to_string(),
+                            AnalyseError{}};
+                }
+
+                for (; itvar != std::end(vars) && itarg != std::end(args);
+                        ++itvar, ++itarg) {
+                    if (itvar->identifier != itarg->identifier) {
+                        /* there's a variable/argument mismatch */
+                        return AnalyseResult{
+                                std::string{}
+                                + "invalid identifier for argument at " + itarg->at.to_string(),
+                                AnalyseError{}};
+                    }
+
+                    auto arg_ex = analyseExpression(dscope, *itarg->value);
+                    if (!arg_ex) {
+                        /* there's an invalid value for the argument */
+                        return AnalyseResult{
+                                std::string{}
+                                + "invalid value for argument at " + itarg->at.to_string(),
+                                AnalyseError{},
+                                arg_ex};
+                    }
+                }
+
+                if (itvar != std::end(vars)) {
+                    std::stringstream ss{};
+                    /* some variables are missing arguments */
+                    for (;itvar != std::end(vars); ++itvar) {
+                        ss << " ." << itvar->identifier;
+                    }
+                    return AnalyseResult{
+                            std::string{}
+                            + "arguments missing of domain `"
+                            + (*dom)->identifier + "' for variables `"
+                            + ss.str() + "' in expression at " + expression.at.to_string(),
+                            AnalyseError{}};
+                }
+
+                if (itarg != std::end(args)) {
+                    std::stringstream ss{};
+                    /* too many arguments supplied */
+                    for (;itarg != std::end(args); ++itarg) {
+                        ss << " ." << itarg->identifier;
+                    }
+                    return AnalyseResult{
+                            std::string{}
+                            + "unexpected arguments of domain `"
+                            + (*dom)->identifier + "' for `"
+                            + ss.str() + "' in expression at " + expression.at.to_string(),
+                            AnalyseError{}};
+                }
+
+                return AnalyseResult{nullptr};
             }
 
-            /* check rest of expr here */
+        } else {
+            /* that variable is value bounded */
+            if (!var->value.identifier.empty()) {
+                auto var_ex = analyseExpression(dscope, var->value);
+                if (!var_ex) {
+                    return AnalyseResult{
+                            std::string{}
+                            + "invalid value constraint",
+                            AnalyseError{},
+                            var_ex};
+                }
+            }
+
+            /* check domain bounded */
+
             return AnalyseResult{nullptr};
         }
-
-        /* that variable is value bounded */
-        if (!var->value.identifier.empty()) {
-            auto var_ex = analyseExpression(dscope, var->value);
-            if (!var_ex) {
-                return AnalyseResult{
-                        std::string{}
-                        + "invalid value constraint",
-                        AnalyseError{},
-                        var_ex};
-            }
-/*
-            auto domain_identifier = [&](const DomainType &d) -> bool {
-                return d.identifier == var->value.identifier;
-            };
-            auto var = std::find_if(std::begin(dscope.variables), std::end(dscope.variables), domain_identifier);*/
-        }
-
-        /* check domain bounded */
-
-        return AnalyseResult{nullptr};
     }
 };
 

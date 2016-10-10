@@ -273,12 +273,18 @@ public:
         using IsError = typename Result::IsError;
         ResultType many{};
         many.reserve(minimum_parsed);
+        Result capture{};
         for (;;) {
             auto many_size = many.size();
             auto prefixed = lookahead(prefix);
+            capture.merge(Result{
+                    std::string{}
+                    + "many-captured prefix errors",
+                    IsError{},
+                    prefixed});
             if (!prefixed) {
                 if (many_size >= minimum_parsed) {
-                    return Result{many, prefixed};
+                    return Result{many, capture};
                 }
 
                 return Result{
@@ -287,16 +293,21 @@ public:
                         + " instances, where only " + std::to_string(many_size)
                         + " found",
                         IsError{},
-                        prefixed};
+                        capture};
             }
 
             auto parsed = parse();
+            capture.merge(Result{
+                    std::string{}
+                    + "many-captured errors",
+                    IsError{},
+                    parsed});
             if (!parsed) {
                 return Result{
                         std::string{}
                         + "expected definition after prefix",
                         IsError{},
-                        parsed};
+                        capture};
             } else {
                 many.push_back(parsed.result);
             }
@@ -324,7 +335,8 @@ public:
                 return Result{
                         std::string{}
                         + "lookahead parse failed, read error at " + current_position.to_string(),
-                        IsError{}};
+                        IsError{},
+                        parsed};
             }
 
             // return it anyway and the pos will be reset to start over
