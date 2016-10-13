@@ -24,7 +24,8 @@ class Analyser {
     struct DomainScope;
     using DomainScopePtrType = std::shared_ptr<DomainScope>;
     struct DomainScope {
-        const DomainScopePtrType parent;
+        enum Scope { DOMAIN_SCOPE_LINEAR, DOMAIN_SCOPE_FULL };
+        DomainScopePtrType root, parent;
         const DomainPtrType &domain;
         using VariableConstIteratorType = typename decltype(domain->variables)::const_iterator;
         const VariableConstIteratorType vbegin;
@@ -34,19 +35,49 @@ class Analyser {
         const DomainConstIteratorType dbegin;
         const DomainConstIteratorType dend;
         DomainConstIteratorType ds;
-        DomainScope(const DomainScopePtrType &parent, const DomainPtrType &domain)
-                : parent{parent}, domain{domain},
+
+        std::string to_string() const {
+            typename Tparser::StringStream ss{};
+            ss << "DomainScope {" << std::endl
+               << "domain: " << domain->identifier << std::endl
+               << "parent: " << parent->domain->identifier << std::endl
+               << "root: " << root->domain->identifier << std::endl
+               << "}" << std::endl;
+            return ss.str();
+        }
+
+        DomainScope(const DomainScopePtrType &parent, const DomainPtrType &domain, Scope scope)
+                : root{}, parent{parent}, domain{domain},
                   vbegin{std::cbegin(domain->variables)},
-                  vend{std::cend(domain->variables)}, vs{vbegin},
+                  vend{std::cend(domain->variables)},
                   dbegin{std::cbegin(domain->domains)},
-                  dend{std::cend(domain->domains)}, ds{dbegin} {}
+                  dend{std::cend(domain->domains)} {
+            if (parent.get() != nullptr) {
+                root = parent->root;
+            }
+            switch (scope) {
+            case DOMAIN_SCOPE_LINEAR:
+                vs = vbegin;
+                ds = dbegin;
+                break;
+            case DOMAIN_SCOPE_FULL:
+                vs = vend;
+                ds = dend;
+                break;
+            }
+        }
+        DomainScope(const DomainScopePtrType &parent, const DomainPtrType &domain)
+                : DomainScope(parent, domain, DOMAIN_SCOPE_LINEAR) {}
+        DomainScope(const DomainPtrType &domain)
+                : DomainScope({}, domain, DOMAIN_SCOPE_LINEAR) {}
     };
     using AnalyseResult = ParseResult<void*>;
     using AnalyseError = typename AnalyseResult::IsError;
 
 public:
     auto analyse(const RealmType &realm) {
-        auto dscope = std::make_shared<DomainScope>(DomainScope{DomainScopePtrType{}, realm.domain});
+        auto dscope = std::make_shared<DomainScope>(DomainScope{realm.domain});
+        dscope->root = dscope;
         return analyseDomain(dscope);
     }
     AnalyseResult analyseDomain(DomainScopePtrType dscope) {
@@ -61,8 +92,10 @@ public:
         }
 
         AnalyseResult domains_check;
-        for (; dscope->ds != dscope->dend; ++dscope->ds) {
-            auto sdscope = std::make_shared<DomainScope>(DomainScope{dscope, *dscope->ds});
+        for (; dscope->ds != dscope->dend; ) {
+            auto ds = dscope->ds;
+            ++dscope->ds;
+            auto sdscope = std::make_shared<DomainScope>(DomainScope{dscope, *ds});
             auto domain_check = analyseDomain(sdscope);
             domains_check.merge(domain_check);
         }
@@ -87,26 +120,22 @@ public:
                     AnalyseError{}};
         }
 
-        if (!dscope->vs->value.identifier.empty()) {
-          auto value_ex = analyseExpression(dscope, dscope->vs->value);
-          if (!value_ex) {
-              return AnalyseResult{
-                      std::string{}
-                      + "unexpected variable value",
-                      AnalyseError{},
-                      value_ex};
-          }
+        auto value_ex = analyseExpression(dscope, dscope, &dscope->vs->value);
+        if (!value_ex) {
+            return AnalyseResult{
+                    std::string{}
+                    + "unexpected variable value",
+                    AnalyseError{},
+                    value_ex};
         }
 
-        if (!dscope->vs->domain.identifier.empty()) {
-          auto domain_ex = analyseExpression(dscope, dscope->vs->domain);
-          if (!domain_ex) {
-              return AnalyseResult{
-                      std::string{}
-                      + "unexpected variable domain",
-                      AnalyseError{},
-                      domain_ex};
-          }
+        auto domain_ex = analyseExpression(dscope, dscope, &dscope->vs->domain);
+        if (!domain_ex) {
+            return AnalyseResult{
+                    std::string{}
+                    + "unexpected variable domain",
+                    AnalyseError{},
+                    domain_ex};
         }
 
         /* check for conflicting value and domain bounds */
@@ -114,7 +143,18 @@ public:
         return AnalyseResult{nullptr};
     }
 
-    AnalyseResult analyseExpression(const DomainScopePtrType &dscope, const ExpressionType &expression) {
+    AnalyseResult analyseExpression(const DomainScopePtrType &dscope,
+            const DomainScopePtrType &ldscope,
+            const ExpressionType * const expression_ptr) {
+        if (expression_ptr == nullptr) {
+            return AnalyseResult{nullptr};
+        }
+        const ExpressionType expression = *expression_ptr;
+        if (expression.identifier.empty()) {
+            /* no expression <=> nothing to do */
+            return AnalyseResult{nullptr};
+        }
+
         using VariableConstIteratorType = typename DomainScope::VariableConstIteratorType;
         using DomainConstIteratorType = typename DomainScope::DomainConstIteratorType;
         std::cout << "analyseExpression " << expression.to_string() << std::endl;
@@ -138,7 +178,7 @@ public:
             auto dom_identifier = [&](const DomainPtrType &d) -> bool {
                 return d->identifier == expression.identifier;
             };
-            cur_scope = dscope;
+            cur_scope = ldscope;
             DomainConstIteratorType dom;
             while (cur_scope.get() != nullptr) {
                 dom = std::find_if(cur_scope->dbegin, cur_scope->ds, dom_identifier);
@@ -150,10 +190,13 @@ public:
                 }
             }
             if (cur_scope.get() == nullptr) {
+                std::cout << "dscope: " << dscope->to_string() << std::endl
+                        << "ldscope: " << ldscope->to_string() << std::endl;
                 /* can't find a corresponding identifier in the scope -> it does not exist */
                 return AnalyseResult{
                         std::string{}
-                        + "invalid expression identifier at " + expression.at.to_string(),
+                        + "invalid expression identifier `"
+                        + expression.identifier + "' at " + expression.at.to_string(),
                         AnalyseError{}};
             } else {
                 /* found the domain */
@@ -189,11 +232,13 @@ public:
                         /* there's a variable/argument mismatch */
                         return AnalyseResult{
                                 std::string{}
-                                + "invalid identifier for argument at " + itarg->at.to_string(),
+                                + "invalid identifier `"
+                                + itarg->identifier + "' for argument at "
+                                + itarg->at.to_string(),
                                 AnalyseError{}};
                     }
 
-                    auto arg_ex = analyseExpression(dscope, *itarg->value);
+                    auto arg_ex = analyseExpression(dscope, dscope, itarg->value.get());
                     if (!arg_ex) {
                         /* there's an invalid value for the argument */
                         return AnalyseResult{
@@ -232,13 +277,30 @@ public:
                             AnalyseError{}};
                 }
 
+                /* check for sub-domain lookup */
+                auto sub_lookup_scope = std::make_shared<DomainScope>(
+                        DomainScope{dscope->root, *dom, DomainScope::DOMAIN_SCOPE_FULL});
+                auto sub_lookup = analyseExpression(
+                        dscope, sub_lookup_scope, expression.lookup.get());
+                if (!sub_lookup) {
+
+                    /* lookup failed */
+                    return AnalyseResult{
+                            std::string{}
+                            + "unexpected lookup in domain `"
+                            + (*dom)->identifier + "' in expression at "
+                            + expression.at.to_string(),
+                            AnalyseError{},
+                            sub_lookup};
+                }
+
                 return AnalyseResult{nullptr};
             }
 
         } else {
-            /* that variable is value bounded */
             if (!var->value.identifier.empty()) {
-                auto var_ex = analyseExpression(dscope, var->value);
+                /* that variable is value bounded */
+                auto var_ex = analyseExpression(dscope, dscope, &var->value);
                 if (!var_ex) {
                     return AnalyseResult{
                             std::string{}

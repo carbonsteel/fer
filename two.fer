@@ -1,6 +1,6 @@
 domain Natural {
   | One
-  | Next { . n }
+  | Next { . n:Natural }
 }
 
 domain Patate {
@@ -8,10 +8,13 @@ domain Patate {
   .b
   | pelure
 }
-
+domain Tomate {
+ | rouge
+}
 domain NaturalMath {
   | sum {
-    . a:Patate( .a~Patate(.a~Natural.b~Natural/One))/pelule
+    . a=Patate( .a~Patate(.a~Natural.b~Natural/Next(.n~Patate(.a~Tomate/rouge.b~Natural/One))).b~Natural/One)/pelure
+       :Patate( .a~Patate(.a~Natural.b~Natural/One).b~Natural/One)/pelure
     . b:Natural
 
     > . a=One
