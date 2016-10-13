@@ -394,7 +394,6 @@ struct DomainDefinition {
             };
             auto value_var = psr.lookahead(value_parse);
 
-            DomainDefinition::IdentifierType domain{};
             auto domain_parse = [&]() {
                 using ExpressionResult = ParseResult<typename TransformDefinition::ExpressionDefinition>;
                 using ExpressionError = typename ExpressionResult::IsError;
@@ -421,6 +420,17 @@ struct DomainDefinition {
                 return ExpressionResult{value_var.result, value_var};
             };
             auto domain_var = psr.lookahead(domain_parse);
+
+            if (!!value_var && !!domain_var) {
+                return VariableResult{
+                        std::string{}
+                        + "unexpected domain expression after value expression at "
+                        + domain_var.result.at.to_string(),
+                        VariableError{},
+                        identifier_var,
+                        value_var,
+                        domain_var};
+            }
 
             return VariableResult{
                     VariableResultType{

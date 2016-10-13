@@ -5,7 +5,7 @@ domain Natural {
 
 domain Patate {
   . a
-  .b
+  .b=Natural
   | pelure
 }
 domain Tomate {
@@ -13,12 +13,11 @@ domain Tomate {
 }
 domain NaturalMath {
   | sum {
-    . a=Patate( .a~Patate(.a~Natural.b~Natural/Next(.n~Patate(.a~Tomate/rouge.b~Natural/One))).b~Natural/One)/pelure
-       :Patate( .a~Patate(.a~Natural.b~Natural/One).b~Natural/One)/pelure
+    . a=Natural
     . b:Natural
 
-    > . a=One
-    $ Next( . n~b )
+    > . a=Natural/One
+    $ Natural/Next( . n~b )
 
     > . a=Next . b=One
     $ Next( . n~a )
@@ -48,18 +47,18 @@ domain NaturalMath {
 
 
 domain Maybe{
-    . Value
+    . Value:Natural/One
     | Nothing
     | Just{ . j:Value }
 }
-domain List
+
 domain List{
     . Value
     | Tail{ . v:Value }
-    | Head{ . v:Value . p:List }
+    | Head{ . v:Value . p:List( .Value~Value ) }
 }
 domain ListUtil{
-    | head {
+    | head { 
       . List
       >$ List/v
     }

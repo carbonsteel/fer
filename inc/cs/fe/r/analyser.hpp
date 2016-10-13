@@ -84,7 +84,20 @@ public:
         std::cout << "analyseDomain " << dscope->domain->identifier << std::endl;  
         AnalyseResult variables_check;
         for (; dscope->vs != dscope->vend; ++dscope->vs) {
-            auto var_check = analyseVariable(dscope);
+            auto variable = &(*dscope->vs);
+            auto same_identifier = [&](const VariableType &v) -> bool {
+                return v.identifier == variable->identifier;
+            };
+            auto it = std::find_if(dscope->vbegin, dscope->vs, same_identifier);
+            if (it != dscope->vs) {
+                return AnalyseResult{
+                        std::string{}
+                        + "redeclaration of variable `" + variable->identifier 
+                        + "' from " + it->at.to_string() + " at " + variable->at.to_string(),
+                        AnalyseError{}};
+            }
+
+            auto var_check = analyseVariable(dscope, variable);
             variables_check.merge(var_check);
         }
         if (!variables_check) {
@@ -103,42 +116,55 @@ public:
             return domains_check;
         }
 
+        AnalyseResult transforms_check;
+        auto transforms = dscope->domain->transforms;
+        for (auto tit = std::begin(transforms); tit != std::end(transforms); ++tit) {
+            for (auto vtit = std::begin(tit->variables); 
+                    vtit != std::end(tit->variables); ++vtit) {
+                auto var_check = analyseVariable(dscope, &(*vtit));
+                transforms_check.merge(var_check);
+            }
+
+            auto transform_ex = analyseExpression(dscope, dscope, &tit->expression);
+            if (!transform_ex) {
+                transforms_check.merge(AnalyseResult{
+                        std::string{}
+                        + "invalid expression of transform at `" + tit->at.to_string()
+                        + "' at " + tit->expression.at.to_string(),
+                        AnalyseError{},
+                        transform_ex});
+            }
+        }
+        if (!transforms_check) {
+            return transforms_check;
+        }
+
         return AnalyseResult{nullptr};
     }
 
-    AnalyseResult analyseVariable(const DomainScopePtrType &dscope) {
-        std::cout << "analyseVariable " << dscope->vs->identifier << std::endl;  
-        auto same_identifier = [&](const VariableType &v) -> bool {
-            return v.identifier == dscope->vs->identifier;
-        };
-        auto it = std::find_if(dscope->vbegin, dscope->vs, same_identifier);
-        if (it != dscope->vs) {
-            return AnalyseResult{
-                    std::string{}
-                    + "redeclaration of variable `" + dscope->vs->identifier 
-                    + "' from " + it->at.to_string() + " at " + dscope->vs->at.to_string(),
-                    AnalyseError{}};
-        }
+    AnalyseResult analyseVariable(const DomainScopePtrType &dscope,
+            const VariableType * const variable) {
+        std::cout << "analyseVariable " << variable->identifier << std::endl;  
 
-        auto value_ex = analyseExpression(dscope, dscope, &dscope->vs->value);
+        auto value_ex = analyseExpression(dscope, dscope, &variable->value);
         if (!value_ex) {
             return AnalyseResult{
                     std::string{}
-                    + "unexpected variable value",
+                    + "invalid value of variable `" + variable->identifier
+                    + "' at " + variable->value.at.to_string(),
                     AnalyseError{},
                     value_ex};
         }
 
-        auto domain_ex = analyseExpression(dscope, dscope, &dscope->vs->domain);
+        auto domain_ex = analyseExpression(dscope, dscope, &variable->domain);
         if (!domain_ex) {
             return AnalyseResult{
                     std::string{}
-                    + "unexpected variable domain",
+                    + "invalid domain of variable `" + variable->identifier
+                    + "' at " + variable->domain.at.to_string(),
                     AnalyseError{},
                     domain_ex};
         }
-
-        /* check for conflicting value and domain bounds */
 
         return AnalyseResult{nullptr};
     }
@@ -287,7 +313,7 @@ public:
                     /* lookup failed */
                     return AnalyseResult{
                             std::string{}
-                            + "unexpected lookup in domain `"
+                            + "invalid lookup in domain `"
                             + (*dom)->identifier + "' in expression at "
                             + expression.at.to_string(),
                             AnalyseError{},
@@ -298,20 +324,7 @@ public:
             }
 
         } else {
-            if (!var->value.identifier.empty()) {
-                /* that variable is value bounded */
-                auto var_ex = analyseExpression(dscope, dscope, &var->value);
-                if (!var_ex) {
-                    return AnalyseResult{
-                            std::string{}
-                            + "invalid value constraint",
-                            AnalyseError{},
-                            var_ex};
-                }
-            }
-
-            /* check domain bounded */
-
+            /* Nothing to do here, expressions have already been analyzed */
             return AnalyseResult{nullptr};
         }
     }
