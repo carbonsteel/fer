@@ -1,0 +1,115 @@
+domain Natural {
+  | One
+  | Next { . n:Natural }
+}
+
+domain Patate {
+  . a
+  .b=Natural
+  | pelure
+}
+domain Tomate {
+ | rouge {
+  | bleu
+ }
+}
+domain NaturalMath {
+  | sum {
+    . a=Natural
+    . b:Natural
+
+    > . b=Tomate/rouge/bleu
+    $ Natural/Next( . n~b )
+
+    > . a=Next . b=One
+    $ Natural/Next( . n~a )
+
+    > . a=Next . b=Next
+    $ Next( . n~Next( . n~sum(
+        . a~a/n
+        . b~b/n
+    )))
+  }
+
+  | mul {
+    . a:Natural
+    . b:Natural
+    > . a=One $ b
+    > . b=One $ a
+    > . a=Next . b=Next
+    $ sum(
+      . a~a
+      . b~mul(
+          . a~a
+          . b~b/n
+      )
+    )
+  }
+}
+
+
+domain Maybe{
+    . Value:Natural/One
+    | Nothing
+    | Just{ . j:Value }
+}
+
+domain List{
+    . Value
+    | Tail{ . v:Value }
+    | Head{ . v:Value . p:List( .Value~Value ) }
+}
+domain ListUtil{
+    | head { 
+      . List
+      >$ List/v
+    }
+
+    | tail {
+      . List
+      > . List=Head
+      $ tail( . List ~ List/p )
+      > . List=Tail
+      $ List/v
+    }
+
+    | find{ 
+      . List
+      . v:List/Value 
+      | check {
+        . c:List/Value  . v:List/Value
+        > . c = v $ Just( .j~v )
+        >$ Nothing
+      }
+      | checkNext {
+        . m:Maybe( . Value~ List/Value )
+        . l:List
+        > . m = Nothing $ find( .List~l .v~v )
+        >$ m
+      }
+
+      > . List=Head
+      $ check ( . c~List/v . v~v )
+
+      > . List=Tail
+      $ checkNext ( . m~check (.c~List/v .v~v) . l~List )
+    }
+
+}
+
+domain Math{
+    . Number
+    . Instance
+    | sum{
+        . a:Number . b:Number 
+        >$ Instance/sum( . a~a . b~b )
+    }
+    | mul{
+        . a:Number . b:Number 
+        >$ Instance/mul( . a~a . b~b )
+    }
+}
+
+domain Main {
+    >$ Math( . Number~Natural . Instance~NaturalMath )/sum( . a~One . b~One )
+}

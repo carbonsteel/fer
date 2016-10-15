@@ -97,7 +97,7 @@ public:
                         AnalyseError{}};
             }
 
-            auto var_check = analyseVariable(dscope, variable);
+            auto var_check = analyseVariable(dscope, dscope, variable, false);
             variables_check.merge(var_check);
         }
         if (!variables_check) {
@@ -121,16 +121,58 @@ public:
         for (auto tit = std::begin(transforms); tit != std::end(transforms); ++tit) {
             for (auto vtit = std::begin(tit->variables); 
                     vtit != std::end(tit->variables); ++vtit) {
-                auto var_check = analyseVariable(dscope, &(*vtit));
+                /* check if variable is defined */
+                auto variable = &(*vtit);
+                auto same_identifier = [&](const VariableType &v) -> bool {
+                    return v.identifier == variable->identifier;
+                };
+                auto it = std::find_if(dscope->vbegin, dscope->vend, same_identifier);
+                if (it == dscope->vend) {
+                    return AnalyseResult{
+                            std::string{}
+                            + "undefined variable `" + variable->identifier 
+                            + " at " + variable->at.to_string(),
+                            AnalyseError{}};
+                }
+
+                /* if it is domain bound, allow to lookup directly in that domain */
+                auto ldscope = dscope;
+                if (!it->domain.identifier.empty()) {
+                    /* find that domain scope */
+                    auto dom_identifier = [&](const DomainPtrType &d) -> bool {
+                        return d->identifier == it->domain.identifier;
+                    };
+
+                    auto cur_scope = ldscope;
+                    typename DomainScope::DomainConstIteratorType dom;
+                    while (cur_scope.get() != nullptr) {
+                        dom = std::find_if(cur_scope->dbegin, cur_scope->ds, dom_identifier);
+                        if (dom != cur_scope->ds) {
+                            /* check rest of expr */
+                            break;
+                        } else {
+                            cur_scope = cur_scope->parent;
+                        }
+                    }
+
+                    //if (cur_scope.get() == nullptr) {
+                        /* never happens, an error would have previously been raised */
+                    //}
+                    ldscope = std::make_shared<DomainScope>(
+                            DomainScope{dscope->root, *dom, DomainScope::DOMAIN_SCOPE_FULL});
+                }
+                auto var_check = analyseVariable(dscope, ldscope, &(*vtit), true);
                 transforms_check.merge(var_check);
             }
 
-            auto transform_ex = analyseExpression(dscope, dscope, &tit->expression);
+
+
+            auto transform_ex = analyseExpression(dscope, dscope, &tit->expression, false);
             if (!transform_ex) {
                 transforms_check.merge(AnalyseResult{
                         std::string{}
-                        + "invalid expression of transform at `" + tit->at.to_string()
-                        + "' at " + tit->expression.at.to_string(),
+                        + "invalid expression at " + tit->expression.at.to_string()
+                        + " of transform at " + tit->at.to_string(),
                         AnalyseError{},
                         transform_ex});
             }
@@ -143,10 +185,12 @@ public:
     }
 
     AnalyseResult analyseVariable(const DomainScopePtrType &dscope,
-            const VariableType * const variable) {
+            const DomainScopePtrType &ldscope,
+            const VariableType * const variable,
+            bool no_args_on_last_lookup) {
         std::cout << "analyseVariable " << variable->identifier << std::endl;  
 
-        auto value_ex = analyseExpression(dscope, dscope, &variable->value);
+        auto value_ex = analyseExpression(dscope, ldscope, &variable->value, no_args_on_last_lookup);
         if (!value_ex) {
             return AnalyseResult{
                     std::string{}
@@ -156,7 +200,7 @@ public:
                     value_ex};
         }
 
-        auto domain_ex = analyseExpression(dscope, dscope, &variable->domain);
+        auto domain_ex = analyseExpression(dscope, ldscope, &variable->domain, no_args_on_last_lookup);
         if (!domain_ex) {
             return AnalyseResult{
                     std::string{}
@@ -171,7 +215,8 @@ public:
 
     AnalyseResult analyseExpression(const DomainScopePtrType &dscope,
             const DomainScopePtrType &ldscope,
-            const ExpressionType * const expression_ptr) {
+            const ExpressionType * const expression_ptr,
+            bool no_args_on_last_lookup) {
         if (expression_ptr == nullptr) {
             return AnalyseResult{nullptr};
         }
@@ -198,6 +243,7 @@ public:
                 cur_scope = cur_scope->parent;
             }
         }
+
         /* not a defined variable */
         if (cur_scope.get() == nullptr) {
             /* look for a domain */
@@ -226,18 +272,29 @@ public:
                         AnalyseError{}};
             } else {
                 /* found the domain */
+                auto args = expression.arguments;
+                if (no_args_on_last_lookup && expression.lookup.get() == nullptr) {
+                    if (args.empty()) {
+                        return AnalyseResult{nullptr};
+                    } else {
+                        return AnalyseResult{
+                                std::string{}
+                                + "unexpected argument list on terminating lookup expression at "
+                                + expression.at.to_string(),
+                                AnalyseError{}};
+                    }
+                }
+
                 /* check if all its variables have arguments */
-                
                 auto vars = (*dom)->variables;
                 std::sort(std::begin(vars), std::end(vars));
                 auto itvar = std::begin(vars);
-                std::cout << "analyseExpression " << expression.to_string()
-                        << " domain variables " << std::to_string(vars) << std::endl;
-                auto args = expression.arguments;
+                //std::cout << "analyseExpression " << expression.to_string()
+                //        << " domain variables " << std::to_string(vars) << std::endl;
                 std::sort(std::begin(args), std::end(args));
                 auto itarg = std::begin(args);
-                std::cout << "analyseExpression " << expression.to_string()
-                        << " domain arguments " << std::to_string(args) << std::endl;
+                //std::cout << "analyseExpression " << expression.to_string()
+                //        << " domain arguments " << std::to_string(args) << std::endl;
                 
                 if (vars.empty() != args.empty()) {
                     /* there's an argument where there are no variables */
@@ -264,7 +321,7 @@ public:
                                 AnalyseError{}};
                     }
 
-                    auto arg_ex = analyseExpression(dscope, dscope, itarg->value.get());
+                    auto arg_ex = analyseExpression(dscope, dscope, itarg->value.get(), no_args_on_last_lookup);
                     if (!arg_ex) {
                         /* there's an invalid value for the argument */
                         return AnalyseResult{
@@ -307,9 +364,8 @@ public:
                 auto sub_lookup_scope = std::make_shared<DomainScope>(
                         DomainScope{dscope->root, *dom, DomainScope::DOMAIN_SCOPE_FULL});
                 auto sub_lookup = analyseExpression(
-                        dscope, sub_lookup_scope, expression.lookup.get());
+                        dscope, sub_lookup_scope, expression.lookup.get(), no_args_on_last_lookup);
                 if (!sub_lookup) {
-
                     /* lookup failed */
                     return AnalyseResult{
                             std::string{}
