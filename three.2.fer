@@ -1,0 +1,86 @@
+domain Natural {
+  | One
+  | Next { . n:Natural }
+}
+
+domain Maybe{
+    . Value
+    | Nothing
+    | Just{ . j:Value }
+}
+
+domain List{
+    . Value
+    | Tail{ . v:Value }
+    | Head{ . v:Value . p:List( .Value~Value ) }
+}
+
+domain ListUtil{
+    | head { 
+      . List
+      >$ List/v
+    }
+
+    | tail {
+      . List
+      > . List=Head
+      $ tail( . List ~ List/p )
+      > . List=Tail
+      $ List/v
+    }
+
+    | size {
+      . List
+      > . List=Head
+      $ Natural/Next(.n~size( . List ~ List/p ))
+      > . List=Tail
+      $ Natural/One
+    }
+
+    | find{ 
+      . List
+      . v:List/Value 
+      | check {
+        . c:List/Value  . v:List/Value
+        > . c = v $ Just( .j~v )
+        >$ Nothing
+      }
+      | checkNext {
+        . m:Maybe( . Value~ List/Value )
+        . l:List
+        > . m = Nothing $ find( .List~l .v~v )
+        >$ m
+      }
+
+      > . List=Head
+      $ check ( . c~List/v . v~v )
+
+      > . List=Tail
+      $ checkNext ( . m~check (.c~List/v .v~v) . l~List )
+    }
+}
+
+domain Character {
+  | a | b | c | s
+}
+
+domain String {
+  . chars:List(.Value~Character)
+}
+
+domain StringIO {
+  | _printf_args {
+    . str:String
+    >$ 
+  }
+  | printf {
+    . str:String
+    . args:_printf_args(str)
+  }
+}
+
+domain Main {
+  >$ StringIO/printf(
+      .str~IO/read
+      .args~IO/read)
+}
