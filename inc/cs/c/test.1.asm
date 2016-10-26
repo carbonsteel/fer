@@ -2,39 +2,42 @@ section .text
 
   global T_NaturalMath_sum
 T_NaturalMath_sum:
-T_NaturalMath_sum_0:
   ; a and b are garenteed to be both of Natural
-  ; is a one?
-  cmp r14,D_Natural_One
-  jne T_NaturalMath_sum_1
+  ; r14 points to a
+  ; r13 points to b
+  mov r8,[r14]
+  mov r9,[r13]
+  jmp [J_NaturalMath_sum+r8*2+r9]
+J_NaturalMath_sum:
+  dd T_NaturalMath_sum_0
+  dd T_NaturalMath_sum_0
+  dd T_NaturalMath_sum_1
+  dd T_NaturalMath_sum_2
+T_NaturalMath_sum_0:
   ; a is one
-  sub rsp,8
-  mov [rsp+4],r13
-  mov [rsp+8],D_Natural_Next
-  mov rax,rsp+8
-  jmp [rsp]
+  ; b is one or next
+  push r13
+  push D_Natural_Next
+  mov rax,rsp
+  ret
 T_NaturalMath_sum_1:
   ; a is next
-  ; is b one?
-  cmp r13,D_Natural_One
-  je T_NaturalMath_sum_2
   ; b is one
-  sub rsp,8
-  mov [rsp+4],r14
-  mov [rsp+8],D_Natural_Next
-  mov rax,rsp+8
-  jmp T_Main_1
+  push r14
+  push D_Natural_Next
+  mov rax,rsp
+  ret
 T_NaturalMath_sum_2:
-  ; a is next and b is next
-  inc r15
-  sub rsp,16
-T_NaturalMath_sum_2a:
-  mov [rsp+4],
-  mov [rsp+8],D_Natural_Next
-  mov [rsp+12],rsp+4
-  mov [rsp+16],D_Natural_Next
-  mov rax,rsp+8
-  jmp T_Main_1
+  ; a is next
+  ; b is next
+  push ; RENDU ICI
+  call T_NaturalMath_sum
+  push 0
+  push D_Natural_Next
+  push rsp
+  push D_Natural_Next
+
+  ret
 
   global  T_main
 ; dumb and unoptimized code for three.1.fer
@@ -69,8 +72,7 @@ section .data
 
 D_Main db             0x0
 D_Natural db          0x1
-D_Natural_One db      0x2
-D_Natural_Next db     0x3
-D_NaturalMath db      0x4
-D_NaturalMath_sum db  0x5
-
+D_Natural_One db        0x0
+D_Natural_Next db       0x1
+D_NaturalMath db      0x2
+D_NaturalMath_sum db    0x0
