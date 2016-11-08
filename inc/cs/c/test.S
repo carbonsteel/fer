@@ -1,6 +1,7 @@
 
 # borkne code for three.1.fer
 
+# as test.S -o test.o -g && ld test.o -o test
 
 .text
 .global T_NaturalMath_sum
@@ -10,11 +11,18 @@ T_NaturalMath_sum:
   # r13 points to b
   movq (%r14), %r8
   movq (%r13), %r9
-  jmp *J_NaturalMath_sum(%r9,%r8,2)
+  lea T_NaturalMath_sum_2, %rax
+  lea J_NaturalMath_sum, %rbx
+  lea J_NaturalMath_sum_test, %rcx
+  lea (%r9,%r8,2), %r10
+  lea J_NaturalMath_sum(,%r10,4), %r11
+  mov (%r11), %edx
+  jmpq *%rdx
 J_NaturalMath_sum:
   .int T_NaturalMath_sum_0
   .int T_NaturalMath_sum_0
   .int T_NaturalMath_sum_1
+J_NaturalMath_sum_test:
   .int T_NaturalMath_sum_2
 T_NaturalMath_sum_0:
   # a is one
@@ -33,8 +41,8 @@ T_NaturalMath_sum_1:
 T_NaturalMath_sum_2:
   # a is next
   # b is next
-  movq -8(%r14), %r14
-  movq -8(%r13), %r13
+  movq 8(%r14), %r14
+  movq 8(%r13), %r13
   call T_NaturalMath_sum
   pushq %rax
   pushq D_Natural_Next
@@ -83,4 +91,8 @@ D_NaturalMath:
 .quad               0x2
 D_NaturalMath_sum:
 .quad                 0x0
-.end
+
+
+
+
+.end # END
