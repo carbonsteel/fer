@@ -7,6 +7,7 @@ It seems to me that memory allocation is a dependency problem in which any node 
 
 Examples, where f is a function and no properties can be inferred from f and no f', inverse of f, exists:
 
+    ; best case (tail call)
     -> a, b=f(a), c=f(b) : 3 dep
     ~> a, a=f(a), a=f(a) : 1 dep
     

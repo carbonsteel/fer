@@ -29,26 +29,24 @@ T_NaturalMath_sum_0:
   # b is one or next
   pushq %r13
   pushq D_Natural_Next
-  mov %rsp, %rax
-  ret
+  jmp T_Main_rf_NaturalMath_sum
 T_NaturalMath_sum_1:
   # a is next
   # b is one
   pushq %r14
   pushq D_Natural_Next
-  mov %rsp, %rax
-  ret
+  jmp T_Main_rf_NaturalMath_sum
 T_NaturalMath_sum_2:
   # a is next
   # b is next
   movq 8(%r14), %r14
   movq 8(%r13), %r13
-  call T_NaturalMath_sum
   pushq %rax
   pushq D_Natural_Next
   pushq %rsp
   pushq D_Natural_Next
-  ret
+  jmp T_NaturalMath_sum
+  jmp T_Main_rf_NaturalMath_sum
 
 .global _start
 .global  T_main
@@ -69,7 +67,8 @@ T_Main_0:
   # set params
   # a and b could point to the same place
   mov %rsp, %r13
-  call T_NaturalMath_sum
+  jmp T_NaturalMath_sum
+  T_Main_rf_NaturalMath_sum:
   # sys_exit 0
   mov %rax, %rdi
   mov $60, %rax
