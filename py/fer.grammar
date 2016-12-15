@@ -1,0 +1,34 @@
+# many(<parser> {.min=0 .max=SIZE_MAX})
+# either(<parser> ...)
+# //
+# eof()
+
+
+<realm> := "domains"@many(<domain-of-the-realm>) # root of the file
+
+
+<w> := /[ \n]*/
+<id> := <w> @/[a-zA-Z]+/
+<variable-prefix> := <w> /\./
+
+<domain-of-the-realm> := <w> /domain/ @<domain>
+<domain> := "id"@<id> "domain"@many(<domain-definition> .min=0 .max=1)
+<domain-definition> := 
+  <w> /\{/ 
+  "variables"@many(<variable-definition>)
+  "domains"@many(<sub-domain-definition>)
+  "transforms"@many(<transform-definition>) 
+  <w> /\}/
+<sub-domain-definition> := <w> /\|/ @<domain>
+<variable-definition> :=  <variable-prefix> "id"@<id> "domain"@<domain-expression>
+<domain-expression> := <w> /\:/ @<expression>
+<transform-definition> := 
+  <w> /\>/ "constraints"@many(<variable-definition>)
+  <w> /\$/ "expression"@<expression>
+<expression> := 
+  "id"@<id>
+  "arguments"@many(<expression-arguments> .min=0 .max=1)
+  "lookup"@many(<expression-lookup> .min=0 .max=1)
+<expression-arguments> := <w> /\(/ @many(<expression-argument> .min=1) <w> /\)/
+<expression-argument> := <variable-prefix> "id"@<id> <w> /\~/ "expression"@<expression>
+<expression-lookup> := <w> /\// @<expression>

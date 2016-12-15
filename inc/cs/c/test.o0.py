@@ -76,7 +76,6 @@ def T_NaturalMath_sum(cpu, pv_a, pv_b):
 
 def main(cpu):
   cpu.stack_push(D_Natural_Next)
-  
   cpu.stack_push(cpu.stack_pointer()+2)
   cpu.stack_push(D_Natural_Next)
   cpu.stack_push(cpu.stack_pointer()+2)
