@@ -1,9 +1,15 @@
 #!/usr/bin/python2
 
+import io
+import re
+
 class GenericError(Exception):
   def __init__(self, *causes):
     super(GenericError, self).__init__("\n"+ "\ncaused by\n".join(str(cause) for cause in causes))
     self.causes = causes
+
+class Dummy(object):
+  pass
 
 class StrictNamedArguments(object):
   def __init__(self, definitions, superdefinitions={}):
@@ -120,6 +126,8 @@ class ParseResult(object):
         "mutually_exclusive": True,
       } 
     })(self, args)
+  def __nonzero__(self):
+    return self.parse_kind == "value"
   def __str__(self):
     if self.parse_kind == "value":
       return "ok : %s" % str(self.value)
@@ -131,24 +139,126 @@ class ParseResult(object):
           _str += rstr(c, depth+1, "")
         return _str
       return rstr(self, 1, "")
+  def put(self, **args):
+    that = Dummy()
+    StrictNamedArguments({
+      "causes": {
+        "default": [],
+        "type": seq_of(ParseResult),
+      }
+    })(that, args)
+    self.causes.extend(that.causes)
 
-class Parser(object):
+
+
+class ParseReader(object):
   def __init__(self, stream):
-    self.current_coord = ParserCoord()
+    self.current_coord = ParserCoord(line=1)
     self._stream = stream
+
+  def consume_string(self, minimum_consumed, maximum_consumed, predicate):
+    string = ""
+    error = ParseResult(error=predicate.what(), coord=self.current_coord)
+    if not self._stream.readable():
+      return ParseResult(error="stream is not readable", coord=self.current_coord)
+    predicate_result = None
+    consumed_count = 0
+    while True:
+      peek_bytes = self._stream.peek(1)
+      if len(peek_bytes) < 1:
+        error.put(causes=[
+            ParseResult(error="unexpected eof", coord=self.current_coord)])
+        return error
+      #if len(peek_bytes) > 1:
+      #  error.put(causes=[
+      #      ParseResult(error="peek(1) returned more than 1 byte %s" % repr(peek_bytes), coord=self.current_coord)])
+      #  return error
+      byte = peek_bytes[0]
+      consumed_count += 1
+      if consumed_count > maximum_consumed:
+        break
+      predicate_result = predicate(byte)
+      if not predicate_result:
+        break
+      self._stream.read(1) # move forward
+      string += byte
+      if byte == "\n":
+        self.current_coord.line += 1
+        self.current_coord.column = 0
+      self.current_coord.column += 1
+    if not predicate_result and consumed_count <= minimum_consumed:
+      error.put(causes=[
+          ParseResult(error="unexpected byte `%s'" % byte, coord=self.current_coord)])
+      return error
+    return ParseResult(value=string, coord=self.current_coord)
+
+class StringPredicate(object):
+  def __init__(self, string):
+    self.string = string
+    self.index = 0
+  def __call__(self, byte):
+    p = byte == self.string[self.index]
+    self.index += 1
+    return p
+  def what(self):
+    wh = "expected byte `%s'" % self.string[max(0, self.index-1)]
+    if len(self.string) > 1:
+      wh += " from string `%s'" % self.string
+    return wh 
+
+def parse_string(**args):
+  this = Dummy()
+  StrictNamedArguments({
+    "reader": {
+      "type": of(ParseReader),
+    },
+    "string": {
+      "type": str,
+    },
+  })(this, args)
+  strlen = len(this.string)
+  if strlen < 1:
+    return ParseResult(value=this.string, coord=this.reader.current_coord)
+  pred = StringPredicate(this.string)
+  return this.reader.consume_string(strlen, strlen, pred)
+
+class ClassPredicate(object):
+  def __init__(self, ccls):
+    self.ccls = ccls
+    self.re = re.compile("[%s]" % ccls)
+  def __call__(self, byte):
+    return self.re.match(byte)
+  def what(self):
+    wh = "expected byte within [%s]" % ccls
+    return wh
+def parse_class(**args):
+  this = Dummy()
+  StrictNamedArguments({
+    "reader": {
+      "type": of(ParseReader),
+    },
+    "class": {
+      "type": str,
+    },
+  })(this, args)
+
+
 
 
 
 
 
 if __name__ == "__main__":
-  c = ParserCoord(line=1, column="2")
-  r = ParseResult(value=12, coord=c)
-  print r
-  e = ParseResult(error="testing", coord=c)
-  print e
-  f = ParseResult(error="more testing", coord=c, causes=[e,e])
-  print f
-  g = ParseResult(error="more testing", coord=c, causes=[f,e,e])
-  print g
-  
+  #c = ParserCoord(line=1, column="2")
+  #r = ParseResult(value=12, coord=c)
+  #print r
+  #e = ParseResult(error="testing", coord=c)
+  #print e
+  #f = ParseResult(error="more testing", coord=c, causes=[e,e])
+  #print f
+  #g = ParseResult(error="more testing", coord=c, causes=[f,e,e])
+  #print g
+  with io.open("fer.grammar", "rb") as f:
+    brf = io.BufferedReader(f)
+    r = ParseReader(brf)
+    print parse_string(reader=r, string="\n. ws [ \\n]\n. id  ")
