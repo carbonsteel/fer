@@ -283,7 +283,7 @@ class ParseReader(object):
     self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)
     return self.consume_string(predicate, minimum_consumed, maximum_consumed)
 
-  def consume_string(self, predicate, minimum_consumed, maximum_consumed):
+  def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
     string = ""
     error = ParseResult(error=predicate.what(), coord=self.current_coord)
     if not self._stream.readable():
@@ -459,7 +459,7 @@ class GrammarParser(object):
         ("", "expected class prefix",
           lambda: self._reader.consume_token(StringPredicate("["), 1, 1)),
         ("ccls", "expected class value",
-          lambda: self._reader.consume_token(EscapedClassPredicate("^\]\.", "\]\."), 1)),
+          lambda: self._reader.consume_string(EscapedClassPredicate("^\]\.", "\]\."), 1)),
         ("", "expected class postfix",
           lambda: self._reader.consume_token(StringPredicate("]"), 1, 1)),
     ])
@@ -472,7 +472,7 @@ class GrammarParser(object):
         ("", "expected literal prefix",
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
         ("literal", "expected literal value",
-          lambda: self._reader.consume_token(EscapedClassPredicate("^'\.", "'\."), 1)),
+          lambda: self._reader.consume_string(EscapedClassPredicate("^'\.", "'\."), 1)),
         ("", "expected literal postfix",
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
     ])
