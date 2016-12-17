@@ -1,5 +1,6 @@
 #!/usr/bin/python2
 
+import copy
 import io
 import re
 import sys
@@ -164,7 +165,7 @@ class ParseResult(object):
   def __str__(self):
     def rstr(result, depth, _str):
       if result.parse_kind == "value":
-        return "ok : %s" % str(result.value)
+        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, str(result.value))
       elif result.parse_kind == "error":
         _str += "error @%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
       for c in result.causes:
@@ -247,6 +248,10 @@ class ParseReader(object):
         return ParseResult(
             error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
             causes=[prefix_errors, parser_errors])
+      if count >= maximum_parsed:
+        return ParseResult(
+            error="expected at most %d instances in many" % (maximum_parsed,),
+            causes=[prefix_errors, parser_errors])
       parser_result = parser()
       parser_errors.put(causes=[parser_result])
       if not parser_result:
@@ -311,11 +316,12 @@ class ParseReader(object):
       self._stream.seek(io.SEEK_CUR, 1) # move forward
       if not predicate_result.prune:
         string += byte
+      self.current_coord = copy.copy(self.current_coord)
       if byte == "\n":
         self.current_coord.line += 1
         self.current_coord.column = 0
       self.current_coord.column += 1
-    if not predicate_result and consumed_count <= minimum_consumed:
+    if not predicate_result.consume and consumed_count <= minimum_consumed:
       error.put(causes=[
           ParseResult(error="unexpected byte `%s'" % byte, coord=self.current_coord)])
       return error
