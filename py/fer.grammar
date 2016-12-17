@@ -1,7 +1,7 @@
 
-. ws 123[ \n]
+. ws [ \n]
 . id [a-zA-Z_]
-. dot ''
+. dot '..'
 . domain 'domain'
 . left-curly-bracket '{'
 . right-curly-bracket '}'

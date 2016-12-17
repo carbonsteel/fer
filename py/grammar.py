@@ -280,7 +280,7 @@ class ParseReader(object):
 
 
   def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
-    self.consume_string(ClassPredicate(" \n"), 0, sys.maxint)
+    self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)
     return self.consume_string(predicate, minimum_consumed, maximum_consumed)
 
   def consume_string(self, predicate, minimum_consumed, maximum_consumed):
@@ -291,8 +291,8 @@ class ParseReader(object):
     predicate_result = None
     consumed_count = 0
     while True:
-      peek_bytes = self._stream.peek(1)
-      if len(peek_bytes) < 1:
+      peek_bytes = self._stream.peek(predicate.peek_distance)
+      if len(peek_bytes) < predicate.peek_distance:
         error.put(causes=[
             ParseResult(error="unexpected eof", coord=self.current_coord)])
         return error
@@ -304,13 +304,14 @@ class ParseReader(object):
       consumed_count += 1
       if consumed_count > maximum_consumed:
         break
-      predicate_result = predicate(byte)
+      predicaterepr = str(predicate)
+      predicate_result = predicate(*(peek_bytes[:predicate.peek_distance]))
       print "@%d,%d (%s) : %s : %s" % (
           self.current_coord.line,
           self.current_coord.column,
-          repr(byte),
+          repr(peek_bytes[:predicate.peek_distance]),
           predicate_result,
-          predicate)
+          predicaterepr)
       if not predicate_result.consume:
         break
       self._stream.seek(io.SEEK_CUR, 1) # move forward
@@ -345,8 +346,9 @@ class StringPredicate(object):
   def __init__(self, string):
     self.string = string
     self.index = 0
-  def __call__(self, byte):
-    p = byte == self.string[self.index]
+    self.peek_distance = 1
+  def __call__(self, *peek):
+    p = peek[0] == self.string[self.index]
     self.index += 1
     return ConsumePredicateResult(consume=p)
   def what(self):
@@ -355,34 +357,51 @@ class StringPredicate(object):
       wh += " from string `%s'" % self.string
     return wh
   def __str__(self):
-    return """StringPredicate(string="%s")""" % repr(self.string)
+    return """StringPredicate(string=%s)""" % repr(self.string)
 
-class ClassPredicate(object):
+class SimpleClassPredicate(object):
   def __init__(self, ccls):
     self.ccls = ccls
     self.re = re.compile("[%s]" % ccls)
-    self.previous_byte = None
-    self.previous_escaped = False
+    self.peek_distance = 1
   
-  def __call__(self, byte):
-    if self.re.match(byte):
-      self.previous_byte = byte
-      self.previous_escaped = False
-      return ConsumePredicateResult(consume=True)
-    elif self.previous_byte == byte:
-      if self.previous_escaped:
-        return ConsumePredicateResult(consume=False)
-      else:
-        self.previous_byte = byte
-        self.previous_escaped = False
-        return ConsumePredicateResult(consume=True, prune=True)
-    return ConsumePredicateResult(consume=False)
-
+  def __call__(self, *peek):
+    return ConsumePredicateResult(consume=self.re.match(peek[0]))
   def what(self):
     wh = "expected byte within [%s]" % self.ccls
     return wh
   def __str__(self):
-    return """ClassPredicate(ccls="%s")""" % repr(self.ccls)
+    return """SimpleClassPredicate(ccls=%s)""" % (
+        repr(self.ccls),)
+
+class EscapedClassPredicate(object):
+  def __init__(self, ccls, cclse):
+    self.ccls = ccls
+    self.cclse = cclse
+    self.re = re.compile("[%s]" % ccls)
+    self.ree = re.compile("[%s]" % cclse)
+    self.peek_distance = 2
+    self.previous_escaped = False
+  
+  def __call__(self, *peek):
+    consume = False
+    prune = False
+    if self.re.match(peek[0]):
+      consume = True
+    elif self.previous_escaped:
+      self.previous_escaped = False
+      consume = True
+    elif peek[0] == peek[1] and self.ree.match(peek[0]):
+      self.previous_escaped = True
+      consume = True
+      prune = True
+    return ConsumePredicateResult(consume=consume, prune=prune)
+  def what(self):
+    wh = "expected byte within [%s]" % self.ccls
+    return wh
+  def __str__(self):
+    return """EscapedClassPredicate(ccls=%s, cclse=%s)""" % (
+        repr(self.ccls), repr(self.cclse))
 
 class GrammarClassDefinition(object):
   def __init__(self, **args):
@@ -392,7 +411,7 @@ class GrammarClassDefinition(object):
       },
     })(self, args)
   def __str__(self):
-    return """GrammarClassDefinition(ccls=[%s])""" % (repr(self.ccls),)
+    return """GrammarClassDefinition(ccls=%s)""" % (repr(self.ccls),)
 
 class GrammarLiteralDefinition(object):
   def __init__(self, **args):
@@ -402,7 +421,7 @@ class GrammarLiteralDefinition(object):
       },
     })(self, args)
   def __str__(self):
-    return """GrammarLiteralDefinition(literal='%s')""" % (repr(self.literal),)
+    return """GrammarLiteralDefinition(literal=%s)""" % (repr(self.literal),)
 
 class GrammarDefinition(object):
   def __init__(self, **args):
@@ -430,7 +449,7 @@ class GrammarParser(object):
     self._reader = reader
 
   def parse_identifier(self):
-    return self._reader.consume_token(ClassPredicate("a-zA-Z-_"), minimum_consumed=1)
+    return self._reader.consume_token(SimpleClassPredicate("a-zA-Z-_"), minimum_consumed=1)
   
   def parse_class(self):
     return self._reader.parse_type(
@@ -440,7 +459,7 @@ class GrammarParser(object):
         ("", "expected class prefix",
           lambda: self._reader.consume_token(StringPredicate("["), 1, 1)),
         ("ccls", "expected class value",
-          lambda: self._reader.consume_token(ClassPredicate("^\]\."), 1)),
+          lambda: self._reader.consume_token(EscapedClassPredicate("^\]\.", "\]\."), 1)),
         ("", "expected class postfix",
           lambda: self._reader.consume_token(StringPredicate("]"), 1, 1)),
     ])
@@ -453,7 +472,7 @@ class GrammarParser(object):
         ("", "expected literal prefix",
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
         ("literal", "expected literal value",
-          lambda: self._reader.consume_token(ClassPredicate("^'\."), 1)),
+          lambda: self._reader.consume_token(EscapedClassPredicate("^'\.", "'\."), 1)),
         ("", "expected literal postfix",
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
     ])
