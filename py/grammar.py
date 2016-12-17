@@ -2,6 +2,7 @@
 
 import io
 import re
+import sys
 
 class GenericError(Exception):
   def __init__(self, *causes):
@@ -84,10 +85,17 @@ class ParserCoord(object):
     })(self, args)
   def __str__(self):
     return "%d:%d" % (self.line, self.column)
+  
+
+def ofinstance(v, typ):
+  try:
+    return isinstance(v, typ)
+  except TypeError:
+    return typ(v)
 
 def of(typ):
   def of_what(v):
-    if isinstance(v, typ):
+    if ofinstance(v, typ):
       return v
     raise TypeError("expected value of type %s, got %s instead" % (str(typ), str(type(v))))
   return of_what
@@ -100,10 +108,31 @@ def seq_of(typ):
       raise GenericError("expected iterable object", e)
 
     for v in s:
-      if not isinstance(v, typ):
+      if not ofinstance(v, typ):
         raise TypeError("expected iterable of types %s, found %s instead" % (str(typ), str(type(v))))
     return s
   return of_what
+
+def tuple_of(*types):
+  def of_what(t):
+    if not ofinstance(t, tuple):
+      raise GenericError("expected tuple")
+
+    for i in range(0, len(types)):
+      if not ofinstance(t[i], types[i]):
+        raise TypeError("expected tuple of types %s, found %s instead" % (str(types), str(t)))
+    return t
+  return of_what
+
+def like(pred, what):
+  def of_what(v):
+    if pred(v):
+      return v
+    raise TypeError("expected value %s" % what)
+  return of_what
+
+def any(v):
+  return v
 
 class ParseResult(object):
   def __init__(self, **args):
@@ -126,19 +155,23 @@ class ParseResult(object):
         "mutually_exclusive": True,
       } 
     })(self, args)
+    # bring value forward 
+    if self.parse_kind == "value" and isinstance(self.value, ParseResult):
+      self.put(causes=self.value.causes)
+      self.value = self.value.value
   def __nonzero__(self):
     return self.parse_kind == "value"
   def __str__(self):
-    if self.parse_kind == "value":
-      return "ok : %s" % str(self.value)
-    elif self.parse_kind == "error":
-      def rstr(result, depth, _str):
+    def rstr(result, depth, _str):
+      if result.parse_kind == "value":
+        return "ok : %s" % str(result.value)
+      elif result.parse_kind == "error":
         _str += "error @%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
-        for c in result.causes:
-          _str += "\n" + (". "*depth)
-          _str += rstr(c, depth+1, "")
-        return _str
-      return rstr(self, 1, "")
+      for c in result.causes:
+        _str += "\n" + (". "*depth)
+        _str += rstr(c, depth+1, "")
+      return _str
+    return rstr(self, 1, "")
   def put(self, **args):
     that = Dummy()
     StrictNamedArguments({
@@ -149,14 +182,103 @@ class ParseResult(object):
     })(that, args)
     self.causes.extend(that.causes)
 
-
-
 class ParseReader(object):
   def __init__(self, stream):
     self.current_coord = ParserCoord(line=1)
     self._stream = stream
+    if not self._stream.seekable():
+      raise GenericError("programming fault, stream must be seekable")
+    
+  def parse_type(self, **args):
+    this = Dummy()
+    StrictNamedArguments({
+      "result_type": {
+      },
+      "error": {
+        "type": str,
+      },
+      "parsers": {
+        "type": seq_of(
+          tuple_of(
+            str,
+            str,
+            like(callable, "that is callable (and argument-less)"))),
+      },
+    })(this, args)
+    type_args = {}
+    parser_errors = ParseResult(error=this.error, coord=self.current_coord)
+    for id, error, parser in this.parsers:
+      parser_result = parser()
+      parser_errors.put(causes=[
+          ParseResult(error=error, coord=self.current_coord, causes=[parser_result])
+      ])
+      if not parser_result:
+        return parser_errors
+      if len(id) > 0:
+        type_args[id] = parser_result.value
+    return ParseResult(value=this.result_type(**type_args),
+        coord=self.current_coord,
+        causes=[parser_errors])
 
-  def consume_string(self, minimum_consumed, maximum_consumed, predicate):
+  def parse_any(self, parsers):
+    errors = ParseResult(error="expected any", coord=self.current_coord)
+    for parser in parsers:
+      parser_result = parser()
+      if parser_result:
+        return parser_result
+      errors.put(causes=[parser_result])
+    return errors
+
+  def parse_many(self, prefix, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
+    results = []
+    prefix_errors = ParseResult(error="prefix errors in many",
+        coord=self.current_coord)
+    parser_errors = ParseResult(error="inner parser errors in many",
+        coord=self.current_coord)
+    while True:
+      count = len(results)
+      prefix_result = self.lookahead(prefix)
+      prefix_errors.put(causes=[prefix_result])
+      if not prefix_result:
+        if count >= minimum_parsed:
+          return ParseResult(value=results,
+              coord=self.current_coord,
+              causes=[prefix_errors, parser_errors])
+        return ParseResult(
+            error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
+            causes=[prefix_errors, parser_errors])
+      parser_result = parser()
+      parser_errors.put(causes=[parser_result])
+      if not parser_result:
+        return ParseResult(error="expected instance after prefix in many",
+            coord=self.current_coord,
+            causes=[prefix_errors, parser_errors])
+      results.append(parser_result.value)
+  
+  def lookahead(self, parser):
+    if not self._stream.readable():
+      return ParseResult(error="stream is not readable",
+          coord=self.current_coord)
+    # save state
+    previous_position = self._stream.tell()
+    previous_coord = self.current_coord
+    result = parser()
+    if not result:
+      # restore state
+      self._stream.seek(previous_position)
+      if not self._stream.readable():
+        return ParseResult(error="stream is not readable after seeking",
+            coord=self.current_coord)
+      self.current_coord = previous_coord
+    
+    return result
+
+
+  def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
+    self.consume_string(ClassPredicate(" \n"), 0, sys.maxint)
+    return self.consume_string(predicate, minimum_consumed, maximum_consumed)
+
+  def consume_string(self, predicate, minimum_consumed, maximum_consumed):
     string = ""
     error = ParseResult(error=predicate.what(), coord=self.current_coord)
     if not self._stream.readable():
@@ -178,10 +300,17 @@ class ParseReader(object):
       if consumed_count > maximum_consumed:
         break
       predicate_result = predicate(byte)
-      if not predicate_result:
+      print "@%d,%d (%s) : %s : %s" % (
+          self.current_coord.line,
+          self.current_coord.column,
+          repr(byte),
+          predicate_result,
+          predicate)
+      if not predicate_result.consume:
         break
-      self._stream.read(1) # move forward
-      string += byte
+      self._stream.seek(io.SEEK_CUR, 1) # move forward
+      if not predicate_result.prune:
+        string += byte
       if byte == "\n":
         self.current_coord.line += 1
         self.current_coord.column = 0
@@ -192,6 +321,20 @@ class ParseReader(object):
       return error
     return ParseResult(value=string, coord=self.current_coord)
 
+class ConsumePredicateResult(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "prune": {
+        "default": False,
+        "type": bool,
+      },
+      "consume": {
+        "type": bool,
+      }
+    })(self, args)
+  def __str__(self):
+    return """ConsumePredicateResult(consume=%s, prune=%s)""" % (self.consume, self.prune)
+
 class StringPredicate(object):
   def __init__(self, string):
     self.string = string
@@ -199,49 +342,145 @@ class StringPredicate(object):
   def __call__(self, byte):
     p = byte == self.string[self.index]
     self.index += 1
-    return p
+    return ConsumePredicateResult(consume=p)
   def what(self):
     wh = "expected byte `%s'" % self.string[max(0, self.index-1)]
     if len(self.string) > 1:
       wh += " from string `%s'" % self.string
-    return wh 
-
-def parse_string(**args):
-  this = Dummy()
-  StrictNamedArguments({
-    "reader": {
-      "type": of(ParseReader),
-    },
-    "string": {
-      "type": str,
-    },
-  })(this, args)
-  strlen = len(this.string)
-  if strlen < 1:
-    return ParseResult(value=this.string, coord=this.reader.current_coord)
-  pred = StringPredicate(this.string)
-  return this.reader.consume_string(strlen, strlen, pred)
+    return wh
+  def __str__(self):
+    return """StringPredicate(string="%s")""" % repr(self.string)
 
 class ClassPredicate(object):
   def __init__(self, ccls):
     self.ccls = ccls
     self.re = re.compile("[%s]" % ccls)
+    self.previous_byte = None
+    self.previous_escaped = False
+  
   def __call__(self, byte):
-    return self.re.match(byte)
-  def what(self):
-    wh = "expected byte within [%s]" % ccls
-    return wh
-def parse_class(**args):
-  this = Dummy()
-  StrictNamedArguments({
-    "reader": {
-      "type": of(ParseReader),
-    },
-    "class": {
-      "type": str,
-    },
-  })(this, args)
+    if self.re.match(byte):
+      self.previous_byte = byte
+      self.previous_escaped = False
+      return ConsumePredicateResult(consume=True)
+    elif self.previous_byte == byte:
+      if self.previous_escaped:
+        return ConsumePredicateResult(consume=False)
+      else:
+        self.previous_byte = byte
+        self.previous_escaped = False
+        return ConsumePredicateResult(consume=True, prune=True)
+    return ConsumePredicateResult(consume=False)
 
+  def what(self):
+    wh = "expected byte within [%s]" % self.ccls
+    return wh
+  def __str__(self):
+    return """ClassPredicate(ccls="%s")""" % repr(self.ccls)
+
+class GrammarClassDefinition(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "ccls": {
+        "type": str,
+      },
+    })(self, args)
+  def __str__(self):
+    return """GrammarClassDefinition(ccls=[%s])""" % (repr(self.ccls),)
+
+class GrammarLiteralDefinition(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "literal": {
+        "type": str,
+      },
+    })(self, args)
+  def __str__(self):
+    return """GrammarLiteralDefinition(literal='%s')""" % (repr(self.literal),)
+
+class GrammarDefinition(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "id": {
+        "type": str,
+      },
+      "value": {
+      },
+    })(self, args)
+  def __str__(self):
+    return """GrammarDefinition(id="%s", value=%s)""" % (self.id, self.value)
+
+class GrammarCompositeDefinition(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "id": {
+        "type": str,
+      },
+      #todo
+    })(self, args)
+
+class GrammarParser(object):
+  def __init__(self, reader):
+    self._reader = reader
+
+  def parse_identifier(self):
+    return self._reader.consume_token(ClassPredicate("a-zA-Z-_"), minimum_consumed=1)
+  
+  def parse_class(self):
+    return self._reader.parse_type(
+      result_type=GrammarClassDefinition,
+      error="expected class",
+      parsers=[
+        ("", "expected class prefix",
+          lambda: self._reader.consume_token(StringPredicate("["), 1, 1)),
+        ("ccls", "expected class value",
+          lambda: self._reader.consume_token(ClassPredicate("^\]\."), 1)),
+        ("", "expected class postfix",
+          lambda: self._reader.consume_token(StringPredicate("]"), 1, 1)),
+    ])
+  
+  def parse_literal(self):
+    return self._reader.parse_type(
+      result_type=GrammarLiteralDefinition,
+      error="expected literal",
+      parsers=[
+        ("", "expected literal prefix",
+          lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
+        ("literal", "expected literal value",
+          lambda: self._reader.consume_token(ClassPredicate("^'\."), 1)),
+        ("", "expected literal postfix",
+          lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
+    ])
+
+  def parse_definition_value(self):
+    return self._reader.parse_any([
+      self.parse_class,
+      self.parse_literal
+    ])
+
+  def parse_definition(self):
+    return self._reader.parse_type(
+      result_type=GrammarDefinition,
+      error="expected definition",
+      parsers=[
+        ("id", "expected definition identifier",
+          self.parse_identifier),
+        ("value", "expected definition value",
+          self.parse_definition_value),
+    ])
+
+  def parse_definition_prefix(self):
+    prefix = self._reader.consume_token(StringPredicate("."), 1, 1)
+    if not prefix:
+      return ParseResult(error="expected definition prefix",
+          coord=self._reader.current_coord)
+    return prefix
+  
+  def __call__(self):
+    return self._reader.parse_many(
+        self.parse_definition_prefix,
+        self.parse_definition, 1)
+    
 
 
 
@@ -261,4 +500,5 @@ if __name__ == "__main__":
   with io.open("fer.grammar", "rb") as f:
     brf = io.BufferedReader(f)
     r = ParseReader(brf)
-    print parse_string(reader=r, string="\n. ws [ \\n]\n. id  ")
+    gp = GrammarParser(r)
+    print gp()
