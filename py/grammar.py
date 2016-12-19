@@ -2,8 +2,10 @@
 
 import copy
 import io
+import pprint
 import re
 import sys
+import types
 
 class GenericError(Exception):
   def __init__(self, *causes):
@@ -14,9 +16,10 @@ class Dummy(object):
   pass
 
 class StrictNamedArguments(object):
-  def __init__(self, definitions, superdefinitions={}):
+  def __init__(self, definitions, superdefinitions={}, hyperdefinitions={}):
     self._definitions = definitions
     self._superdefinitions = superdefinitions
+    self._hyperdefinitions = hyperdefinitions
   @staticmethod
   def _is_required(meta):
     return "default" not in meta
@@ -30,6 +33,7 @@ class StrictNamedArguments(object):
   def _type(meta):
     return meta["type"]
   def __call__(self, instance, args):
+    all_definition_id = []
     definitions = self._definitions.copy()
     for id, meta in self._superdefinitions.iteritems():
       for a in meta["arguments"]:
@@ -48,6 +52,7 @@ class StrictNamedArguments(object):
         if found_one is None:
           raise AttributeError("required exclusive group %s is missing an argument" % (id,))
         else:
+          all_definition_id.append(id)
           setattr(instance, id, found_one)
           for x in meta["arguments"]:
             if x == found_one:
@@ -59,18 +64,30 @@ class StrictNamedArguments(object):
         if StrictNamedArguments._is_required(meta):
           raise AttributeError("required argument %s is missing" % (id,))
         else:
+          all_definition_id.append(id)
           setattr(instance, id, StrictNamedArguments._default(meta))
           continue
 
       if StrictNamedArguments._is_typed(meta):
         try:
+          all_definition_id.append(id)
           setattr(instance, id, StrictNamedArguments._type(meta)(args[id]))
         except (ValueError, TypeError) as e:
           raise GenericError("wrong type for argument %s, expected %s" % (
                   id, str(StrictNamedArguments._type(meta))),
               e)
       else:
+        all_definition_id.append(id)
         setattr(instance, id, args[id])
+    if "autostr" not in self._hyperdefinitions or self._hyperdefinitions["autostr"]:
+      def autostr(instance):
+        attrs = []
+        for id in instance.__strict_named_attrs__:
+          attrs.append("%s=%s" % (str(id), repr(getattr(instance, id))))
+        return """%s(%s)""" % (type(instance).__name__, ", ".join(attrs))
+      setattr(instance, "__strict_named_attrs__", all_definition_id)
+      setattr(type(instance), "__str__", autostr)
+      setattr(type(instance), "__repr__", autostr)
 
 class ParserCoord(object):
   def __init__(self, **args):
@@ -114,14 +131,14 @@ def seq_of(typ):
     return s
   return of_what
 
-def tuple_of(*types):
+def tuple_of(*type_list):
   def of_what(t):
     if not ofinstance(t, tuple):
       raise GenericError("expected tuple")
 
-    for i in range(0, len(types)):
-      if not ofinstance(t[i], types[i]):
-        raise TypeError("expected tuple of types %s, found %s instead" % (str(types), str(t)))
+    for i in range(0, len(type_list)):
+      if not ofinstance(t[i], type_list[i]):
+        raise TypeError("expected tuple of types %s, found %s instead" % (str(type_list), str(t)))
     return t
   return of_what
 
@@ -134,6 +151,15 @@ def like(pred, what):
 
 def any(v):
   return v
+
+def pformat(v, depth=0):
+  if ofinstance(v, tuple):
+    return "(%s)" % (", ").join(pformat(i, depth+1) for i in v)
+  if ofinstance(v, list):
+    return "[%s]" % (("  "*depth) + ",\n").join(pformat(i, depth+1) for i in v)
+  if ofinstance(v, dict):
+    return "{%s}" % (("  "*depth) + ",\n").join("%s: %s" % (pformat(k, depth+1), pformat(i, depth+1)) for k, i in v.iteritems())
+  return str(v)
 
 class ParseResult(object):
   def __init__(self, **args):
@@ -155,6 +181,8 @@ class ParseResult(object):
         "arguments": ["value", "error"],
         "mutually_exclusive": True,
       } 
+    }, {
+      "autostr": False,
     })(self, args)
     # bring value forward 
     if self.parse_kind == "value" and isinstance(self.value, ParseResult):
@@ -162,10 +190,11 @@ class ParseResult(object):
       self.value = self.value.value
   def __nonzero__(self):
     return self.parse_kind == "value"
+
   def __str__(self):
     def rstr(result, depth, _str):
       if result.parse_kind == "value":
-        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, str(result.value))
+        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, pformat(result.value))
       elif result.parse_kind == "error":
         _str += "error @%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
       for c in result.causes:
@@ -189,6 +218,9 @@ class ParseReader(object):
     self._stream = stream
     if not self._stream.seekable():
       raise GenericError("programming fault, stream must be seekable")
+
+  def parse_nothing(self):
+    return ParseResult(value=None, coord=self.current_coord)
     
   def parse_type(self, **args):
     this = Dummy()
@@ -224,7 +256,7 @@ class ParseReader(object):
   def parse_any(self, parsers):
     errors = ParseResult(error="expected any", coord=self.current_coord)
     for parser in parsers:
-      parser_result = parser()
+      parser_result = self.lookahead(parser)
       if parser_result:
         return parser_result
       errors.put(causes=[parser_result])
@@ -339,8 +371,6 @@ class ConsumePredicateResult(object):
         "type": bool,
       }
     })(self, args)
-  def __str__(self):
-    return """ConsumePredicateResult(consume=%s, prune=%s)""" % (self.consume, self.prune)
 
 class StringPredicate(object):
   def __init__(self, string):
@@ -358,6 +388,7 @@ class StringPredicate(object):
     return wh
   def __str__(self):
     return """StringPredicate(string=%s)""" % repr(self.string)
+
 
 class SimpleClassPredicate(object):
   def __init__(self, ccls):
@@ -410,8 +441,6 @@ class GrammarClassDefinition(object):
         "type": str,
       },
     })(self, args)
-  def __str__(self):
-    return """GrammarClassDefinition(ccls=%s)""" % (repr(self.ccls),)
 
 class GrammarLiteralDefinition(object):
   def __init__(self, **args):
@@ -420,8 +449,6 @@ class GrammarLiteralDefinition(object):
         "type": str,
       },
     })(self, args)
-  def __str__(self):
-    return """GrammarLiteralDefinition(literal=%s)""" % (repr(self.literal),)
 
 class GrammarDefinition(object):
   def __init__(self, **args):
@@ -432,24 +459,29 @@ class GrammarDefinition(object):
       "value": {
       },
     })(self, args)
-  def __str__(self):
-    return """GrammarDefinition(id="%s", value=%s)""" % (self.id, self.value)
 
 class GrammarCompositeDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({
-      "id": {
-        "type": str,
+      "expression": {
       },
-      #todo
     })(self, args)
+
+class ExpressionQuantifier(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "expression": {
+      },
+    })(self, args)
+
 
 class GrammarParser(object):
   def __init__(self, reader):
     self._reader = reader
 
+  IDENTIFIER_CLASS = "a-zA-Z-_"
   def parse_identifier(self):
-    return self._reader.consume_token(SimpleClassPredicate("a-zA-Z-_"), minimum_consumed=1)
+    return self._reader.consume_token(SimpleClassPredicate(self.IDENTIFIER_CLASS), minimum_consumed=1)
   
   def parse_class(self):
     return self._reader.parse_type(
@@ -477,10 +509,46 @@ class GrammarParser(object):
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
     ])
 
+  def parse_quantifier(self):
+    return self._reader.parse_type(
+      result_type=dict,
+      error="expected quantifier",
+      parsers=[
+        ("identifier", "expected expression identifier",
+          self.parse_identifier),
+        ("", "expected composite postfix",
+          lambda: self._reader.consume_token(StringPredicate(")"), 1, 1)),
+    ])
+
+  def parse_expression(self):
+    return self._reader.parse_type(
+      result_type=dict,
+      error="expected expression",
+      parsers=[
+        ("identifier", "expected expression identifier",
+          self.parse_identifier),
+        ("quantifier", "expected expression quantifier",
+          self.parse_quantifier),
+    ])
+  
+  def parse_composite(self):
+    return self._reader.parse_type(
+      result_type=GrammarCompositeDefinition,
+      error="expected composite",
+      parsers=[
+        ("", "expected composite prefix",
+          lambda: self._reader.consume_token(StringPredicate("("), 1, 1)),
+        ("expression", "expected composite expression",
+          self.parse_expression),
+        ("", "expected composite postfix",
+          lambda: self._reader.consume_token(StringPredicate(")"), 1, 1)),
+    ])
+
   def parse_definition_value(self):
     return self._reader.parse_any([
       self.parse_class,
-      self.parse_literal
+      self.parse_literal,
+      self.parse_composite
     ])
 
   def parse_definition(self):
@@ -505,10 +573,6 @@ class GrammarParser(object):
     return self._reader.parse_many(
         self.parse_definition_prefix,
         self.parse_definition, 1)
-    
-
-
-
 
 
 
@@ -522,8 +586,10 @@ if __name__ == "__main__":
   #print f
   #g = ParseResult(error="more testing", coord=c, causes=[f,e,e])
   #print g
+  result = None
   with io.open("fer.grammar", "rb") as f:
     brf = io.BufferedReader(f)
     r = ParseReader(brf)
     gp = GrammarParser(r)
-    print gp()
+    result = gp()
+  print str(result)
