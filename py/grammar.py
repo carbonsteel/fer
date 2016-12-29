@@ -159,7 +159,7 @@ def pformat(v, depth=0):
     return "[%s]" % (("  "*depth) + ",\n").join(pformat(i, depth+1) for i in v)
   if ofinstance(v, dict):
     return "{%s}" % (("  "*depth) + ",\n").join("%s: %s" % (pformat(k, depth+1), pformat(i, depth+1)) for k, i in v.iteritems())
-  return str(v)
+  return repr(v)
 
 class ParseResult(object):
   def __init__(self, **args):
@@ -216,11 +216,17 @@ class ParseReader(object):
   def __init__(self, stream):
     self.current_coord = ParserCoord(line=1)
     self._stream = stream
+    self.stats = {
+      "total_peeks":0,
+      "total_consumes": 0,
+      "total_backtracks": 0,
+      "total_prunes": 0,
+    }
     if not self._stream.seekable():
       raise GenericError("programming fault, stream must be seekable")
 
-  def parse_nothing(self):
-    return ParseResult(value=None, coord=self.current_coord)
+  def parse_nothing(self, value=None):
+    return ParseResult(value=value, coord=self.current_coord)
     
   def parse_type(self, **args):
     this = Dummy()
@@ -237,6 +243,10 @@ class ParseReader(object):
             str,
             like(callable, "that is callable (and argument-less)"))),
       },
+      "result_immediate": {
+        "type": str,
+        "default": None,
+      }
     })(this, args)
     type_args = {}
     parser_errors = ParseResult(error=this.error, coord=self.current_coord)
@@ -249,7 +259,8 @@ class ParseReader(object):
         return parser_errors
       if len(id) > 0:
         type_args[id] = parser_result.value
-    return ParseResult(value=this.result_type(**type_args),
+    value = this.result_type(**type_args) if this.result_immediate is None else this.result_type(type_args[this.result_immediate])
+    return ParseResult(value=value,
         coord=self.current_coord,
         causes=[parser_errors])
 
@@ -279,10 +290,12 @@ class ParseReader(object):
               causes=[prefix_errors, parser_errors])
         return ParseResult(
             error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
+            coord=self.current_coord,
             causes=[prefix_errors, parser_errors])
       if count >= maximum_parsed:
         return ParseResult(
             error="expected at most %d instances in many" % (maximum_parsed,),
+            coord=self.current_coord,
             causes=[prefix_errors, parser_errors])
       parser_result = parser()
       parser_errors.put(causes=[parser_result])
@@ -290,6 +303,30 @@ class ParseReader(object):
         return ParseResult(error="expected instance after prefix in many",
             coord=self.current_coord,
             causes=[prefix_errors, parser_errors])
+      results.append(parser_result.value)
+
+  def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
+    results = []
+    parser_errors = ParseResult(error="inner parser errors in many",
+        coord=self.current_coord)
+    while True:
+      count = len(results)
+      if count >= maximum_parsed:
+        return ParseResult(
+            error="expected at most %d instances in many" % (maximum_parsed,),
+            coord=self.current_coord,
+            causes=[parser_errors])
+      parser_result = parser()
+      parser_errors.put(causes=[parser_result])
+      if not parser_result:
+        if count >= minimum_parsed:
+          return ParseResult(value=results,
+              coord=self.current_coord,
+              causes=[parser_errors])
+        return ParseResult(
+            error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
+            coord=self.current_coord,
+            causes=[parser_errors])
       results.append(parser_result.value)
   
   def lookahead(self, parser):
@@ -301,6 +338,7 @@ class ParseReader(object):
     previous_coord = self.current_coord
     result = parser()
     if not result:
+      self.stats["total_backtracks"] += 1
       # restore state
       self._stream.seek(previous_position)
       if not self._stream.readable():
@@ -310,9 +348,22 @@ class ParseReader(object):
     
     return result
 
+  def consume_eof(self):
+    peek_bytes = self._stream.peek(1)
+    if len(peek_bytes) == 0:
+      return ParseResult(value=None, coord=self.current_coord)
+    else:
+      return ParseResult(error="expected eof", coord=self.current_coord)
+
+  def consume_ws(self):
+    def __ws():
+      self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)
+      return self.consume_string(LineCommentPredicate(), 1, sys.maxint)
+    self.parse_many_wp(__ws)
+    self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)    
 
   def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
-    self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)
+    self.consume_ws()
     return self.consume_string(predicate, minimum_consumed, maximum_consumed)
 
   def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
@@ -325,9 +376,7 @@ class ParseReader(object):
     while True:
       peek_bytes = self._stream.peek(predicate.peek_distance)
       if len(peek_bytes) < predicate.peek_distance:
-        error.put(causes=[
-            ParseResult(error="unexpected eof", coord=self.current_coord)])
-        return error
+        break
       #if len(peek_bytes) > 1:
       #  error.put(causes=[
       #      ParseResult(error="peek(1) returned more than 1 byte %s" % repr(peek_bytes), coord=self.current_coord)])
@@ -344,16 +393,26 @@ class ParseReader(object):
           repr(peek_bytes[:predicate.peek_distance]),
           predicate_result,
           predicaterepr)
+      self.stats["total_peeks"] += 1
       if not predicate_result.consume:
         break
+      self.stats["total_consumes"] += 1
       self._stream.seek(io.SEEK_CUR, 1) # move forward
       if not predicate_result.prune:
         string += byte
+      else:
+        self.stats["total_prunes"] += 1
       self.current_coord = copy.copy(self.current_coord)
       if byte == "\n":
         self.current_coord.line += 1
         self.current_coord.column = 0
       self.current_coord.column += 1
+    if predicate_result is None:
+      if consumed_count >= minimum_consumed:
+        return ParseResult(value=string, coord=self.current_coord)
+      error.put(causes=[
+          ParseResult(error="unexpected eof", coord=self.current_coord)])
+      return error
     if not predicate_result.consume and consumed_count <= minimum_consumed:
       error.put(causes=[
           ParseResult(error="unexpected byte `%s'" % byte, coord=self.current_coord)])
@@ -388,6 +447,23 @@ class StringPredicate(object):
     return wh
   def __str__(self):
     return """StringPredicate(string=%s)""" % repr(self.string)
+
+class LineCommentPredicate(object):
+  def __init__(self):
+    self.peek_distance = 1
+    self.within_comment = False
+  def __call__(self, *peek):
+    is_comment = peek[0] == "#"
+    is_eol = peek[0] == "\n"
+    if is_comment:
+      self.within_comment = True
+    r = not is_eol and self.within_comment
+    return ConsumePredicateResult(consume=r, prune=r)
+  def what(self):
+    wh = "expected line comment"
+    return wh
+  def __str__(self):
+    return """LineCommentPredicate(within_comment=%s)""" % repr(self.within_comment)
 
 
 class SimpleClassPredicate(object):
@@ -480,8 +556,11 @@ class GrammarParser(object):
     self._reader = reader
 
   IDENTIFIER_CLASS = "a-zA-Z-_"
-  def parse_identifier(self):
-    return self._reader.consume_token(SimpleClassPredicate(self.IDENTIFIER_CLASS), minimum_consumed=1)
+  def parse_identifier(self, method=None):
+    if method is None:
+      method = self._reader.consume_token
+    return method(SimpleClassPredicate(self.IDENTIFIER_CLASS), minimum_consumed=1)
+  
   
   def parse_class(self):
     return self._reader.parse_type(
@@ -511,13 +590,28 @@ class GrammarParser(object):
 
   def parse_quantifier(self):
     return self._reader.parse_type(
-      result_type=dict,
+      result_type=str,
+      result_immediate="_",
       error="expected quantifier",
       parsers=[
-        ("identifier", "expected expression identifier",
-          self.parse_identifier),
-        ("", "expected composite postfix",
-          lambda: self._reader.consume_token(StringPredicate(")"), 1, 1)),
+        ("_", "expected quantifier symbol",
+          lambda: self._reader.consume_string(SimpleClassPredicate("\+\*\?"), 0, 1)),
+    ])
+
+  def parse_anchor(self):
+    return self._reader.parse_type(
+      result_type=str,
+      result_immediate="_",
+      error="expected anchor",
+      parsers=[
+        ("", "expected anchor prefix",
+          lambda: self._reader.consume_string(StringPredicate("@"), 1, 1)),
+        ("_", "expected anchor value",
+          lambda: self._reader.parse_any([
+            lambda: self._reader.consume_string(StringPredicate("@"), 1, 1),
+            lambda: self.parse_identifier(self._reader.consume_string),
+            lambda: self._reader.parse_nothing("_self")
+          ]))
     ])
 
   def parse_expression(self):
@@ -529,6 +623,8 @@ class GrammarParser(object):
           self.parse_identifier),
         ("quantifier", "expected expression quantifier",
           self.parse_quantifier),
+        ("anchor", "expected expression anchor",
+          lambda: self._reader.parse_any([self.parse_anchor, self._reader.parse_nothing])),
     ])
   
   def parse_composite(self):
@@ -539,7 +635,7 @@ class GrammarParser(object):
         ("", "expected composite prefix",
           lambda: self._reader.consume_token(StringPredicate("("), 1, 1)),
         ("expression", "expected composite expression",
-          self.parse_expression),
+          lambda: self._reader.parse_many_wp(self.parse_expression, 1)),
         ("", "expected composite postfix",
           lambda: self._reader.consume_token(StringPredicate(")"), 1, 1)),
     ])
@@ -570,9 +666,14 @@ class GrammarParser(object):
     return prefix
   
   def __call__(self):
-    return self._reader.parse_many(
+    definitions_result = self._reader.parse_many(
         self.parse_definition_prefix,
         self.parse_definition, 1)
+    self._reader.consume_ws()
+    eof_result = self._reader.consume_eof()
+    if not eof_result:
+      return eof_result
+    return definitions_result
 
 
 
@@ -592,4 +693,5 @@ if __name__ == "__main__":
     r = ParseReader(brf)
     gp = GrammarParser(r)
     result = gp()
+    print pformat(r.stats)
   print str(result)

@@ -14,7 +14,7 @@
 . right-parenthesis ')'
 . tilde '~'
 . solidus '/'
-. percent-sign '%'
+. percent-sign '%' # alala
 
 . realm (realm-domain-declaration@domains) # root of the file
 
@@ -53,3 +53,6 @@
     w tilde expression@
   )
 . expression-lookup (w solidus expression@@)
+
+#sadas
+#adas 

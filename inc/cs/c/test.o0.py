@@ -32,7 +32,7 @@ class magicpu(object):
       raise ValueError("Stackoverflow!")
     self._stack.append(v)
   def stack_pop(self):
-    if self.stack_pointer() == NULLPTR:
+    if self.stack_pointer() <= NULLPTR:
       raise ValueError("Stackunderflow!")
     return self._stack.pop()
 
