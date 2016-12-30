@@ -1,0 +1,27 @@
+domain Natural {
+  | One
+  | Next { . n:Natural }
+}
+
+domain NaturalMath {
+  | sum {
+    . a:Natural
+    . b:Natural
+
+    > . a:One
+    $ Next( . n~b )
+
+    > . a=Next . b=One
+    $ Next( . n~a )
+
+    > . a=Next . b=Next
+    $ Next( . n~Next( . n~sum(
+        . a~a/n
+        . b~b/n
+    )))
+  }
+}
+
+domain Main {
+  >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
+}

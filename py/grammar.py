@@ -80,14 +80,13 @@ class StrictNamedArguments(object):
         all_definition_id.append(id)
         setattr(instance, id, args[id])
     if "autostr" not in self._hyperdefinitions or self._hyperdefinitions["autostr"]:
-      def autostr(instance):
+      def autostr(instance, depth):
         attrs = []
         for id in instance.__strict_named_attrs__:
-          attrs.append("%s=%s" % (str(id), repr(getattr(instance, id))))
+          attrs.append("%s=%s" % (str(id), pformat(getattr(instance, id), depth)))
         return """%s(%s)""" % (type(instance).__name__, ", ".join(attrs))
       setattr(instance, "__strict_named_attrs__", all_definition_id)
-      setattr(type(instance), "__str__", autostr)
-      setattr(type(instance), "__repr__", autostr)
+      setattr(type(instance), "__pformat__", autostr)
 
 class ParserCoord(object):
   def __init__(self, **args):
@@ -153,12 +152,15 @@ def any(v):
   return v
 
 def pformat(v, depth=0):
+  vformat = getattr(v, "__pformat__", None)
+  if callable(vformat):
+    return vformat(depth)
   if ofinstance(v, tuple):
     return "(%s)" % (", ").join(pformat(i, depth+1) for i in v)
   if ofinstance(v, list):
-    return "[%s]" % (("  "*depth) + ",\n").join(pformat(i, depth+1) for i in v)
+    return "[%s]" % (",\n" + ("  "*depth)).join(pformat(i, depth+1) for i in v)
   if ofinstance(v, dict):
-    return "{%s}" % (("  "*depth) + ",\n").join("%s: %s" % (pformat(k, depth+1), pformat(i, depth+1)) for k, i in v.iteritems())
+    return "{%s}" % (",\n" + ("  "*depth)).join("%s: %s" % (pformat(k, depth+1), pformat(i, depth+1)) for k, i in v.iteritems())
   return repr(v)
 
 class ParseResult(object):
@@ -190,11 +192,10 @@ class ParseResult(object):
       self.value = self.value.value
   def __nonzero__(self):
     return self.parse_kind == "value"
-
-  def __str__(self):
+  def __pformat__(self, depth):
     def rstr(result, depth, _str):
       if result.parse_kind == "value":
-        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, pformat(result.value))
+        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, pformat(result.value, depth+1))
       elif result.parse_kind == "error":
         _str += "error @%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
       for c in result.causes:
@@ -360,7 +361,6 @@ class ParseReader(object):
       self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)
       return self.consume_string(LineCommentPredicate(), 1, sys.maxint)
     self.parse_many_wp(__ws)
-    self.consume_string(SimpleClassPredicate(" \n"), 0, sys.maxint)    
 
   def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
     self.consume_ws()
@@ -385,14 +385,14 @@ class ParseReader(object):
       consumed_count += 1
       if consumed_count > maximum_consumed:
         break
-      predicaterepr = str(predicate)
+      #predicaterepr = str(predicate)
       predicate_result = predicate(*(peek_bytes[:predicate.peek_distance]))
-      print "@%d,%d (%s) : %s : %s" % (
-          self.current_coord.line,
-          self.current_coord.column,
-          repr(peek_bytes[:predicate.peek_distance]),
-          predicate_result,
-          predicaterepr)
+      #print "@%d,%d (%s) : %s : %s" % (
+      #    self.current_coord.line,
+      #    self.current_coord.column,
+      #    repr(peek_bytes[:predicate.peek_distance]),
+      #    predicate_result,
+      #    predicaterepr)
       self.stats["total_peeks"] += 1
       if not predicate_result.consume:
         break
@@ -588,9 +588,19 @@ class GrammarParser(object):
           lambda: self._reader.consume_token(StringPredicate("'"), 1, 1)),
     ])
 
+  def quantifier_tuple(self, value):
+    if len(value) == 0:
+      return (1, 1)
+    if value == "+":
+      return (1, sys.maxint)
+    if value == "*":
+      return (0, sys.maxint)
+    if value == "?":
+      return (0, 1)
+
   def parse_quantifier(self):
     return self._reader.parse_type(
-      result_type=str,
+      result_type=self.quantifier_tuple,
       result_immediate="_",
       error="expected quantifier",
       parsers=[
@@ -610,7 +620,7 @@ class GrammarParser(object):
           lambda: self._reader.parse_any([
             lambda: self._reader.consume_string(StringPredicate("@"), 1, 1),
             lambda: self.parse_identifier(self._reader.consume_string),
-            lambda: self._reader.parse_nothing("_self")
+            lambda: self._reader.parse_nothing("")
           ]))
     ])
 
@@ -664,16 +674,66 @@ class GrammarParser(object):
       return ParseResult(error="expected definition prefix",
           coord=self._reader.current_coord)
     return prefix
-  
+
   def __call__(self):
-    definitions_result = self._reader.parse_many(
+    return self._reader.parse_many(
         self.parse_definition_prefix,
         self.parse_definition, 1)
-    self._reader.consume_ws()
-    eof_result = self._reader.consume_eof()
-    if not eof_result:
-      return eof_result
-    return definitions_result
+
+def kebab_to_camel(t): # or how to undigest a desert animal
+  parts = []
+  for w in t.split("-"):
+    parts.append(w[0].upper())
+    parts.extend(w[1:])
+  return "".join(parts)
+def kebab_to_snake(t):
+  return "_".join(t.split("-"))
+
+class GrammarParserCompiler(object):
+  def __init__(self, stream, parse_result):
+    if not parse_result:
+      raise ValueError("innapropriate grammar")
+    self._stream = stream
+    self.grammar = parse_result.value
+
+  def get_writer(self):
+    class _writer(object):
+      def __init__(self, stream):
+        self._stream = stream
+      def __iadd__(self, b):
+        self._stream.write(b)
+        self._stream.write("\n")
+        return self
+    return _writer(self._stream)
+
+  def _w_class_for_composite_definition(self, definition):
+    if not ofinstance(definition.value, GrammarCompositeDefinition):
+      raise ValueError("can't compile class for non composite definition")
+    composite = definition.value
+    members = {}
+    for d in composite.expression
+      if d["anchor"] is None:
+        continue
+      name = None
+      if d["anchor"] == "":
+        name = kebab_to_snake(d["identifier"])
+      elif d["anchor"] == "@":
+        name = 
+      members[] = {}
+    W = self.get_writer()
+    W += "class %sDef(object):" % kebab_to_camel(definition.id)
+    W += "  def __init__(self, **args):"
+    W += "    grammar.StrictNamedArguments(%s)(self, args)" % repr(members)
+
+  def __call__(self):
+    W = self.get_writer()
+    W += "# AUTOMATICLY GENERATED FILE."
+    W += "# ALL CHANGES TO THIS FILE WILL BE OVERWRITTEN."
+    W += "# THIS IS THE ONLY WARNING YOU WILL GET!"
+    W += "import grammar"
+    W += "# Definition classes"
+    self._w_class_for_composite_definition(self.grammar[0])
+    
 
 
 
@@ -693,5 +753,14 @@ if __name__ == "__main__":
     r = ParseReader(brf)
     gp = GrammarParser(r)
     result = gp()
+    r.consume_ws()
+    eof_result = r.consume_eof()
+    if not eof_result:
+      result.put(causes=[eof_result])
     print pformat(r.stats)
-  print str(result)
+  with io.open("ferparser.py", "wb+") as f:
+    bwf = io.BufferedWriter(f)
+    gpc = GrammarParserCompiler(bwf, result)
+    gpc()
+    bwf.flush()
+  print pformat(result)

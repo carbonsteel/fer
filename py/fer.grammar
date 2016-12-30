@@ -1,6 +1,7 @@
+. realm (realm-domain-declaration@domains) # root is first definition
 
 . ws [ \n]
-. id [a-zA-Z_]
+. pseudo-letter [a-zA-Z_]
 . dot '..'
 . domain 'domain'
 . left-curly-bracket '{'
@@ -16,14 +17,13 @@
 . solidus '/'
 . percent-sign '%' # alala
 
-. realm (realm-domain-declaration@domains) # root of the file
 
 . w (ws*)
-. id (w id+@@)
+. id (w pseudo-letter+@@)
 . variable-prefix (w dot)
 
 . realm-domain-declaration (w domain domain-declaration)
-. domain-declaration (id@ domain-definition@domain)
+. domain-declaration (i@ domain-definition@domain)
 . domain-definition (
     w brace-open
     domain-parser?@parser
