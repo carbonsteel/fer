@@ -2,6 +2,18 @@ domain Natural {
   | One
   | Next { . n:Natural }
 }
+domain List {
+  . Value
+  | Tail { . v:Value }
+  | Head { . v:Value . p:List( .Value~Value ) }
+}
+
+domain ListMath {
+  | append {
+    . l:List
+    . v:List/Value
+    >$ Head(.v~v .p~l)
+}
 
 domain NaturalMath {
   | sum {
@@ -20,6 +32,18 @@ domain NaturalMath {
         . b~b/n
     )))
   }
+ | fib {
+   | onacci {
+     . a:Natural
+     . b:Natural
+     . l:List(.Value~Natural)
+     >$ ListMath/append(.v~sum(.a~a .b~b) .l~l)
+   }
+   | compute {
+     
+   }
+   >$ onacci(.a~Natural/One .b~Natural/Next(.n:Natural/One) .l~List/Tail(.v~Natural/One))
+ }
 }
 
 domain Main {
