@@ -38,7 +38,7 @@
 . variable-constraint (variable-prefix id@ equals-sign expression@)
 . transform-definition (
     w greater-than-sign variable-constraint*@constraints
-    w dollar-sign expression@
+    w dollar-sign expression-argument*@locals expression@
   )
 . expression ( 
     id@ expression-arguments?@arguments expression-lookup?@lookup
