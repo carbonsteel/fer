@@ -711,15 +711,15 @@ class GrammarParserCompiler(object):
       raise ValueError("can't compile class for non composite definition")
     composite = definition.value
     members = {}
-    for d in composite.expression
+    for d in composite.expression:
       if d["anchor"] is None:
         continue
       name = None
       if d["anchor"] == "":
         name = kebab_to_snake(d["identifier"])
-      elif d["anchor"] == "@":
-        name = 
-      members[] = {}
+      #elif d["anchor"] == "@":
+      #  name = de
+      #members[] = {}
     W = self.get_writer()
     W += "class %sDef(object):" % kebab_to_camel(definition.id)
     W += "  def __init__(self, **args):"
