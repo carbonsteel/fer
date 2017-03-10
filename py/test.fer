@@ -28,14 +28,14 @@ domain NaturalMath {
   }
   # this is weird...
   | fib {
-    . n:Natural                             # n-th fibonnaci number to calculate
+    . n:Natural                              # n-th fibonnaci number to calculate
     | fiba {
         . n:Natural
-        > n=One $ One                       # step 3: if (n-1) is 1, then return 1
-        >$ sum(.a~fib(.n~n/n) .b~fib(.n~n)) # step 4: always, return fib((n-1)-1) + fib(n-1)
+        > .n=One $ One                       # step 3: if (n-1) is 1, then return 1
+        >$ sum(.a~fib(.n~n/n) .b~fib(.n~n))  # step 4: always, return fib((n-1)-1) + fib(n-1)
     }
-    > n=One $ One                           # step 1: if n is 1, then return 0
-    > n=Next $ fiba(.n~n/n)                 # step 2: if n > 1, then fiba(n-1)
+    > .n=One $ One                           # step 1: if n is 1, then return 1
+    > .n=Next $ fiba(.n~n/n)                 # step 2: if n > 1, then fiba(n-1)
  }
 }
 
