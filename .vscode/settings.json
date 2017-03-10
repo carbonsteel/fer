@@ -3,7 +3,10 @@
     "editor.rulers": [
         80, 100
     ],
-    "editor.renderWhitespace": true,
+    "editor.renderWhitespace": "all",
+    "editor.minimap.enabled": true,
+    "editor.minimap.renderCharacters": true,
+    "editor.minimap.maxColumn": 120,
     "files.exclude": {
         "**/.git": true,
         "**/bin": true,
