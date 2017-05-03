@@ -1,4 +1,4 @@
-. realm (realm-domain-declaration@domains) # root is first definition
+. realm (realm-domain-declaration+@domains) # root is first definition
 
 . ws [ \n]
 . pseudo-letter [a-zA-Z_]

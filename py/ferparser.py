@@ -62,7 +62,7 @@ class FerParser(object):
       result_type=RealmDefinition,
       error='expected realm',
       parsers=[
-        ('domains', 'expected realm-domain-declaration in realm', self.parse_realm_domain_declaration),
+        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self.parse_realm_domain_declaration, 1, 9223372036854775807)),
       ])
   def parse_ws(self):
     return self._reader.parse_type(
