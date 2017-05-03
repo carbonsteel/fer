@@ -22,17 +22,17 @@
 . id (w pseudo-letter+@@)
 . variable-prefix (w dot)
 
-. realm-domain-declaration (w domain domain-declaration)
-. domain-declaration (i@ domain-definition@domain)
+. realm-domain-declaration (w domain domain-declaration@)
+. domain-declaration (id@ domain-definition?@domain)
 . domain-definition (
-    w brace-open
-    domain-parser?@parser
+    w left-curly-bracket
+   # domain-parser?@parser
     variable-definition*@variables
-    inner-domain-definition*@domains
+    inner-domain-declaration*@domains
     transform-definition*@transforms
-    w brace-close
+    w right-curly-bracket
   )
-. domain-parser (w percent-sign __grammar@@)
+#. domain-parser (w percent-sign __grammar@@)
 . inner-domain-declaration (w vertical-line domain-declaration)
 . variable-definition (variable-prefix id@ colon expression@)
 . variable-constraint (variable-prefix id@ equals-sign expression@)

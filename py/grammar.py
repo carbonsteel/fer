@@ -74,8 +74,7 @@ class StrictNamedArguments(object):
           setattr(instance, id, StrictNamedArguments._type(meta)(args[id]))
         except (ValueError, TypeError) as e:
           raise GenericError("wrong type for argument %s, expected %s" % (
-                  id, str(StrictNamedArguments._type(meta))),
-              e)
+                  id, str(StrictNamedArguments._type(meta))), e)
       else:
         all_definition_id.append(id)
         setattr(instance, id, args[id])
@@ -312,7 +311,7 @@ class ParseReader(object):
         coord=self.current_coord)
     while True:
       count = len(results)
-      if count >= maximum_parsed:
+      if count > maximum_parsed:
         return ParseResult(
             error="expected at most %d instances in many" % (maximum_parsed,),
             coord=self.current_coord,
@@ -689,12 +688,22 @@ def kebab_to_camel(t): # or how to undigest a desert animal
 def kebab_to_snake(t):
   return "_".join(t.split("-"))
 
+def id_to_def(id):
+  return kebab_to_camel(id)+"Definition"
+def id_to_parse(id):
+  return "parse_"+kebab_to_snake(id)
+def id_to_parser(id):
+  return kebab_to_camel(id)+"Parser"
+
+
 class GrammarParserCompiler(object):
-  def __init__(self, stream, parse_result):
+  def __init__(self, stream, parse_result, parser_name):
     if not parse_result:
       raise ValueError("innapropriate grammar")
     self._stream = stream
     self.grammar = parse_result.value
+    self.parser_name = parser_name
+    self.known_definitions = {}
 
   def get_writer(self):
     class _writer(object):
@@ -711,28 +720,110 @@ class GrammarParserCompiler(object):
       raise ValueError("can't compile class for non composite definition")
     composite = definition.value
     members = {}
+    synonym_of = None
+
     for d in composite.expression:
-      if d["anchor"] is None:
+      if d["anchor"] is None: # there was no anchor
         continue
-      name = None
-      if d["anchor"] == "":
+      elif d["anchor"] == "": # there was one anchor -> the name is the id
         name = kebab_to_snake(d["identifier"])
-      #elif d["anchor"] == "@":
-      #  name = de
-      #members[] = {}
+        members[name] = {}
+      elif d["anchor"] == "@": # two anchors -> the value is bound to the parent
+        name = kebab_to_camel(d["identifier"])
+        synonym_of = name
+      else:
+        name = d["anchor"]
+        members[name] = {}
     W = self.get_writer()
-    W += "class %sDef(object):" % kebab_to_camel(definition.id)
-    W += "  def __init__(self, **args):"
-    W += "    grammar.StrictNamedArguments(%s)(self, args)" % repr(members)
+    if len(members) > 0:
+      W += "class %s(object):" % id_to_def(definition.id)
+      W += "  def __init__(self, **args):"
+      W += "    grammar.StrictNamedArguments(%s)(self, args)" % repr(members)
+    elif synonym_of is None:
+      W += "%s = str" % id_to_def(definition.id)
+    if synonym_of is not None:
+      return "%s = %s" % (id_to_def(definition.id), id_to_def(synonym_of))
+
+  def _w_parser_for_definition(self, definition):
+    PARSER_FORMAT = "(%s, 'expected %s', self.%s)"
+    is_immediate = False
+    W = self.get_writer()
+    W += "  def %s(self):" % id_to_parse(definition.id)
+    W += "    return self._reader.parse_type("
+    W += "      result_type=%s," % id_to_def(definition.id)
+    W += "      error='expected %s'," % definition.id
+    W += "      parsers=["
+    if ofinstance(definition.value, GrammarCompositeDefinition):
+      composite = definition.value
+      for e in composite.expression:
+        if e["identifier"] not in self.known_definitions:
+          raise ValueError("%s is used but is not defined" % e["identifier"])
+        anchor = None
+        if e["anchor"] is None: # there was no anchor
+          anchor = ""
+        elif e["anchor"] == "": # there was one anchor -> the name is the id
+          anchor = kebab_to_snake(e["identifier"])
+        elif e["anchor"] == "@": # two anchors -> the value is bound to the parent
+          anchor = "_"
+          is_immediate = True
+        else:
+          anchor = e["anchor"]
+        inner_parse = None
+        if e["quantifier"][0] == e["quantifier"][1] == 1:
+          inner_parse = "self." + id_to_parse(e["identifier"])
+        else:
+          inner_parse = "lambda: self._reader.parse_many_wp(self.%s, %d, %d)" % (
+            id_to_parse(e["identifier"]), e["quantifier"][0], e["quantifier"][1]
+          )
+        W += "        (%s, 'expected %s in %s', %s)," % (
+          repr(anchor), e["identifier"], definition.id, inner_parse
+        )
+    elif ofinstance(definition.value, GrammarLiteralDefinition):
+      W += "        ('_', 'expected %s', lambda: self._reader.consume_string(grammar.StringPredicate(%s), %d, %d))" % (
+        definition.id, repr(definition.value.literal), len(definition.value.literal), len(definition.value.literal)
+      )
+      is_immediate = True
+    elif ofinstance(definition.value, GrammarClassDefinition):
+      # this could be optimized by grabbing the quantifier used by the caller
+      W += "        ('_', 'expected %s', lambda: self._reader.consume_string(grammar.SimpleClassPredicate(%s), 1, 1))" % (
+        definition.id, repr(definition.value.ccls)
+      )
+      is_immediate = True
+    else:
+      raise ValueError("this should never happen (unless a new Grammar**Definition is added and not updated here)")
+    if is_immediate:
+      W += "      ],"
+      W += "      result_immediate='_')"
+    else:
+      W += "      ])"
 
   def __call__(self):
     W = self.get_writer()
     W += "# AUTOMATICLY GENERATED FILE."
-    W += "# ALL CHANGES TO THIS FILE WILL BE OVERWRITTEN."
-    W += "# THIS IS THE ONLY WARNING YOU WILL GET!"
+    W += "# ALL CHANGES TO THIS FILE WILL BE DISCARDED."
     W += "import grammar"
-    W += "# Definition classes"
-    self._w_class_for_composite_definition(self.grammar[0])
+    W += "# Classes"
+    synonyms = []
+    for g in self.grammar:
+      if ofinstance(g.value, GrammarCompositeDefinition):
+        synonym = self._w_class_for_composite_definition(g)
+        if synonym is not None:
+          synonyms.append(synonym)
+      else:
+        W += "%s = str" % id_to_def(g.id)
+      self.known_definitions[g.id] = None
+    for s in synonyms:
+      W += s
+    
+    W += "# Main parser"
+    W += "class %s(object):" % id_to_parser(self.parser_name)
+    W += "  def __init__(self, reader):"
+    W += "    self._reader = reader"
+    W += "  def __call__(self):"
+    W += "    return self.%s()" % id_to_parse(self.grammar[0].id)
+    for g in self.grammar:
+      self._w_parser_for_definition(g)
+    
     
 
 
@@ -760,7 +851,7 @@ if __name__ == "__main__":
     print pformat(r.stats)
   with io.open("ferparser.py", "wb+") as f:
     bwf = io.BufferedWriter(f)
-    gpc = GrammarParserCompiler(bwf, result)
+    gpc = GrammarParserCompiler(bwf, result, "Fer")
     gpc()
     bwf.flush()
   print pformat(result)
