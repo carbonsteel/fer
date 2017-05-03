@@ -27,8 +27,8 @@ domain NaturalMath {
   | sum {
     . a:Opposite(.of~Natural)
   }
-  | fib { # this aint fibonnaci at all!
-    . n:Natural                              # n-th fibonnaci number to calculate # NO!
+  | fib {
+    . n:Natural                              # n-th fibonnaci number to calculate
     | fiba {
         . n:Natural
         > .n=One $ One                       # step 3: if (n-1) is 1, then return 1
