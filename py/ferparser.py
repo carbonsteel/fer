@@ -2,55 +2,60 @@
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
 import grammar
 # Classes
-class RealmDefinition(object):
+class Realm(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'domains': {}})(self, args)
-WsDefinition = str
-PseudoLetterDefinition = str
-DotDefinition = str
-DomainDefinition = str
-LeftCurlyBracketDefinition = str
-RightCurlyBracketDefinition = str
-VerticalLineDefinition = str
-ColonDefinition = str
-GreaterThanSignDefinition = str
-EqualsSignDefinition = str
-DollarSignDefinition = str
-LeftParenthesisDefinition = str
-RightParenthesisDefinition = str
-TildeDefinition = str
-SolidusDefinition = str
-PercentSignDefinition = str
-WDefinition = str
-VariablePrefixDefinition = str
-class RealmDomainDeclarationDefinition(object):
+Ws = str
+PseudoLetter = str
+Dot = str
+Domain = str
+LeftCurlyBracket = str
+RightCurlyBracket = str
+VerticalLine = str
+Colon = str
+GreaterThanSign = str
+EqualsSign = str
+DollarSign = str
+LeftParenthesis = str
+RightParenthesis = str
+Tilde = str
+Solidus = str
+PercentSign = str
+Octothorp = str
+LineFeed = str
+LineCommentContent = str
+W = str
+LineComment = str
+VariablePrefix = str
+class RealmDomainDeclaration(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'domain_declaration': {}})(self, args)
-class DomainDeclarationDefinition(object):
+class DomainDeclaration(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'domain': {}, 'id': {}})(self, args)
-class DomainDefinitionDefinition(object):
+class DomainDefinition(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'domains': {}, 'variables': {}, 'transforms': {}})(self, args)
-InnerDomainDeclarationDefinition = str
-class VariableDefinitionDefinition(object):
+class VariableDefinition(object):
   def __init__(self, **args):
-    grammar.StrictNamedArguments({'expression': {}, 'id': {}})(self, args)
-class VariableConstraintDefinition(object):
-  def __init__(self, **args):
-    grammar.StrictNamedArguments({'expression': {}, 'id': {}})(self, args)
-class TransformDefinitionDefinition(object):
-  def __init__(self, **args):
-    grammar.StrictNamedArguments({'expression': {}, 'locals': {}, 'constraints': {}})(self, args)
-class ExpressionDefinition(object):
+    grammar.StrictNamedArguments({'domain': {}, 'id': {}})(self, args)
+class Expression(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'lookup': {}, 'id': {}, 'arguments': {}})(self, args)
-class ExpressionArgumentDefinition(object):
+class ExpressionArgument(object):
   def __init__(self, **args):
     grammar.StrictNamedArguments({'expression': {}, 'id': {}})(self, args)
-IdDefinition = PseudoLetterDefinition
-ExpressionArgumentsDefinition = ExpressionArgumentDefinition
-ExpressionLookupDefinition = ExpressionDefinition
+class VariableConstraint(object):
+  def __init__(self, **args):
+    grammar.StrictNamedArguments({'expression': {}, 'id': {}})(self, args)
+class TransformDefinition(object):
+  def __init__(self, **args):
+    grammar.StrictNamedArguments({'expression': {}, 'locals': {}, 'constraints': {}})(self, args)
+Id = str
+InnerDomainDeclaration = DomainDeclaration
+ExpressionArguments = list
+ExpressionLookup = Expression
+VariableDomain = Expression
 # Main parser
 class FerParser(object):
   def __init__(self, reader):
@@ -59,14 +64,14 @@ class FerParser(object):
     return self.parse_realm()
   def parse_realm(self):
     return self._reader.parse_type(
-      result_type=RealmDefinition,
+      result_type=Realm,
       error='expected realm',
       parsers=[
         ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self.parse_realm_domain_declaration, 1, 9223372036854775807)),
       ])
   def parse_ws(self):
     return self._reader.parse_type(
-      result_type=WsDefinition,
+      result_type=Ws,
       error='expected ws',
       parsers=[
         ('_', 'expected ws', lambda: self._reader.consume_string(grammar.SimpleClassPredicate(' \\n'), 1, 1))
@@ -74,7 +79,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_pseudo_letter(self):
     return self._reader.parse_type(
-      result_type=PseudoLetterDefinition,
+      result_type=PseudoLetter,
       error='expected pseudo-letter',
       parsers=[
         ('_', 'expected pseudo-letter', lambda: self._reader.consume_string(grammar.SimpleClassPredicate('a-zA-Z_'), 1, 1))
@@ -82,7 +87,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_dot(self):
     return self._reader.parse_type(
-      result_type=DotDefinition,
+      result_type=Dot,
       error='expected dot',
       parsers=[
         ('_', 'expected dot', lambda: self._reader.consume_string(grammar.StringPredicate('.'), 1, 1))
@@ -90,7 +95,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_domain(self):
     return self._reader.parse_type(
-      result_type=DomainDefinition,
+      result_type=Domain,
       error='expected domain',
       parsers=[
         ('_', 'expected domain', lambda: self._reader.consume_string(grammar.StringPredicate('domain'), 6, 6))
@@ -98,7 +103,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_left_curly_bracket(self):
     return self._reader.parse_type(
-      result_type=LeftCurlyBracketDefinition,
+      result_type=LeftCurlyBracket,
       error='expected left-curly-bracket',
       parsers=[
         ('_', 'expected left-curly-bracket', lambda: self._reader.consume_string(grammar.StringPredicate('{'), 1, 1))
@@ -106,7 +111,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_right_curly_bracket(self):
     return self._reader.parse_type(
-      result_type=RightCurlyBracketDefinition,
+      result_type=RightCurlyBracket,
       error='expected right-curly-bracket',
       parsers=[
         ('_', 'expected right-curly-bracket', lambda: self._reader.consume_string(grammar.StringPredicate('}'), 1, 1))
@@ -114,7 +119,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_vertical_line(self):
     return self._reader.parse_type(
-      result_type=VerticalLineDefinition,
+      result_type=VerticalLine,
       error='expected vertical-line',
       parsers=[
         ('_', 'expected vertical-line', lambda: self._reader.consume_string(grammar.StringPredicate('|'), 1, 1))
@@ -122,7 +127,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_colon(self):
     return self._reader.parse_type(
-      result_type=ColonDefinition,
+      result_type=Colon,
       error='expected colon',
       parsers=[
         ('_', 'expected colon', lambda: self._reader.consume_string(grammar.StringPredicate(':'), 1, 1))
@@ -130,7 +135,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_greater_than_sign(self):
     return self._reader.parse_type(
-      result_type=GreaterThanSignDefinition,
+      result_type=GreaterThanSign,
       error='expected greater-than-sign',
       parsers=[
         ('_', 'expected greater-than-sign', lambda: self._reader.consume_string(grammar.StringPredicate('>'), 1, 1))
@@ -138,7 +143,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_equals_sign(self):
     return self._reader.parse_type(
-      result_type=EqualsSignDefinition,
+      result_type=EqualsSign,
       error='expected equals-sign',
       parsers=[
         ('_', 'expected equals-sign', lambda: self._reader.consume_string(grammar.StringPredicate('='), 1, 1))
@@ -146,7 +151,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_dollar_sign(self):
     return self._reader.parse_type(
-      result_type=DollarSignDefinition,
+      result_type=DollarSign,
       error='expected dollar-sign',
       parsers=[
         ('_', 'expected dollar-sign', lambda: self._reader.consume_string(grammar.StringPredicate('$'), 1, 1))
@@ -154,7 +159,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_left_parenthesis(self):
     return self._reader.parse_type(
-      result_type=LeftParenthesisDefinition,
+      result_type=LeftParenthesis,
       error='expected left-parenthesis',
       parsers=[
         ('_', 'expected left-parenthesis', lambda: self._reader.consume_string(grammar.StringPredicate('('), 1, 1))
@@ -162,7 +167,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_right_parenthesis(self):
     return self._reader.parse_type(
-      result_type=RightParenthesisDefinition,
+      result_type=RightParenthesis,
       error='expected right-parenthesis',
       parsers=[
         ('_', 'expected right-parenthesis', lambda: self._reader.consume_string(grammar.StringPredicate(')'), 1, 1))
@@ -170,7 +175,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_tilde(self):
     return self._reader.parse_type(
-      result_type=TildeDefinition,
+      result_type=Tilde,
       error='expected tilde',
       parsers=[
         ('_', 'expected tilde', lambda: self._reader.consume_string(grammar.StringPredicate('~'), 1, 1))
@@ -178,7 +183,7 @@ class FerParser(object):
       result_immediate='_')
   def parse_solidus(self):
     return self._reader.parse_type(
-      result_type=SolidusDefinition,
+      result_type=Solidus,
       error='expected solidus',
       parsers=[
         ('_', 'expected solidus', lambda: self._reader.consume_string(grammar.StringPredicate('/'), 1, 1))
@@ -186,31 +191,66 @@ class FerParser(object):
       result_immediate='_')
   def parse_percent_sign(self):
     return self._reader.parse_type(
-      result_type=PercentSignDefinition,
+      result_type=PercentSign,
       error='expected percent-sign',
       parsers=[
         ('_', 'expected percent-sign', lambda: self._reader.consume_string(grammar.StringPredicate('%'), 1, 1))
       ],
       result_immediate='_')
+  def parse_octothorp(self):
+    return self._reader.parse_type(
+      result_type=Octothorp,
+      error='expected octothorp',
+      parsers=[
+        ('_', 'expected octothorp', lambda: self._reader.consume_string(grammar.StringPredicate('#'), 1, 1))
+      ],
+      result_immediate='_')
+  def parse_line_feed(self):
+    return self._reader.parse_type(
+      result_type=LineFeed,
+      error='expected line-feed',
+      parsers=[
+        ('_', 'expected line-feed', lambda: self._reader.consume_string(grammar.StringPredicate('\\n'), 2, 2))
+      ],
+      result_immediate='_')
+  def parse_line_comment_content(self):
+    return self._reader.parse_type(
+      result_type=LineCommentContent,
+      error='expected line-comment-content',
+      parsers=[
+        ('_', 'expected line-comment-content', lambda: self._reader.consume_string(grammar.SimpleClassPredicate('^\\n'), 1, 1))
+      ],
+      result_immediate='_')
   def parse_w(self):
     return self._reader.parse_type(
-      result_type=WDefinition,
+      result_type=W,
       error='expected w',
       parsers=[
-        ('', 'expected ws in w', lambda: self._reader.parse_many_wp(self.parse_ws, 0, 9223372036854775807)),
+        ('', 'expected ws in w', lambda: self._reader.consume_string(grammar.SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment in w', lambda: self._reader.parse_many_wp(self.parse_line_comment, 0, 1)),
+        ('', 'expected ws in w', lambda: self._reader.consume_string(grammar.SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+      ])
+  def parse_line_comment(self):
+    return self._reader.parse_type(
+      result_type=LineComment,
+      error='expected line-comment',
+      parsers=[
+        ('', 'expected octothorp in line-comment', self.parse_octothorp),
+        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(grammar.SimpleClassPredicate('^\\n'), 0, 9223372036854775807)),
+        ('', 'expected line-feed in line-comment', self.parse_line_feed),
       ])
   def parse_id(self):
     return self._reader.parse_type(
-      result_type=IdDefinition,
+      result_type=Id,
       error='expected id',
       parsers=[
         ('', 'expected w in id', self.parse_w),
-        ('_', 'expected pseudo-letter in id', lambda: self._reader.parse_many_wp(self.parse_pseudo_letter, 1, 9223372036854775807)),
+        ('_', 'expected pseudo-letter in id', lambda: self._reader.consume_string(grammar.SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
       ],
       result_immediate='_')
   def parse_variable_prefix(self):
     return self._reader.parse_type(
-      result_type=VariablePrefixDefinition,
+      result_type=VariablePrefix,
       error='expected variable-prefix',
       parsers=[
         ('', 'expected w in variable-prefix', self.parse_w),
@@ -218,7 +258,7 @@ class FerParser(object):
       ])
   def parse_realm_domain_declaration(self):
     return self._reader.parse_type(
-      result_type=RealmDomainDeclarationDefinition,
+      result_type=RealmDomainDeclaration,
       error='expected realm-domain-declaration',
       parsers=[
         ('', 'expected w in realm-domain-declaration', self.parse_w),
@@ -227,7 +267,7 @@ class FerParser(object):
       ])
   def parse_domain_declaration(self):
     return self._reader.parse_type(
-      result_type=DomainDeclarationDefinition,
+      result_type=DomainDeclaration,
       error='expected domain-declaration',
       parsers=[
         ('id', 'expected id in domain-declaration', self.parse_id),
@@ -235,7 +275,7 @@ class FerParser(object):
       ])
   def parse_domain_definition(self):
     return self._reader.parse_type(
-      result_type=DomainDefinitionDefinition,
+      result_type=DomainDefinition,
       error='expected domain-definition',
       parsers=[
         ('', 'expected w in domain-definition', self.parse_w),
@@ -248,26 +288,77 @@ class FerParser(object):
       ])
   def parse_inner_domain_declaration(self):
     return self._reader.parse_type(
-      result_type=InnerDomainDeclarationDefinition,
+      result_type=InnerDomainDeclaration,
       error='expected inner-domain-declaration',
       parsers=[
         ('', 'expected w in inner-domain-declaration', self.parse_w),
         ('', 'expected vertical-line in inner-domain-declaration', self.parse_vertical_line),
-        ('', 'expected domain-declaration in inner-domain-declaration', self.parse_domain_declaration),
-      ])
+        ('_', 'expected domain-declaration in inner-domain-declaration', self.parse_domain_declaration),
+      ],
+      result_immediate='_')
   def parse_variable_definition(self):
     return self._reader.parse_type(
-      result_type=VariableDefinitionDefinition,
+      result_type=VariableDefinition,
       error='expected variable-definition',
       parsers=[
         ('', 'expected variable-prefix in variable-definition', self.parse_variable_prefix),
         ('id', 'expected id in variable-definition', self.parse_id),
-        ('', 'expected colon in variable-definition', self.parse_colon),
-        ('expression', 'expected expression in variable-definition', self.parse_expression),
+        ('domain', 'expected variable-domain in variable-definition', lambda: self._reader.parse_many_wp(self.parse_variable_domain, 0, 1)),
       ])
+  def parse_expression(self):
+    return self._reader.parse_type(
+      result_type=Expression,
+      error='expected expression',
+      parsers=[
+        ('id', 'expected id in expression', self.parse_id),
+        ('arguments', 'expected expression-arguments in expression', lambda: self._reader.parse_many_wp(self.parse_expression_arguments, 0, 1)),
+        ('lookup', 'expected expression-lookup in expression', lambda: self._reader.parse_many_wp(self.parse_expression_lookup, 0, 1)),
+      ])
+  def parse_expression_argument(self):
+    return self._reader.parse_type(
+      result_type=ExpressionArgument,
+      error='expected expression-argument',
+      parsers=[
+        ('', 'expected variable-prefix in expression-argument', self.parse_variable_prefix),
+        ('id', 'expected id in expression-argument', self.parse_id),
+        ('', 'expected w in expression-argument', self.parse_w),
+        ('', 'expected tilde in expression-argument', self.parse_tilde),
+        ('expression', 'expected expression in expression-argument', self.parse_expression),
+      ])
+  def parse_expression_arguments(self):
+    return self._reader.parse_type(
+      result_type=ExpressionArguments,
+      error='expected expression-arguments',
+      parsers=[
+        ('', 'expected w in expression-arguments', self.parse_w),
+        ('', 'expected left-parenthesis in expression-arguments', self.parse_left_parenthesis),
+        ('_', 'expected expression-argument in expression-arguments', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 1, 9223372036854775807)),
+        ('', 'expected w in expression-arguments', self.parse_w),
+        ('', 'expected right-parenthesis in expression-arguments', self.parse_right_parenthesis),
+      ],
+      result_immediate='_')
+  def parse_expression_lookup(self):
+    return self._reader.parse_type(
+      result_type=ExpressionLookup,
+      error='expected expression-lookup',
+      parsers=[
+        ('', 'expected w in expression-lookup', self.parse_w),
+        ('', 'expected solidus in expression-lookup', self.parse_solidus),
+        ('_', 'expected expression in expression-lookup', self.parse_expression),
+      ],
+      result_immediate='_')
+  def parse_variable_domain(self):
+    return self._reader.parse_type(
+      result_type=VariableDomain,
+      error='expected variable-domain',
+      parsers=[
+        ('', 'expected colon in variable-domain', self.parse_colon),
+        ('_', 'expected expression in variable-domain', self.parse_expression),
+      ],
+      result_immediate='_')
   def parse_variable_constraint(self):
     return self._reader.parse_type(
-      result_type=VariableConstraintDefinition,
+      result_type=VariableConstraint,
       error='expected variable-constraint',
       parsers=[
         ('', 'expected variable-prefix in variable-constraint', self.parse_variable_prefix),
@@ -277,7 +368,7 @@ class FerParser(object):
       ])
   def parse_transform_definition(self):
     return self._reader.parse_type(
-      result_type=TransformDefinitionDefinition,
+      result_type=TransformDefinition,
       error='expected transform-definition',
       parsers=[
         ('', 'expected w in transform-definition', self.parse_w),
@@ -288,45 +379,3 @@ class FerParser(object):
         ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 0, 9223372036854775807)),
         ('expression', 'expected expression in transform-definition', self.parse_expression),
       ])
-  def parse_expression(self):
-    return self._reader.parse_type(
-      result_type=ExpressionDefinition,
-      error='expected expression',
-      parsers=[
-        ('id', 'expected id in expression', self.parse_id),
-        ('arguments', 'expected expression-arguments in expression', lambda: self._reader.parse_many_wp(self.parse_expression_arguments, 0, 1)),
-        ('lookup', 'expected expression-lookup in expression', lambda: self._reader.parse_many_wp(self.parse_expression_lookup, 0, 1)),
-      ])
-  def parse_expression_arguments(self):
-    return self._reader.parse_type(
-      result_type=ExpressionArgumentsDefinition,
-      error='expected expression-arguments',
-      parsers=[
-        ('', 'expected w in expression-arguments', self.parse_w),
-        ('', 'expected left-parenthesis in expression-arguments', self.parse_left_parenthesis),
-        ('_', 'expected expression-argument in expression-arguments', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 1, 9223372036854775807)),
-        ('', 'expected w in expression-arguments', self.parse_w),
-        ('', 'expected right-parenthesis in expression-arguments', self.parse_right_parenthesis),
-      ],
-      result_immediate='_')
-  def parse_expression_argument(self):
-    return self._reader.parse_type(
-      result_type=ExpressionArgumentDefinition,
-      error='expected expression-argument',
-      parsers=[
-        ('', 'expected variable-prefix in expression-argument', self.parse_variable_prefix),
-        ('id', 'expected id in expression-argument', self.parse_id),
-        ('', 'expected w in expression-argument', self.parse_w),
-        ('', 'expected tilde in expression-argument', self.parse_tilde),
-        ('expression', 'expected expression in expression-argument', self.parse_expression),
-      ])
-  def parse_expression_lookup(self):
-    return self._reader.parse_type(
-      result_type=ExpressionLookupDefinition,
-      error='expected expression-lookup',
-      parsers=[
-        ('', 'expected w in expression-lookup', self.parse_w),
-        ('', 'expected solidus in expression-lookup', self.parse_solidus),
-        ('_', 'expected expression in expression-lookup', self.parse_expression),
-      ],
-      result_immediate='_')

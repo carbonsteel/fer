@@ -12,7 +12,7 @@ domain NaturalMath {
     . a:Natural
     . b:Natural
 
-    > . a:One
+    > . a=One
     $ Next( . n~b )
 
     > . a=Next . b=One

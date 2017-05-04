@@ -16,9 +16,14 @@
 . tilde '~'
 . solidus '/'
 . percent-sign '%' # alala
+. octothorp '#'
+. line-feed '\n'
+. line-comment-content [^\n]
 
 
-. w (ws*)
+. w (ws* line-comment? ws*)
+. line-comment (octothorp line-comment-content* line-feed)
+
 . id (w pseudo-letter+@@)
 . variable-prefix (w dot)
 
@@ -33,26 +38,28 @@
     w right-curly-bracket
   )
 #. domain-parser (w percent-sign __grammar@@)
-. inner-domain-declaration (w vertical-line domain-declaration)
-. variable-definition (variable-prefix id@ colon expression@)
-. variable-constraint (variable-prefix id@ equals-sign expression@)
-. transform-definition (
-    w greater-than-sign variable-constraint*@constraints
-    w dollar-sign expression-argument*@locals expression@
-  )
+. inner-domain-declaration (w vertical-line domain-declaration@@)
+. variable-definition (variable-prefix id@ variable-domain?@domain)
 . expression ( 
     id@ expression-arguments?@arguments expression-lookup?@lookup
+  )
+. expression-argument (
+    variable-prefix id@
+    w tilde expression@
   )
 . expression-arguments (
     w left-parenthesis
     expression-argument+@@
     w right-parenthesis
   )
-. expression-argument (
-    variable-prefix id@
-    w tilde expression@
-  )
 . expression-lookup (w solidus expression@@)
+. variable-domain (colon expression@@)
+. variable-constraint (variable-prefix id@ equals-sign expression@)
+. transform-definition (
+    w greater-than-sign variable-constraint*@constraints
+    w dollar-sign expression-argument*@locals expression@
+  )
+
 
 #sadas
 #adas 
