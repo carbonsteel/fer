@@ -2,6 +2,7 @@
 
 import copy
 import io
+import logging as log
 import pprint
 import re
 import sys
@@ -194,9 +195,9 @@ class ParseResult(object):
   def __pformat__(self, depth):
     def rstr(result, depth, _str):
       if result.parse_kind == "value":
-        return "ok @%d,%d : %s" % (result.coord.line, result.coord.column, pformat(result.value, depth+1))
+        _str += "@%d,%d got : %s" % (result.coord.line, result.coord.column, pformat(result.value, depth+1))
       elif result.parse_kind == "error":
-        _str += "error @%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
+        _str += "@%d,%d : %s" % (result.coord.line, result.coord.column, result.error)
       for c in result.causes:
         _str += "\n" + (". "*depth)
         _str += rstr(c, depth+1, "")
@@ -253,13 +254,25 @@ class ParseReader(object):
     for id, error, parser in this.parsers:
       parser_result = parser()
       parser_errors.put(causes=[
-          ParseResult(error=error, coord=self.current_coord, causes=[parser_result])
+          parser_result
+      #    ParseResult(error=error, coord=self.current_coord, causes=[parser_result])
       ])
       if not parser_result:
         return parser_errors
       if len(id) > 0:
         type_args[id] = parser_result.value
-    value = this.result_type(**type_args) if this.result_immediate is None else this.result_type(type_args[this.result_immediate])
+    value = None
+    if this.result_immediate is None:
+      value = this.result_type(**type_args)
+    else:
+      imm = type_args[this.result_immediate]
+      try:
+        value = this.result_type(imm)
+      except TypeError:
+        if ofinstance(imm, this.result_type):
+          value = imm
+        else:
+          raise
     return ParseResult(value=value,
         coord=self.current_coord,
         causes=[parser_errors])
@@ -689,7 +702,7 @@ def kebab_to_snake(t):
   return "_".join(t.split("-"))
 
 def id_to_def(id):
-  return kebab_to_camel(id)+"Definition"
+  return kebab_to_camel(id)
 def id_to_parse(id):
   return "parse_"+kebab_to_snake(id)
 def id_to_parser(id):
@@ -721,7 +734,8 @@ class GrammarParserCompiler(object):
     composite = definition.value
     members = {}
     synonym_of = None
-
+    synonym_unicity = True
+    synonym_is_str = False
     for d in composite.expression:
       if d["anchor"] is None: # there was no anchor
         continue
@@ -731,6 +745,11 @@ class GrammarParserCompiler(object):
       elif d["anchor"] == "@": # two anchors -> the value is bound to the parent
         name = kebab_to_camel(d["identifier"])
         synonym_of = name
+        synonym_unicity = d["quantifier"][0] == d["quantifier"][1] == 1
+        try:
+          synonym_is_str = type(self.known_definitions[d["identifier"]]) == GrammarClassDefinition
+        except KeyError:
+          raise ValueError("%s is used in %s but is not defined yet" % (d["identifier"], definition.id))
       else:
         name = d["anchor"]
         members[name] = {}
@@ -742,7 +761,12 @@ class GrammarParserCompiler(object):
     elif synonym_of is None:
       W += "%s = str" % id_to_def(definition.id)
     if synonym_of is not None:
-      return "%s = %s" % (id_to_def(definition.id), id_to_def(synonym_of))
+      if synonym_unicity:
+        return "%s = %s" % (id_to_def(definition.id), id_to_def(synonym_of))
+      elif synonym_is_str:
+        return "%s = str" % id_to_def(definition.id)
+      else:
+        return "%s = list" % id_to_def(definition.id)
 
   def _w_parser_for_definition(self, definition):
     PARSER_FORMAT = "(%s, 'expected %s', self.%s)"
@@ -767,10 +791,14 @@ class GrammarParserCompiler(object):
           anchor = "_"
           is_immediate = True
         else:
-          anchor = e["anchor"]
+          anchor = e["anchor"] # there was a named anchor -> use that as the id
         inner_parse = None
         if e["quantifier"][0] == e["quantifier"][1] == 1:
           inner_parse = "self." + id_to_parse(e["identifier"])
+        elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
+          inner_parse = "lambda: self._reader.consume_string(grammar.SimpleClassPredicate(%s), %d, %d)" % (
+            repr(self.known_definitions[e["identifier"]].ccls), e["quantifier"][0], e["quantifier"][1]
+          )
         else:
           inner_parse = "lambda: self._reader.parse_many_wp(self.%s, %d, %d)" % (
             id_to_parse(e["identifier"]), e["quantifier"][0], e["quantifier"][1]
@@ -784,7 +812,6 @@ class GrammarParserCompiler(object):
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
-      # this could be optimized by grabbing the quantifier used by the caller
       W += "        ('_', 'expected %s', lambda: self._reader.consume_string(grammar.SimpleClassPredicate(%s), 1, 1))" % (
         definition.id, repr(definition.value.ccls)
       )
@@ -811,7 +838,7 @@ class GrammarParserCompiler(object):
           synonyms.append(synonym)
       else:
         W += "%s = str" % id_to_def(g.id)
-      self.known_definitions[g.id] = None
+      self.known_definitions[g.id] = g.value
     for s in synonyms:
       W += s
     
@@ -849,9 +876,9 @@ if __name__ == "__main__":
     if not eof_result:
       result.put(causes=[eof_result])
     print pformat(r.stats)
+  print pformat(result)
   with io.open("ferparser.py", "wb+") as f:
     bwf = io.BufferedWriter(f)
     gpc = GrammarParserCompiler(bwf, result, "Fer")
     gpc()
     bwf.flush()
-  print pformat(result)

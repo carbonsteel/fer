@@ -12,7 +12,10 @@ if __name__ == "__main__":
     result = gp()
     r.consume_ws()
     eof_result = r.consume_eof()
-    if not eof_result:
-      result.put(causes=[eof_result])
     print grammar.pformat(r.stats)
-    print grammar.pformat(result)
+    if not eof_result:
+      eof_result.put(causes=[result])
+      print grammar.pformat(eof_result)
+      exit(1)
+    else:
+      print grammar.pformat(result)
