@@ -11,7 +11,8 @@
         "**/.git": true,
         "**/bin": true,
         "**/*.o": true,
-        "**/*.d": true
+        "**/*.d": true,
+        "**/*.pyc": true
     },
     "editor.tabSize": 2,
     "editor.detectIndentation": false,
