@@ -42,3 +42,4 @@ domain NaturalMath {
 domain Main {
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
+
