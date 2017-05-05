@@ -3,6 +3,9 @@ import os
 import sys
 
 from fer.ferutil import *
+logger.init()
+log = logger.get_logger()
+
 from fer.grammer import *
 
 PARSER_NAME = "Fer"
@@ -15,20 +18,20 @@ def main():
     print "Usage: <input file>"
     exit(1)
   stats, result = compile_parser(PARSER_GRAMMAR, PARSER_MODULE, PARSER_NAME)
-  print pformat(stats)
+  log.debug(pformat(stats))
   if not result:
-    print pformat(result)
+    log.error(pformat(result))
     exit(1)
-  print sys.path
   ferparser = __import__(PARSER_MODULE_NAME)
   with io.open(sys.argv[1], "rb") as f:
     brf = io.BufferedReader(f)
     r = ParseReader(brf)
     p = ferparser.FerParser(r)
     result = p()
-    print pformat(r.stats)
-    print pformat(result.value)
+    log.debug(pformat(r.stats))
     if not result:
+      log.error(pformat(result))
       exit(1)
+    log.debug(pformat(result.value))
 
 main()
