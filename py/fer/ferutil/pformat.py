@@ -5,7 +5,7 @@ class PformatState(object):
     self.elems = []
   def add(self, elem, **args):
     self.elems.append((elem, args))
-  def finalize(self):
+  def finalize(self, max_depth=None):
     l = {
       "depth": 0,
       "lines": [],
@@ -13,7 +13,8 @@ class PformatState(object):
     }
     def fore(s, args):
       if "newline" in args and args["newline"]:
-        l["lines"].append(l["line"])
+        if max_depth is None or l["depth"] < max_depth:
+          l["lines"].append(l["line"])
         l["line"] = ("  "*l["depth"])
       if "indent" in args:
         l["depth"] += args["indent"]

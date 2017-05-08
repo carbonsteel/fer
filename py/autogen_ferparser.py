@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-05-05 14:23:23.644976
+# Updated on 2017-05-08 19:40:46.399440
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -33,7 +33,7 @@ class RealmDomainDeclaration(object):
     StrictNamedArguments({'domain_declaration': {}})(self, args)
 class DomainDeclaration(object):
   def __init__(self, **args):
-    StrictNamedArguments({'domain': {}, 'id': {}})(self, args)
+    StrictNamedArguments({'domain': {}, 'id': {}, 'result': {}})(self, args)
 class DomainDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({'domains': {}, 'variables': {}, 'transforms': {}})(self, args)
@@ -76,7 +76,7 @@ class FerParser(object):
       result_type=Ws,
       error='expected ws',
       parsers=[
-        ('_', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 1, 1))
+        ('_', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 1, 1))
       ],
       result_immediate='_')
   def parse_pseudo_letter(self):
@@ -212,7 +212,7 @@ class FerParser(object):
       result_type=LineFeed,
       error='expected line-feed',
       parsers=[
-        ('_', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('\\n'), 2, 2))
+        ('_', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('\n'), 1, 1))
       ],
       result_immediate='_')
   def parse_line_comment_content(self):
@@ -220,7 +220,7 @@ class FerParser(object):
       result_type=LineCommentContent,
       error='expected line-comment-content',
       parsers=[
-        ('_', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 1, 1))
+        ('_', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 1, 1))
       ],
       result_immediate='_')
   def parse_w(self):
@@ -228,9 +228,9 @@ class FerParser(object):
       result_type=W,
       error='expected w',
       parsers=[
-        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
         ('', 'expected line-comment in w', lambda: self._reader.parse_many_wp(self.parse_line_comment, 0, 1)),
-        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
       ])
   def parse_line_comment(self):
     return self._reader.parse_type(
@@ -238,7 +238,7 @@ class FerParser(object):
       error='expected line-comment',
       parsers=[
         ('', 'expected octothorp in line-comment', self.parse_octothorp),
-        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', self.parse_line_feed),
       ])
   def parse_id(self):
@@ -273,6 +273,7 @@ class FerParser(object):
       error='expected domain-declaration',
       parsers=[
         ('id', 'expected id in domain-declaration', self.parse_id),
+        ('result', 'expected variable-domain in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_variable_domain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_domain_definition, 0, 1)),
       ])
   def parse_domain_definition(self):
