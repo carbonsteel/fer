@@ -3,10 +3,6 @@ domain Natural {
   | One
   | Next { . n:Natural }
 }
-domain Opposite {
-  . of
-  . v:of
-}
 domain NaturalMath {
   | sum {
     . a:Natural
@@ -24,9 +20,6 @@ domain NaturalMath {
         . b~b/n
     )))
   }
-  | sum {
-    . a:Opposite(.of~Natural)
-  }
   | fib {
     . n:Natural                              # n-th fibonnaci number to calculate
     | fiba {
@@ -42,4 +35,3 @@ domain NaturalMath {
 domain Main {
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
-
