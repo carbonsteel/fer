@@ -92,8 +92,9 @@ class GrammarParserCompiler(object):
         if e["quantifier"][0] == e["quantifier"][1] == 1:
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
+          ccls = self.known_definitions[e["identifier"]].ccls.decode('string_escape')
           inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
-            repr(self.known_definitions[e["identifier"]].ccls), e["quantifier"][0], e["quantifier"][1]
+            repr(ccls), e["quantifier"][0], e["quantifier"][1]
           )
         else:
           inner_parse = "lambda: self._reader.parse_many_wp(self.%s, %d, %d)" % (
@@ -105,13 +106,15 @@ class GrammarParserCompiler(object):
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
+      literal = definition.value.literal.decode('string_escape')
       W += "        ('_', 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
-        definition.id, repr(definition.value.literal), len(definition.value.literal), len(definition.value.literal)
+        definition.id, repr(literal), len(literal), len(literal)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
+      ccls = definition.value.ccls.decode('string_escape')
       W += "        ('_', 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
-        definition.id, repr(definition.value.ccls)
+        definition.id, repr(ccls)
       )
       is_immediate = True
     else:
