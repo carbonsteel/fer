@@ -19,9 +19,9 @@ def main():
     print "Usage: <input file>"
     exit(1)
   stats, result = compile_parser(PARSER_GRAMMAR, PARSER_MODULE, PARSER_NAME)
-  log.debug(pformat(stats))
+  log.debug(pformat(stats).finalize())
   if not result:
-    log.error(pformat(result))
+    log.error(pformat(result).finalize())
     exit(1)
   ferparser = __import__(PARSER_MODULE_NAME)
   log.info("Parsing fer file")
@@ -30,11 +30,11 @@ def main():
     r = ParseReader(brf)
     p = ferparser.FerParser(r)
     result = p()
-    log.debug(pformat(r.stats))
+    log.debug(pformat(r.stats).finalize())
     if not result:
-      log.error(pformat(result))
+      log.error(pformat(result).finalize())
       exit(1)
-    log.debug(pformat(result.value))
+    log.debug(pformat(result.value).finalize())
     log.info("Parsed fer file")
 
 main()
