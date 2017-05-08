@@ -28,7 +28,7 @@
 . variable-prefix (w dot)
 
 . realm-domain-declaration (w domain domain-declaration@)
-. domain-declaration (id@ domain-definition?@domain)
+. domain-declaration (id@ variable-domain?@result domain-definition?@domain)
 . domain-definition (
     w left-curly-bracket
    # domain-parser?@parser
