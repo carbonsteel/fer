@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-05-10 16:39:08.740943
+# Updated on 2017-05-10 17:30:32.902974
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -34,7 +34,7 @@ class RealmDomainDeclaration(object):
 class DomainDeclaration(object):
   def __init__(self, **args):
     StrictNamedArguments({'domain': {}, '_fcrd': {}, 'id': {}, 'result': {}})(self, args)
-class DomainDefinition(object):
+class DomainDefinitionInner(object):
   def __init__(self, **args):
     StrictNamedArguments({'domains': {}, 'variables': {}, 'transforms': {}, '_fcrd': {}})(self, args)
 class VariableDefinition(object):
@@ -53,6 +53,7 @@ class TransformDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({'expression': {}, '_fcrd': {}, 'locals': {}, 'constraints': {}})(self, args)
 Id = str
+DomainDefinition = DomainDefinitionInner
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
@@ -279,20 +280,28 @@ class FerParser(object):
         ('result', 'expected variable-domain in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_variable_domain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_domain_definition, 0, 1)),
       ])
+  def parse_domain_definition_inner(self):
+    return self._reader.parse_type(
+      result_type=DomainDefinitionInner,
+      error='expected domain-definition-inner',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
+        ('variables', 'expected variable-definition in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 9223372036854775807)),
+        ('domains', 'expected inner-domain-declaration in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 9223372036854775807)),
+        ('transforms', 'expected transform-definition in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 9223372036854775807)),
+      ])
   def parse_domain_definition(self):
     return self._reader.parse_type(
       result_type=DomainDefinition,
       error='expected domain-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self.parse_left_curly_bracket),
-        ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 9223372036854775807)),
-        ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 9223372036854775807)),
-        ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 9223372036854775807)),
+        ('_fimm', 'expected domain-definition-inner in domain-definition', self.parse_domain_definition_inner),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected right-curly-bracket in domain-definition', self.parse_right_curly_bracket),
-      ])
+      ],
+      result_immediate='_fimm')
   def parse_inner_domain_declaration(self):
     return self._reader.parse_type(
       result_type=InnerDomainDeclaration,

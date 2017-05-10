@@ -21,6 +21,17 @@ class ParserCoord(object):
     })(self, args)
   def __str__(self):
     return "%d:%d" % (self.line, self.column)
+  def __cmp__(self, other):
+    if self.line < other.line:
+      return -1
+    elif self.line > other.line:
+      return 1
+    elif self.column < other.column:
+      return -1
+    elif self.column > other.column:
+      return 1
+    else:
+      return 0
 
 class ParseResult(object):
   def __init__(self, **args):
@@ -60,6 +71,13 @@ class ParseResult(object):
     for c in self.causes:
       c.__pformat__(state)
     state.add("", indent=-1)
+  def get_deepest_cause(self):
+    deepest = self
+    for c in self.causes:
+      dpst = c.get_deepest_cause()
+      if dpst.coord > deepest.coord:
+        deepest = dpst
+    return deepest
   def put(self, **args):
     that = Dummy()
     StrictNamedArguments({
@@ -185,14 +203,14 @@ class ParseReader(object):
   def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
     results = []
     begin_coord = self.get_coord()
-    parser_errors = ParseResult(error="inner parser errors in many",
+    parser_errors = ParseResult(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
         coord=self.get_coord())
     while True:
       count = len(results)
-      if count > maximum_parsed:
+      if count == maximum_parsed:
         return ParseResult(
-            error="expected at most %d instances in many" % (maximum_parsed,),
-            coord=self.get_coord(),
+            value=results,
+            coord=begin_coord,
             causes=[parser_errors])
       parser_result = self.lookahead(parser)
       parser_errors.put(causes=[parser_result])

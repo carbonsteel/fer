@@ -29,7 +29,7 @@ domain NaturalMath {
     }
     > .n=One $ One                           # step 1: if n is 1, then return 1
     > .n=Next $ fiba(.n~n/n)                 # step 2: if n > 1, then fiba(n-1)
- }
+  }
 }
 
 domain Main {
