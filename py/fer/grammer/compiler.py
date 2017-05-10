@@ -5,6 +5,9 @@ from fer.ferutil import *
 from common import *
 from grammar import *
 
+KEY_FER_COORD = "_fcrd"
+KEY_IMMEDIATE = "_fimm"
+
 class GrammarParserCompiler(object):
   def __init__(self, stream, parse_result, parser_name):
     if not parse_result:
@@ -51,12 +54,15 @@ class GrammarParserCompiler(object):
         members[name] = {}
     W = self.get_writer()
     if len(members) > 0:
+      members[KEY_FER_COORD] = {}
       W += "class %s(object):" % id_to_def(definition.id)
       W += "  def __init__(self, **args):"
       W += "    StrictNamedArguments(%s)(self, args)" % repr(members)
+      return None
     elif synonym_of is None:
       W += "%s = str" % id_to_def(definition.id)
-    if synonym_of is not None:
+      return None
+    else:
       if synonym_unicity:
         return "%s = %s" % (id_to_def(definition.id), id_to_def(synonym_of))
       elif synonym_is_str:
@@ -75,6 +81,19 @@ class GrammarParserCompiler(object):
     W += "      parsers=["
     if ofinstance(definition.value, GrammarCompositeDefinition):
       composite = definition.value
+      # coord record must be executed first so has to get the starting point
+      # of whatever is being parsed. It must also not be added when there is
+      # no anchor or an immediate
+      qty_anchors = 0
+      has_imm = False
+      for e in composite.expression:
+        if e["anchor"] is not None:
+          qty_anchors += 1
+        if e["anchor"] == "@":
+          has_imm = True
+          break
+      if not(has_imm or qty_anchors == 0):
+        W += "        (%s, 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord()))," % repr(KEY_FER_COORD)
       for e in composite.expression:
         if e["identifier"] not in self.known_definitions:
           raise ValueError("%s is used but is not defined" % e["identifier"])
@@ -84,7 +103,7 @@ class GrammarParserCompiler(object):
         elif e["anchor"] == "": # there was one anchor -> the name is the id
           anchor = kebab_to_snake(e["identifier"])
         elif e["anchor"] == "@": # two anchors -> the value is bound to the parent
-          anchor = "_"
+          anchor = KEY_IMMEDIATE
           is_immediate = True
         else:
           anchor = e["anchor"] # there was a named anchor -> use that as the id
@@ -92,6 +111,7 @@ class GrammarParserCompiler(object):
         if e["quantifier"][0] == e["quantifier"][1] == 1:
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
+          # inlines the consume call for class definitions to get an "str" instead of a list of char
           ccls = self.known_definitions[e["identifier"]].ccls.decode('string_escape')
           inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
             repr(ccls), e["quantifier"][0], e["quantifier"][1]
@@ -107,21 +127,21 @@ class GrammarParserCompiler(object):
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
       literal = definition.value.literal.decode('string_escape')
-      W += "        ('_', 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
-        definition.id, repr(literal), len(literal), len(literal)
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
+        repr(KEY_IMMEDIATE), definition.id, repr(literal), len(literal), len(literal)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
       ccls = definition.value.ccls.decode('string_escape')
-      W += "        ('_', 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
-        definition.id, repr(ccls)
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
+        repr(KEY_IMMEDIATE), definition.id, repr(ccls)
       )
       is_immediate = True
     else:
       raise ValueError("this should never happen (unless a new Grammar**Definition is added and not updated here)")
     if is_immediate:
       W += "      ],"
-      W += "      result_immediate='_')"
+      W += "      result_immediate=%s)" % repr(KEY_IMMEDIATE)
     else:
       W += "      ])"
 
