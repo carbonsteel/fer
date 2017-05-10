@@ -13,19 +13,6 @@ PARSER_MODULE_NAME = "autogen_ferparser"
 PARSER_MODULE = PARSER_MODULE_NAME+".py"
 PARSER_GRAMMAR = os.path.join(os.path.dirname(__file__), "fer.grammar")
 
-def get_effective_error(result):
-  # the most reasonable error in the trace is the error that last made every
-  # parsers fail. In our case that is the second to last line, because the fer 
-  # parser has two main sub parsers, the last being EOF which is completly 
-  # unhelpful. The second to last will be the deepest error and will have made
-  # all other parsers fail.
-
-  # smallest code to get that is to extract it from the formatted result 
-  # (i know its not great)
-  return pformat(result).finalize().split("\n")[-2].strip()
-
-
-
 def main():
   log.info("Welcome to carbonsteel/fer")
   if len(sys.argv) < 2:
@@ -46,7 +33,18 @@ def main():
     log.debug(pformat(r.stats).finalize())
     #log.debug(pformat(result).finalize())
     if not result:
-      log.error(get_effective_error(result))
+      # get the error that caused failure the farthest into the file
+      cause = result.get_deepest_cause()
+      ff = pformat(cause).finalize()
+      f = ff.split("\n")
+      # pformat will add a line feed before the failed parser and the last 
+      # line will contain the consume error
+      if len(f) > 2:
+        log.error(f[1].strip())
+        log.error(f[-1].strip())
+      else:
+        log.error(ff)
+
       exit(1)
     log.debug(pformat(result.value).finalize())
     log.info("Parsed fer file")
