@@ -5,6 +5,8 @@ import re
 import sys
 
 from fer.ferutil import *
+logger.init()
+log = logger.get_logger()
 
 class ParserCoord(object):
   # First line begins at 1, first column begins at 1
@@ -21,17 +23,23 @@ class ParserCoord(object):
     })(self, args)
   def __str__(self):
     return "%d:%d" % (self.line, self.column)
-  def __cmp__(self, other):
+  def __lt__(self, other):
     if self.line < other.line:
-      return -1
-    elif self.line > other.line:
-      return 1
-    elif self.column < other.column:
-      return -1
-    elif self.column > other.column:
-      return 1
-    else:
-      return 0
+      return True
+    if self.line > other.line:
+      return False
+    return self.column < other.column 
+  
+  def __eq__(self, other):
+    return not self<other and not other<self
+  def __ne__(self, other):
+    return self<other or other<self
+  def __gt__(self, other):
+    return other<self
+  def __ge__(self, other):
+    return not self<other
+  def __le__(self, other):
+    return not other<self
 
 class ParseResult(object):
   def __init__(self, **args):
@@ -56,6 +64,7 @@ class ParseResult(object):
     }, {
       "autostr": False,
     })(self, args)
+    self.__wtf__ = id_generator()
     # bring value forward 
     if self.parse_kind == "value" and isinstance(self.value, ParseResult):
       self.put(causes=self.value.causes)
@@ -63,21 +72,36 @@ class ParseResult(object):
   def __nonzero__(self):
     return self.parse_kind == "value"
   def __pformat__(self, state):
+    state.add(str(self), indent=1, newline=True)
     if self.parse_kind == "value":
-      state.add("@%d,%d got : " % (self.coord.line, self.coord.column), indent=1, newline=True)
       pformat(self.value, state)
-    elif self.parse_kind == "error":
-      state.add("@%d,%d : %s" % (self.coord.line, self.coord.column, self.error), indent=1, newline=True)
     for c in self.causes:
       c.__pformat__(state)
     state.add("", indent=-1)
-  def get_deepest_cause(self):
+  def __str__(self):
+    if self.parse_kind == "value":
+      return "%s@%d,%d got : " % (self.__wtf__, self.coord.line, self.coord.column)
+    elif self.parse_kind == "error":
+      return "%s@%d,%d : %s" % (self.__wtf__, self.coord.line, self.coord.column, self.error)
+  def get_first_deepest_cause(self):
     deepest = self
     for c in self.causes:
-      dpst = c.get_deepest_cause()
+      dpst = c.get_first_deepest_cause()
       if dpst.coord > deepest.coord:
         deepest = dpst
     return deepest
+  def get_last_deepest_cause(self):
+    d, _ = self._get_last_deepest_cause()
+    return d
+  def _get_last_deepest_cause(self, level=0):
+    deepest = self
+    lvl = level
+    for c in self.causes:
+      dpst, lpst = c._get_last_deepest_cause(level+1)
+      if dpst.coord > deepest.coord or (dpst.coord == deepest.coord and lpst > lvl):
+        deepest = dpst
+        lvl = lpst
+    return (deepest, lvl)
   def put(self, **args):
     that = Dummy()
     StrictNamedArguments({
