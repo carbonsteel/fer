@@ -31,19 +31,13 @@ def main():
     p = ferparser.FerParser(r)
     result = p()
     log.debug(pformat(r.stats).finalize())
-    #log.debug(pformat(result).finalize())
+    
     if not result:
       # get the error that caused failure the farthest into the file
-      cause = result.get_deepest_cause()
-      ff = pformat(cause).finalize()
-      f = ff.split("\n")
-      # pformat will add a line feed before the failed parser and the last 
-      # line will contain the consume error
-      if len(f) > 2:
-        log.error(f[1].strip())
-        log.error(f[-1].strip())
-      else:
-        log.error(ff)
+      fcause = result.get_first_deepest_cause()
+      lcause = fcause.get_last_deepest_cause()
+      log.error(str(fcause))
+      log.error(str(lcause))
 
       exit(1)
     log.debug(pformat(result.value).finalize())
