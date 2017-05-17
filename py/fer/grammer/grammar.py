@@ -169,6 +169,12 @@ class GrammarParser(object):
     return prefix
 
   def __call__(self):
-    return self._reader.parse_many(
-        self.parse_definition_prefix,
-        self.parse_definition, 1)
+    return self._reader.parse_type(
+      result_type=list,
+      error='expected grammar',
+      result_immediate='_',
+      parsers=[
+        ('_', 'expected definition in grammar', lambda: self._reader.parse_many(self.parse_definition_prefix, self.parse_definition, 1)),
+        ('', 'expected whitespace', self._reader.consume_ws),
+        ('', 'expected eof', self._reader.consume_eof),
+      ])

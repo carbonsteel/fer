@@ -4,7 +4,7 @@ domain Natural {
   | Next { . n:Natural }
 }
 domain NaturalMath {
-  | sum {
+  | sum -> Natural {
     . a:Natural
     . b:Natural
 
@@ -20,15 +20,43 @@ domain NaturalMath {
         . b~b/n
     )))
   }
-  | fib {
-    . n:Natural                              # n-th fibonnaci number to calculate
-    | fiba {
-        . n:Natural
-        > .n=One $ One                       # step 3: if (n-1) is 1, then return 1
-        >$ sum(.a~fib(.n~n/n) .b~fib(.n~n))  # step 4: always, return fib((n-1)-1) + fib(n-1)
+  | fib -> Natural {
+    . n:Natural                            # n-th fibonnaci number to calculate
+    | fiba -> Natural {
+      . n:Natural
+      > .n=One $ One                       # step 3: if (n-1) is 1, then return 1
+      >$ sum(.a~fib(.n~n/n) .b~fib(.n~n))  # step 4: always, return fib((n-1)-1) + fib(n-1)
     }
-    > .n=One $ One                           # step 1: if n is 1, then return 1
-    > .n=Next $ fiba(.n~n/n)                 # step 2: if n > 1, then fiba(n-1)
+    > .n=One $ One                         # step 1: if n is 1, then return 1
+    > .n=Next $ fiba(.n~n/n)               # step 2: if n > 1, then fiba(n-1)
+  }
+}
+
+domain Animal {
+  | getLegCount { -> Natural }
+}
+
+domain Monopod {
+  | getLegCount {
+    -> Natural
+    >$ One
+  } 
+}
+
+
+
+domain DomainMath {
+  | implements {
+    . interface:Domain
+    . 
+  }
+}
+
+domain Zoologist {
+  | countLegs {
+    . animal:Animal
+    -> Natural
+    >$ animal/getLegCount()
   }
 }
 

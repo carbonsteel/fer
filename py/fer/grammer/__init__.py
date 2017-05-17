@@ -16,12 +16,7 @@ def compile_parser(grammar_file, parser_file, parser_name):
     r = ParseReader(brf)
     gp = GrammarParser(r)
     result = gp()
-    r.consume_ws()
-    eof_result = r.consume_eof()
-    if not eof_result:
-      log.error("Failed to parse grammar file")
-      result.put(causes=[eof_result])
-    elif not result:
+    if not result:
       log.error("Failed to parse grammar file")
     else:
       log.info("Parsed grammar file")

@@ -3,7 +3,6 @@ import os
 import sys
 
 from fer.ferutil import *
-logger.init()
 from fer.grammer import *
 import varcheck
 
@@ -68,4 +67,5 @@ def main():
 
   log.info("C'est finiii!")
 
-main()
+if __name__ == "__main__":
+  main()
