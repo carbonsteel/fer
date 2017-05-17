@@ -1,5 +1,8 @@
 
+from fer.ferutil import *
 from fer.grammer import ParseResult
+
+log = logger.get_logger()
 
 class VariableAnalysis(object):
   def check_realm(self, realm):

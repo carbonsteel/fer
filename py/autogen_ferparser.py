@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-05-10 17:30:32.902974
+# Updated on 2017-05-16 14:21:43.312472
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -25,6 +25,8 @@ PercentSign = str
 Octothorp = str
 LineFeed = str
 LineCommentContent = str
+LeftToRightArrow = str
+Ww = str
 W = str
 LineComment = str
 VariablePrefix = str
@@ -33,8 +35,8 @@ class RealmDomainDeclaration(object):
     StrictNamedArguments({'_fcrd': {}, 'domain_declaration': {}})(self, args)
 class DomainDeclaration(object):
   def __init__(self, **args):
-    StrictNamedArguments({'domain': {}, '_fcrd': {}, 'id': {}, 'result': {}})(self, args)
-class DomainDefinitionInner(object):
+    StrictNamedArguments({'codomain': {}, 'id': {}, 'domain': {}, '_fcrd': {}})(self, args)
+class DomainDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({'domains': {}, 'variables': {}, 'transforms': {}, '_fcrd': {}})(self, args)
 class VariableDefinition(object):
@@ -53,11 +55,11 @@ class TransformDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({'expression': {}, '_fcrd': {}, 'locals': {}, 'constraints': {}})(self, args)
 Id = str
-DomainDefinition = DomainDefinitionInner
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
 VariableDomain = Expression
+VariableCodomain = Expression
 # Main parser
 class FerParser(object):
   def __init__(self, reader):
@@ -71,6 +73,7 @@ class FerParser(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self.parse_realm_domain_declaration, 1, 9223372036854775807)),
+        ('', 'expected w in realm', self.parse_w),
         ('', 'expected eof', self._reader.consume_eof),
       ])
   def parse_ws(self):
@@ -225,14 +228,28 @@ class FerParser(object):
         ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 1, 1))
       ],
       result_immediate='_fimm')
+  def parse_left_to_right_arrow(self):
+    return self._reader.parse_type(
+      result_type=LeftToRightArrow,
+      error='expected left-to-right-arrow',
+      parsers=[
+        ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(StringPredicate('->'), 2, 2))
+      ],
+      result_immediate='_fimm')
+  def parse_ww(self):
+    return self._reader.parse_type(
+      result_type=Ww,
+      error='expected ww',
+      parsers=[
+        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self.parse_line_comment, 0, 1)),
+      ])
   def parse_w(self):
     return self._reader.parse_type(
       result_type=W,
       error='expected w',
       parsers=[
-        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
-        ('', 'expected line-comment in w', lambda: self._reader.parse_many_wp(self.parse_line_comment, 0, 1)),
-        ('', 'expected ws in w', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
+        ('', 'expected ww in w', lambda: self._reader.parse_many_wp(self.parse_ww, 0, 9223372036854775807)),
       ])
   def parse_line_comment(self):
     return self._reader.parse_type(
@@ -241,7 +258,7 @@ class FerParser(object):
       parsers=[
         ('', 'expected octothorp in line-comment', self.parse_octothorp),
         ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 9223372036854775807)),
-        ('', 'expected line-feed in line-comment', self.parse_line_feed),
+        ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self.parse_line_feed, 0, 1)),
       ])
   def parse_id(self):
     return self._reader.parse_type(
@@ -277,31 +294,23 @@ class FerParser(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('id', 'expected id in domain-declaration', self.parse_id),
-        ('result', 'expected variable-domain in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_variable_domain, 0, 1)),
+        ('codomain', 'expected variable-codomain in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_variable_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self.parse_domain_definition, 0, 1)),
-      ])
-  def parse_domain_definition_inner(self):
-    return self._reader.parse_type(
-      result_type=DomainDefinitionInner,
-      error='expected domain-definition-inner',
-      parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
-        ('variables', 'expected variable-definition in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 9223372036854775807)),
-        ('domains', 'expected inner-domain-declaration in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 9223372036854775807)),
-        ('transforms', 'expected transform-definition in domain-definition-inner', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 9223372036854775807)),
       ])
   def parse_domain_definition(self):
     return self._reader.parse_type(
       result_type=DomainDefinition,
       error='expected domain-definition',
       parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self.parse_left_curly_bracket),
-        ('_fimm', 'expected domain-definition-inner in domain-definition', self.parse_domain_definition_inner),
+        ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 9223372036854775807)),
+        ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 9223372036854775807)),
+        ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 9223372036854775807)),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected right-curly-bracket in domain-definition', self.parse_right_curly_bracket),
-      ],
-      result_immediate='_fimm')
+      ])
   def parse_inner_domain_declaration(self):
     return self._reader.parse_type(
       result_type=InnerDomainDeclaration,
@@ -373,6 +382,17 @@ class FerParser(object):
       parsers=[
         ('', 'expected colon in variable-domain', self.parse_colon),
         ('_fimm', 'expected expression in variable-domain', self.parse_expression),
+      ],
+      result_immediate='_fimm')
+  def parse_variable_codomain(self):
+    return self._reader.parse_type(
+      result_type=VariableCodomain,
+      error='expected variable-codomain',
+      parsers=[
+        ('', 'expected w in variable-codomain', self.parse_w),
+        ('', 'expected left-to-right-arrow in variable-codomain', self.parse_left_to_right_arrow),
+        ('', 'expected w in variable-codomain', self.parse_w),
+        ('_fimm', 'expected expression in variable-codomain', self.parse_expression),
       ],
       result_immediate='_fimm')
   def parse_variable_constraint(self):

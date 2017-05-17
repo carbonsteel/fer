@@ -5,7 +5,6 @@ import re
 import sys
 
 from fer.ferutil import *
-logger.init()
 log = logger.get_logger()
 
 class ParserCoord(object):
@@ -149,12 +148,16 @@ class ParseReader(object):
       "result_immediate": {
         "type": str,
         "default": None,
+      },
+      "any": {
+        "default": False,
       }
     })(this, args)
     type_args = {}
     begin_coord = self.get_coord()
     parser_errors = ParseResult(error=this.error, coord=begin_coord)
     for id, error, parser in this.parsers:
+      #log.debug("parse_type trying %s %s:%s"%(str(self.get_coord()),repr(id),repr(error)))
       parser_result = parser()
       parser_errors.put(causes=[
           parser_result
@@ -229,6 +232,7 @@ class ParseReader(object):
     begin_coord = self.get_coord()
     parser_errors = ParseResult(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
         coord=self.get_coord())
+    previous_coord = begin_coord
     while True:
       count = len(results)
       if count == maximum_parsed:
@@ -238,16 +242,20 @@ class ParseReader(object):
             causes=[parser_errors])
       parser_result = self.lookahead(parser)
       parser_errors.put(causes=[parser_result])
-      if not parser_result:
+      current_coord = self.get_coord()
+      if (not parser_result) or (current_coord == previous_coord):
+        # bad parse or nothing was successfully parsed
         if count >= minimum_parsed:
           return ParseResult(value=results,
               coord=begin_coord,
               causes=[parser_errors])
-        return ParseResult(
-            error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
-            coord=self.get_coord(),
-            causes=[parser_errors])
+        else:
+          return ParseResult(
+              error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
+              coord=self.get_coord(),
+              causes=[parser_errors])
       results.append(parser_result.value)
+      previous_coord = current_coord
   
   def lookahead(self, parser):
     if not self._stream.readable():
@@ -275,14 +283,22 @@ class ParseReader(object):
     else:
       return ParseResult(error="expected eof", coord=self.get_coord())
 
-  def consume_ws(self):
+  def consume_ws (self):
     return self.parse_type(
       result_type=str,
       error='expected w',
       parsers=[
-        ('', 'expected ws in w', lambda: self.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
-        ('', 'expected line-comment in w', lambda: self.parse_many_wp(self.parse_line_comment, 0, 1)),
-        ('', 'expected ws in w', lambda: self.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+        ('', 'expected ww in w', lambda: self.parse_many_wp(self.parse_ww, 0, 9223372036854775807)),
+      ])
+
+  def parse_ww(self):
+    return self.parse_type(
+      result_type=str,
+      error='expected w',
+      any=True,
+      parsers=[
+        ('', 'expected ws in ww', lambda: self.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment in ww', lambda: self.parse_many_wp(self.parse_line_comment, 0, 1)),
       ])
 
   def parse_line_comment(self):
@@ -292,12 +308,18 @@ class ParseReader(object):
       parsers=[
         ('', 'expected octothorp in line-comment', lambda: self.consume_string(StringPredicate('#'), 1, 1)),
         ('', 'expected line-comment-content in line-comment', lambda: self.consume_string(SimpleClassPredicate('^\\n'), 0, 9223372036854775807)),
-        ('', 'expected line-feed in line-comment', lambda: self.consume_string(StringPredicate("\n"), 1, 1)),
+        ('', 'expected line-feed in line-comment', lambda: self.consume_string(StringPredicate("\n"), 0, 1)),
       ])
 
   def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
-    self.consume_ws()
-    return self.consume_string(predicate, minimum_consumed, maximum_consumed)
+    return self.parse_type(
+      result_type=str,
+      error='expected token',
+      result_immediate='_',
+      parsers=[
+        ('', 'expected whitespace before token', self.consume_ws),
+        ('_', 'expected token', lambda: self.consume_string(predicate, minimum_consumed, maximum_consumed))
+      ])
 
   def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
     string = ""

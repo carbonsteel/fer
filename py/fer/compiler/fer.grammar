@@ -1,4 +1,4 @@
-. realm (realm-domain-declaration+@domains) # root is first definition
+. realm (realm-domain-declaration+@domains w) # root is first definition
 
 . ws [ \n]
 . pseudo-letter [a-zA-Z_]
@@ -19,16 +19,18 @@
 . octothorp '#'
 . line-feed '\n'
 . line-comment-content [^\n]
+. left-to-right-arrow '->'
 
 
-. w (ws* line-comment? ws*)
-. line-comment (octothorp line-comment-content* line-feed)
+. ww (ws* line-comment?)
+. w (ww*)
+. line-comment (octothorp line-comment-content* line-feed?)
 
 . id (w pseudo-letter+@@)
 . variable-prefix (w dot)
 
 . realm-domain-declaration (w domain domain-declaration@)
-. domain-declaration (id@ variable-domain?@result domain-definition?@domain)
+. domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
 . domain-definition (
     w left-curly-bracket
    # domain-parser?@parser
@@ -54,12 +56,12 @@
   )
 . expression-lookup (w solidus expression@@)
 . variable-domain (colon expression@@)
+. variable-codomain (w left-to-right-arrow w expression@@)
 . variable-constraint (variable-prefix id@ equals-sign expression@)
 . transform-definition (
     w greater-than-sign variable-constraint*@constraints
     w dollar-sign expression-argument*@locals expression@
   )
 
-
-#sadas
-#adas 
+# asd 
+# asdasd
