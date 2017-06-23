@@ -51,7 +51,7 @@
   )
 . expression-arguments (
     w left-parenthesis
-    expression-argument+@@
+    expression-argument*@@
     w right-parenthesis
   )
 . expression-lookup (w solidus expression@@)

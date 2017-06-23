@@ -33,12 +33,11 @@ domain NaturalMath {
 }
 
 domain Animal {
-  | getLegCount { -> Natural }
+  | getLegCount -> Natural {  }
 }
 
 domain Monopod {
-  | getLegCount {
-    -> Natural
+  | getLegCount -> Natural {
     >$ One
   } 
 }
@@ -48,14 +47,12 @@ domain Monopod {
 domain DomainMath {
   | implements {
     . interface:Domain
-    . 
   }
 }
 
 domain Zoologist {
-  | countLegs {
+  | countLegs -> Natural {
     . animal:Animal
-    -> Natural
     >$ animal/getLegCount()
   }
 }
