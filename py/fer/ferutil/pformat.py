@@ -75,3 +75,6 @@ def pformat(v, state=None):
   else:
     state.add(repr(v))
   return state
+
+def spformat(v, state=None):
+  return pformat(v, state).finalize()
