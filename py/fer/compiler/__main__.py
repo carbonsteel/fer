@@ -25,7 +25,7 @@ def log_result_errors(result):
 
 def compile_fer_parser():
   stats, result = compile_parser(PARSER_GRAMMAR, PARSER_MODULE, PARSER_NAME)
-  log.debug(pformat(stats).finalize())
+  log.debug(spformat(stats))
   if not result:
     log_result_errors(result)
     exit(1)
@@ -46,12 +46,12 @@ def parse_fer_input(ferparser):
     r = ParseReader(brf)
     p = ferparser.FerParser(r)
     result = p()
-    log.debug(pformat(r.stats).finalize())
+    log.debug(spformat(r.stats))
     
     if not result:
       log_result_errors(result)
       exit(1)
-    #log.debug(pformat(result.value).finalize())
+    
     log.info("Parsed fer file")
     return result.value
 
@@ -68,4 +68,7 @@ def main():
   log.info("C'est finiii!")
 
 if __name__ == "__main__":
-  main()
+  try:
+    main()
+  except:
+    log.exception("Unhandled exception in __main__.main()")
