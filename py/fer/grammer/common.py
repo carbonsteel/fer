@@ -12,5 +12,3 @@ def id_to_def(id):
   return kebab_to_camel(id)
 def id_to_parse(id):
   return "parse_"+kebab_to_snake(id)
-def id_to_parser(id):
-  return kebab_to_camel(id)+"Parser"

@@ -166,7 +166,7 @@ class GrammarParserCompiler(object):
       W += s
     
     W += "# Main parser"
-    W += "class %s(object):" % id_to_parser(self.parser_name)
+    W += "class _ParserImpl(object):"
     W += "  def __init__(self, reader):"
     W += "    self._reader = reader"
     W += "  def __call__(self):"
@@ -175,3 +175,4 @@ class GrammarParserCompiler(object):
     for g in self.grammar:
       self._w_parser_for_definition(g, first)
       first = False
+    W += "%s = _ParserImpl" % (self.parser_name)
