@@ -8,7 +8,7 @@ from parser import *
 
 log = logger.get_logger()
 
-def compile_parser(grammar_file, parser_file, parser_name):
+def compile_parser(grammar_file, parser_module_name, parser_name):
   result = None
   log.info("Parsing grammar file")
   with io.open(grammar_file, "rb") as f:
@@ -20,7 +20,7 @@ def compile_parser(grammar_file, parser_file, parser_name):
       log.error("Failed to parse grammar file")
     else:
       log.info("Parsed grammar file")
-      with io.open(parser_file, "wb+") as f:
+      with io.open(parser_module_name+".py", "wb+") as f:
         bwf = io.BufferedWriter(f)
         gpc = GrammarParserCompiler(bwf, result, parser_name)
         gpc()
