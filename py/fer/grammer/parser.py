@@ -63,7 +63,8 @@ class ParseResult(object):
     }, {
       "autostr": False,
     })(self, args)
-    self.__wtf__ = id_generator()
+    # ouch, get rid of this dependency defined in the importer (fer.compiler)
+    self.__wtf__ = id_generator() if logger.get_level("INFO") > vars.get("LOGLEVEL") else ""
     # bring value forward 
     if self.parse_kind == "value" and isinstance(self.value, ParseResult):
       self.put(causes=self.value.causes)
