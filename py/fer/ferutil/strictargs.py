@@ -71,14 +71,15 @@ class StrictNamedArguments(object):
         state.add("(")
         for id in instance.__strict_named_attrs__[:-1]:
           state.add(str(id), newline=True)
-          state.add("=")
+          state.add("=", indent=1)
           pformat(getattr(instance, id), state)
-          state.add(",")
+          state.add(",", indent=-1)
         if len(instance.__strict_named_attrs__) > 0:
           id = instance.__strict_named_attrs__[-1]
           state.add(str(id), newline=True)
-          state.add("=")
+          state.add("=", indent=1)
           pformat(getattr(instance, id), state)
+          state.add("", indent=-1)
         state.add(")", indent=-1)
       setattr(instance, "__strict_named_attrs__", all_definition_id)
       setattr(type(instance), "__pformat__", autostr)
