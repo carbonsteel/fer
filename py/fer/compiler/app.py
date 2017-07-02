@@ -5,6 +5,7 @@ import sys
 
 from fer.ferutil import env, id_generator, logger, spformat
 from fer.grammer import compiler, parser
+from . import varcheck 
 
 log = logger.get_logger()
 
@@ -37,9 +38,6 @@ class CompilationProblem(Exception):
         "{}:\n{}\n{}".format(what, str(fcause), str(lcause)))
 
 def compile_parser():
-  log.debug((env.vars.get(EV_PSRGRAMMAR),
-      env.vars.get(EV_PSRMODNAME),
-      env.vars.get(EV_PSRNAME)))
   stats, result = compiler.compile_parser(
       env.vars.get(EV_PSRGRAMMAR),
       env.vars.get(EV_PSRMODNAME),
@@ -62,6 +60,7 @@ def parse_input(modparser):
       raise CompilationProblem("Could not parse fer file", result)
     
     log.info("Parsed fer file")
+    log.trace(spformat(result.value))
     return result.value
 
 def check_variable_semantics(realm):
