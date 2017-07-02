@@ -1,5 +1,6 @@
 # carbonsteel
 bin/
+application.log*
 
 # Visual Studio Code
 .vscode/*

@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-06-28 20:08:59.546000
+# Updated on 2017-07-02 14:20:13.428552
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -61,7 +61,7 @@ ExpressionLookup = Expression
 VariableDomain = Expression
 VariableCodomain = Expression
 # Main parser
-class FerParser(object):
+class _ParserImpl(object):
   def __init__(self, reader):
     self._reader = reader
   def __call__(self):
@@ -72,7 +72,7 @@ class FerParser(object):
       error='expected realm',
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
-        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self.parse_realm_domain_declaration, 1, 2147483647)),
+        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self.parse_realm_domain_declaration, 1, 9223372036854775807)),
         ('', 'expected w in realm', self.parse_w),
         ('', 'expected eof', self._reader.consume_eof),
       ])
@@ -241,7 +241,7 @@ class FerParser(object):
       result_type=Ww,
       error='expected ww',
       parsers=[
-        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 2147483647)),
+        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self.parse_line_comment, 0, 1)),
       ])
   def parse_w(self):
@@ -249,7 +249,7 @@ class FerParser(object):
       result_type=W,
       error='expected w',
       parsers=[
-        ('', 'expected ww in w', lambda: self._reader.parse_many_wp(self.parse_ww, 0, 2147483647)),
+        ('', 'expected ww in w', lambda: self._reader.parse_many_wp(self.parse_ww, 0, 9223372036854775807)),
       ])
   def parse_line_comment(self):
     return self._reader.parse_type(
@@ -257,7 +257,7 @@ class FerParser(object):
       error='expected line-comment',
       parsers=[
         ('', 'expected octothorp in line-comment', self.parse_octothorp),
-        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 2147483647)),
+        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self.parse_line_feed, 0, 1)),
       ])
   def parse_id(self):
@@ -266,7 +266,7 @@ class FerParser(object):
       error='expected id',
       parsers=[
         ('', 'expected w in id', self.parse_w),
-        ('_fimm', 'expected pseudo-letter in id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 2147483647)),
+        ('_fimm', 'expected pseudo-letter in id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
       ],
       result_immediate='_fimm')
   def parse_variable_prefix(self):
@@ -305,9 +305,9 @@ class FerParser(object):
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self.parse_left_curly_bracket),
-        ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 2147483647)),
-        ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 2147483647)),
-        ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 2147483647)),
+        ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_variable_definition, 0, 9223372036854775807)),
+        ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self.parse_inner_domain_declaration, 0, 9223372036854775807)),
+        ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self.parse_transform_definition, 0, 9223372036854775807)),
         ('', 'expected w in domain-definition', self.parse_w),
         ('', 'expected right-curly-bracket in domain-definition', self.parse_right_curly_bracket),
       ])
@@ -360,7 +360,7 @@ class FerParser(object):
       parsers=[
         ('', 'expected w in expression-arguments', self.parse_w),
         ('', 'expected left-parenthesis in expression-arguments', self.parse_left_parenthesis),
-        ('_fimm', 'expected expression-argument in expression-arguments', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 0, 2147483647)),
+        ('_fimm', 'expected expression-argument in expression-arguments', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 0, 9223372036854775807)),
         ('', 'expected w in expression-arguments', self.parse_w),
         ('', 'expected right-parenthesis in expression-arguments', self.parse_right_parenthesis),
       ],
@@ -414,9 +414,10 @@ class FerParser(object):
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in transform-definition', self.parse_w),
         ('', 'expected greater-than-sign in transform-definition', self.parse_greater_than_sign),
-        ('constraints', 'expected variable-constraint in transform-definition', lambda: self._reader.parse_many_wp(self.parse_variable_constraint, 0, 2147483647)),
+        ('constraints', 'expected variable-constraint in transform-definition', lambda: self._reader.parse_many_wp(self.parse_variable_constraint, 0, 9223372036854775807)),
         ('', 'expected w in transform-definition', self.parse_w),
         ('', 'expected dollar-sign in transform-definition', self.parse_dollar_sign),
-        ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 0, 2147483647)),
+        ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self.parse_expression_argument, 0, 9223372036854775807)),
         ('expression', 'expected expression in transform-definition', self.parse_expression),
       ])
+Parser = _ParserImpl

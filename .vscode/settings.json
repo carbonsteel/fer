@@ -16,5 +16,6 @@
     },
     "editor.tabSize": 2,
     "editor.detectIndentation": false,
-    "git.autofetch": false
-}
+    "git.autofetch": false,
+    "python.linting.pylintEnabled": false
+  }
