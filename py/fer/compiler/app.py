@@ -57,6 +57,7 @@ def parse_input(modparser):
     log.trace(spformat(r.stats))
     
     if not result:
+      log.trace(spformat(result))
       raise CompilationProblem("Could not parse fer file", result)
     
     log.info("Parsed fer file")
