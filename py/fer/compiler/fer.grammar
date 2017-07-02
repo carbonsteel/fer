@@ -4,6 +4,8 @@
 . pseudo-letter [a-zA-Z_]
 . dot '..'
 . domain 'domain'
+. from 'from'
+. import 'import
 . left-curly-bracket '{'
 . right-curly-bracket '}'
 . vertical-line '|'
@@ -33,6 +35,7 @@
 . variable-prefix (w dot)
 
 . realm-domain-declaration (w domain domain-declaration@)
+. realm-domain-import (w from )
 . domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
 . domain-definition (
     w left-curly-bracket
