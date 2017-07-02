@@ -165,6 +165,7 @@ class ParseReader(object):
       ])
       if not parser_result:
         parser_errors.coord = self.get_coord()
+        parser_result.error += " (%s)" % (error,)
         return parser_errors
       if len(id) > 0:
         type_args[id] = parser_result.value
@@ -188,10 +189,11 @@ class ParseReader(object):
     errors = ParseResult(error="expected any", coord=self.get_coord())
     for parser in parsers:
       parser_result = self.lookahead(parser)
-      if parser_result:
-        return parser_result
       errors.put(causes=[parser_result])
-    errors.coord = self.get_coord()
+      if not parser_result:
+        continue
+      else:
+        return parser_result
     return errors
 
   def parse_many(self, prefix, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
@@ -359,7 +361,7 @@ class ParseReader(object):
       return error
     if not predicate_result.consume and consumed_count <= minimum_consumed:
       error.put(causes=[
-          ParseResult(error="unexpected byte `%s'" % byte, coord=begin_coord)])
+          ParseResult(error="unexpected byte `%s'" % byte, coord=self.get_coord())])
       return error
     return ParseResult(value=string, coord=begin_coord)
 
@@ -385,10 +387,7 @@ class StringPredicate(object):
     self.index += 1
     return ConsumePredicateResult(consume=p)
   def what(self):
-    wh = "expected byte `%s'" % self.string[max(0, self.index-1)]
-    if len(self.string) > 1:
-      wh += " from string `%s'" % self.string
-    return wh
+    return "expected bytestring `%s'" % self.string
   def __str__(self):
     return """StringPredicate(string=%s)""" % repr(self.string)
 
