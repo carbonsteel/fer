@@ -160,6 +160,14 @@ class GrammarParserCompiler(object):
         repr(KEY_IMMEDIATE), definition.id, repr(ccls)
       )
       is_immediate = True
+    elif ofinstance(definition.value, GrammarAlternativeDefinition):
+      alts = ["self." + id_to_parse(alt) for alt in definition.value.alternative]
+      W += "        (%s, 'expected %s', lambda: self._reader.parse_any([%s]))" % (
+        repr(KEY_IMMEDIATE),
+        "%s, any of %s" % (definition.id,", ".join(definition.value.alternative)),
+        ",".join(alts)
+      )
+      is_immediate = True
     else:
       raise ValueError("this should never happen (unless a new Grammar**Definition is added and not updated here)")
     if is_immediate:
