@@ -2,6 +2,8 @@
 
 ## Compiler steps
 1. Parse source file
+1. 1. Add imports
+1. 1. Look at adding decorators to parser methods to to inline semantics
 1. Verify domain variable semantics
 1. Find code paths
 1. Verify domain transform semantics
