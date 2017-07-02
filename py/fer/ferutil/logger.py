@@ -6,7 +6,7 @@ import sys
 def get_level(level_name):
   try:
     return logbook.lookup_level(level_name)
-  except KeyError:
+  except LookupError:
     return logbook.NOTSET
 
 def get_logger():
