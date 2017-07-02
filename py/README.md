@@ -1,8 +1,8 @@
-# carbonsteel/fer/py
-Python implementation
-
 # Prerequisistes
 pip2 install logbook
+
+# carbonsteel/fer/py
+Python implementation
 
 ## fer/compiler
 Fer compiler
