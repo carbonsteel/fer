@@ -15,7 +15,7 @@ def init():
   logger.init(env.vars.get(EV_LOGLEVEL))
   modmain = sys.modules[__name__]
   setattr(modmain, "log", logger.get_logger())
-  env.vars.trace(modmain.log)
+  env.vars.forall(lambda k, v: modmain.log.debug("{} = {}".format(k, repr(v))))
 
 if __name__ == "__main__":
   try:
