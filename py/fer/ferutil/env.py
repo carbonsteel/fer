@@ -31,9 +31,9 @@ class EnvVars(object):
     self.initialized = True
     self.get = self._get_post
 
-  def trace(self, log):
+  def forall(self, f):
     for k, v in self.vars.items():
-      log.trace("{} = {}".format(k, repr(v)))
+      f(k, v)
 
   def _get_pre(self, name):
     raise ValueError("EnvVars has not been initialized")
