@@ -36,6 +36,13 @@ class GrammarCompositeDefinition(object):
       },
     })(self, args)
 
+class GrammarAlternativeDefinition(object):
+  def __init__(self, **args):
+    StrictNamedArguments({
+      "alternative": {
+      },
+    })(self, args)
+
 class ExpressionQuantifier(object):
   def __init__(self, **args):
     StrictNamedArguments({
@@ -142,12 +149,26 @@ class GrammarParser(object):
         ("", "expected composite postfix",
           lambda: self._reader.consume_token(StringPredicate(")"), 1, 1)),
     ])
+  
+  def parse_alternative(self):
+    return self._reader.parse_type(
+      result_type=GrammarAlternativeDefinition,
+      error="expected alternative",
+      parsers=[
+        ("", "expected alternative prefix",
+          lambda: self._reader.consume_token(StringPredicate("{"), 1, 1)),
+        ("alternative", "expected alternatives",
+          lambda: self._reader.parse_many_wp(self.parse_identifier, 1)),
+        ("", "expected alternative postfix",
+          lambda: self._reader.consume_token(StringPredicate("}"), 1, 1)),
+    ])
 
   def parse_definition_value(self):
     return self._reader.parse_any([
       self.parse_class,
       self.parse_literal,
-      self.parse_composite
+      self.parse_composite,
+      self.parse_alternative
     ])
 
   def parse_definition(self):

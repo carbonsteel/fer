@@ -20,6 +20,9 @@
 . line-feed '\n'
 . line-comment-content [^\n]
 . left-to-right-arrow '->'
+#. a 'poutine'
+#. b 'kebab'
+#. c 'baguette'
 
 
 . ww (ws* line-comment?)
@@ -33,12 +36,14 @@
 . domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
 . domain-definition (
     w left-curly-bracket
-   # domain-parser?@parser
+    # domain-parser?@parser
+    # w alts?@
     variable-definition*@variables
     inner-domain-declaration*@domains
     transform-definition*@transforms
     w right-curly-bracket
   )
+#. alts { a b c }
 #. domain-parser (w percent-sign __grammar@@)
 . inner-domain-declaration (w vertical-line domain-declaration@@)
 . variable-definition (variable-prefix id@ variable-domain?@domain)
