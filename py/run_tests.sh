@@ -1,8 +1,6 @@
 #!/bin/bash
 LogFile='application.log'
 LogDir='.'
-if [ -e  "$LogDir/$LogFile" ];then   
-    timestamp=$(date +%s)
-    mv "$LogDir/$LogFile" "$LogDir/$timestamp.$LogFile"
-fi
-time /usr/bin/python2 -m fer.compiler test.fer 1>>application.log 2>&1
+LogPath="$LogDir/$LogFile"
+/usr/bin/savelog -l -p -d -C -c 5 "$LogPath"
+time /usr/bin/python2 -m fer.compiler tests/basic/test.fer 1>>"$LogPath" 2>&1
