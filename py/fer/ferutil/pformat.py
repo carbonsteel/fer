@@ -12,6 +12,10 @@ class PformatState(object):
       "line": ""
     }
     def fore(s, args):
+      """
+        newline, start element on a new line
+        indent, add to indentation value (will be used on next line)
+      """
       if "newline" in args and args["newline"]:
         if max_depth is None or l["depth"] < max_depth:
           l["lines"].append(l["line"])
