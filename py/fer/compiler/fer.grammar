@@ -5,7 +5,7 @@
 . dot '..'
 . domain 'domain'
 . from 'from'
-. import 'import
+. import 'import'
 . left-curly-bracket '{'
 . right-curly-bracket '}'
 . vertical-line '|'

@@ -10,6 +10,19 @@ from fer.compiler import app
 EV_LOGLEVEL = "LOGLEVEL"
 env.vars.register(EV_LOGLEVEL, "DEBUG", logger.get_level)
 
+# Big problem when Literal definition is not closed
+# https://stackoverflow.com/questions/8315389/how-do-i-print-functions-as-they-are-called
+def tracefunc(frame, event, arg, indent=[0]):
+      if event == "call":
+          indent[0] += 2
+          print("-" * indent[0] + "> call function", frame.f_code.co_name)
+      elif event == "return":
+          print("<" + "-" * indent[0], "exit function", frame.f_code.co_name)
+          indent[0] -= 2
+      return tracefunc
+
+#sys.setprofile(tracefunc)
+
 def init():
   env.vars.init()
   logger.init(env.vars.get(EV_LOGLEVEL))
