@@ -8,7 +8,7 @@ from fer.ferutil import env, logger
 from fer.compiler import app
 
 EV_LOGLEVEL = "LOGLEVEL"
-env.vars.register(EV_LOGLEVEL, "DEBUG", logger.get_level)
+env.vars.register(EV_LOGLEVEL, "ERROR", logger.get_level)
 
 # Big problem when Literal definition is not closed
 # https://stackoverflow.com/questions/8315389/how-do-i-print-functions-as-they-are-called

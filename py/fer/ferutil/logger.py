@@ -7,7 +7,7 @@ def get_level(level_name):
   try:
     return logbook.lookup_level(level_name)
   except LookupError:
-    return logbook.NOTSET
+    return logbook.ERROR
 
 def get_logger():
   frm = inspect.stack()[1]
