@@ -32,26 +32,29 @@ env.vars.register(EV_PSRGRAMMAR, os.path.join(os.path.dirname(__file__), "fer.gr
 
 
 class CompilationProblem(Exception):
-  def __init__(self, what, result):
-    # get the first farthest (first highest line,column) error
-    # which will indicate what was being parsed
-    fcause = result.get_first_deepest_cause()
+  def __init__(self, what, result=None):
+    if result is None:
+      super(CompilationProblem, self).__init__(what)
+    else:
+      # get the first farthest (first highest line,column) error
+      # which will indicate what was being parsed
+      fcause = result.get_first_deepest_cause()
 
-    # get the farthest (last highest line,column) and highest level (high parser depth)
-    # error which will indicate what caused the failure
-    lcause = fcause.get_last_deepest_cause()
+      # get the farthest (last highest line,column) and highest level (high parser depth)
+      # error which will indicate what caused the failure
+      lcause = fcause.get_last_deepest_cause()
 
-    super(CompilationProblem, self).__init__(
-        "{}:\n{}\n{}".format(what, str(fcause), str(lcause)))
+      super(CompilationProblem, self).__init__(
+          "{}:\n{}\n{}".format(what, str(fcause), str(lcause)))
 
 def compile_parser():
-  # stats, result = compiler.compile_parser(
-  #     env.vars.get(EV_PSRGRAMMAR),
-  #     env.vars.get(EV_PSRMODNAME),
-  #     env.vars.get(EV_PSRNAME))
-  # log.trace(spformat(stats))
-  #if not result:
-  #  raise CompilationProblem("Could not compile fer parser", result)
+  stats, result = compiler.compile_parser(
+      env.vars.get(EV_PSRGRAMMAR),
+      env.vars.get(EV_PSRMODNAME),
+      env.vars.get(EV_PSRNAME))
+  log.trace(spformat(stats))
+  if not result:
+    raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 
 def on_realm_import(realm_import_result, modparser):
@@ -63,6 +66,8 @@ def on_realm_import(realm_import_result, modparser):
 
 def parse_input(path, modparser):
   fullpath = os.path.abspath(path)
+  if not os.path.isfile(fullpath):
+    raise CompilationProblem("Expected realm at {}".format(fullpath))
   log.info("Parsing {}", fullpath)
   with io.open(path, "rb") as f:
     brf = io.BufferedReader(f)

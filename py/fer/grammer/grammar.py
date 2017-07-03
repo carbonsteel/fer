@@ -27,6 +27,8 @@ class GrammarDefinition(object):
       },
       "value": {
       },
+      "hook": {
+      }
     })(self, args)
 
 class GrammarCompositeDefinition(object):
@@ -56,11 +58,16 @@ class GrammarParser(object):
     self._reader = reader
 
   IDENTIFIER_CLASS = "a-zA-Z-_"
-  def parse_identifier(self, method=None):
+  METHOD_IDENTIFIER_CLASS = "a-zA-Z_"
+  def _parse_identifier(self, method, identifier_class):
     if method is None:
       method = self._reader.consume_token
-    return method(SimpleClassPredicate(self.IDENTIFIER_CLASS), minimum_consumed=1)
-  
+    return method(SimpleClassPredicate(identifier_class), minimum_consumed=1)
+  def parse_identifier(self, method=None):
+    return self._parse_identifier(method, self.IDENTIFIER_CLASS)
+  def parse_method_identifier(self, method=None):
+    return self._parse_identifier(method, self.METHOD_IDENTIFIER_CLASS)
+
   
   def parse_class(self):
     return self._reader.parse_type(
@@ -171,6 +178,18 @@ class GrammarParser(object):
       self.parse_alternative
     ])
 
+  def parse_definition_hook(self):
+    return self._reader.parse_type(
+      result_type=str,
+      error="expected hook",
+      result_immediate="_",
+      parsers=[
+        ("", "expected hook prefix",
+          lambda: self._reader.consume_token(StringPredicate(":"), 1, 1)),
+        ("_", "expected hook",
+          self.parse_method_identifier),
+    ])
+
   def parse_definition(self):
     return self._reader.parse_type(
       result_type=GrammarDefinition,
@@ -180,6 +199,8 @@ class GrammarParser(object):
           self.parse_identifier),
         ("value", "expected definition value",
           self.parse_definition_value),
+        ("hook", "expected definition hook",
+          lambda: self._reader.parse_any([self.parse_definition_hook, self._reader.parse_nothing])),
     ])
 
   def parse_definition_prefix(self):

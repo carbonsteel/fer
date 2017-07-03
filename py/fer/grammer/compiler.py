@@ -98,7 +98,7 @@ class GrammarParserCompiler(object):
     is_immediate = False
     W = self.get_writer()
     W += "  def %s(self):" % id_to_parse(definition.id)
-    W += "    return self._reader.parse_type("
+    W += "    value = self._reader.parse_type("
     W += "      result_type=%s," % id_to_def(definition.id)
     W += "      error='expected %s'," % definition.id
     W += "      parsers=["
@@ -175,6 +175,9 @@ class GrammarParserCompiler(object):
       W += "      result_immediate=%s)" % repr(KEY_IMMEDIATE)
     else:
       W += "      ])"
+    if definition.hook is not None:
+      W += "    value = self.interceptor.trigger(self.%s, value)" % (definition.hook,)
+    W += "    return value"
 
   def __call__(self):
     W = self.get_writer()
@@ -184,6 +187,7 @@ class GrammarParserCompiler(object):
     W += "from fer.grammer import *"
     W += "# Classes"
     synonyms = []
+    hooks = []
     for g in self.grammar:
       if ofinstance(g.value, GrammarCompositeDefinition):
         synonym = self._w_class_for_composite_definition(g)
@@ -193,13 +197,20 @@ class GrammarParserCompiler(object):
       else:
         W += "%s = str" % id_to_def(g.id)
       self.known_definitions[g.id] = g.value
+      if g.hook is not None:
+        hooks.append(g.hook)
     for s in synonyms:
       W += s
     
     W += "# Main parser"
     W += "class _ParserImpl(object):"
-    W += "  def __init__(self, reader):"
+    counter = 0
+    for hook in hooks:
+      W += "  %s = %d" % (hook, counter)
+      counter += 1
+    W += "  def __init__(self, reader, interceptor):"
     W += "    self._reader = reader"
+    W += "    self.interceptor = interceptor"
     W += "  def __call__(self):"
     W += "    return self.%s()" % id_to_parse(self.grammar[0].id)
     first = True
