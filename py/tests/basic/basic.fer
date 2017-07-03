@@ -1,7 +1,7 @@
-#from Prelude {
-#  import Natural
-#  i NaturalMath
-#}
+from /Prelude {
+  import Natural
+  i NaturalMath
+}
 
 domain Animal {
   | getLegCount -> Natural {  }

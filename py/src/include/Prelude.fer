@@ -1,4 +1,4 @@
-from Universe/Naturals import {
+from /Universe/Naturals {
   i Natural
   i NaturalMath
 }

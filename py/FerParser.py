@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-03 15:07:09.805241
+# Updated on 2017-07-03 17:06:46.080070
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -38,8 +38,7 @@ LineComment = str
 VariablePrefix = str
 class RealmPath(object):
   def __init__(self, **args):
-    StrictNamedArguments({'realm': {}, 'root': {}, '_fcrd': {}, 'subrealms': {}})(self, args)
-RealmPathRoot = str
+    StrictNamedArguments({'path': {}, 'local': {}, '_fcrd': {}})(self, args)
 class RealmPathBranch(object):
   def __init__(self, **args):
     StrictNamedArguments({'realm': {}, '_fcrd': {}})(self, args)
@@ -81,7 +80,8 @@ VariableDomain = Expression
 VariableCodomain = Expression
 # Main parser
 class _ParserImpl(object):
-  on_realm_import = 0
+  on_realm_path = 0
+  on_realm_domain_import = 1
   def __init__(self, reader, interceptor):
     self._reader = reader
     self.interceptor = interceptor
@@ -386,19 +386,10 @@ class _ParserImpl(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in realm-path', self._parse_w),
-        ('root', 'expected realm-path-root in realm-path', self._parse_realm_path_root),
-        ('realm', 'expected id in realm-path', self._parse_id),
-        ('subrealms', 'expected realm-path-branch in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 0, 9223372036854775807)),
+        ('local', 'expected dot in realm-path', lambda: self._reader.parse_many_wp(self._parse_dot, 0, 1)),
+        ('path', 'expected realm-path-branch in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 1, 9223372036854775807)),
       ])
-    return value
-  def _parse_realm_path_root(self):
-    value = self._reader.parse_type(
-      result_type=RealmPathRoot,
-      error='expected realm-path-root',
-      parsers=[
-        ('_fimm', 'expected realm-path-root, any of solidus, dot', lambda: self._reader.parse_any([self._parse_solidus,self._parse_dot]))
-      ],
-      result_immediate='_fimm')
+    value = self.interceptor.trigger(self.on_realm_path, value)
     return value
   def _parse_realm_path_branch(self):
     value = self._reader.parse_type(
@@ -429,14 +420,14 @@ class _ParserImpl(object):
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected from in realm-domain-import', self._parse_from),
-        ('realm', 'expected id in realm-domain-import', self._parse_id),
+        ('realm', 'expected realm-path in realm-domain-import', self._parse_realm_path),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected left-curly-bracket in realm-domain-import', self._parse_left_curly_bracket),
         ('domains', 'expected import-domain in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain, 1, 9223372036854775807)),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected right-curly-bracket in realm-domain-import', self._parse_right_curly_bracket),
       ])
-    value = self.interceptor.trigger(self.on_realm_import, value)
+    value = self.interceptor.trigger(self.on_realm_domain_import, value)
     return value
   def _parse_import_domain(self):
     value = self._reader.parse_type(

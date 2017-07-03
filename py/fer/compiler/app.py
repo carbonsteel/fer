@@ -3,7 +3,7 @@ import io
 import os
 import sys
 
-from fer.ferutil import env, id_generator, logger, spformat
+from fer.ferutil import env, id_generator, logger, spformat, pformat_path
 from fer.grammer import common, compiler, interceptor, parser
 from . import varcheck 
 
@@ -57,36 +57,72 @@ def compile_parser():
     raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 
-def on_realm_import(realm_import_result, modparser):
+def on_realm_path(realm_path, nocontext):
+  if realm_path:
+    parts = realm_path.value
+    root = parts.local[0] if len(parts.local) > 1 else "/"
+    return parser.ParseResult(
+        value=root + "/".join(branch.realm for branch in parts.path),
+        causes=[realm_path],
+        coord=realm_path.coord)
+  else:
+    return realm_path
+
+def on_realm_domain_import(realm_import_result, modparser):
   if realm_import_result:
     #log.debug(spformat(realm_import_result.value))
     imp = realm_import_result.value
-    parse_input(common.realm_to_file(imp.realm), modparser)
+    return parse_realm(imp, modparser)
   return realm_import_result
 
-def parse_input(path, modparser):
-  fullpath = os.path.abspath(path)
-  if not os.path.isfile(fullpath):
-    raise CompilationProblem("Expected realm at {}".format(fullpath))
-  log.info("Parsing {}", fullpath)
-  with io.open(path, "rb") as f:
+def realm_to_file(path, realm):
+  return os.path.join(path, realm + ".fer")
+
+def find_realm_in_path(realm):
+  dirs = env.vars.get(EV_INCPATH)
+  # first dir is assumed to be intended local directory (not necessarily '.')
+  log.trace(realm)
+  if realm[0] == ".":
+    dirs = [dirs[0]]
+  else: # == '/'
+    # strip leading / otherwise join assumes it is root
+    realm = realm[1:]
+  for dir in dirs:
+    path = realm_to_file(dir, realm)
+    log.debug("Looking for realm {} at {}", realm, pformat_path(path))
+    if os.path.isfile(path):
+      return path
+  return None
+
+def parse_realm(realm_import, modparser):
+  fullpath = find_realm_in_path(realm_import.realm)
+  pretty_fullpath = pformat_path(fullpath)
+  if fullpath is None:
+    return parser.ParseResult(
+        error="Could not find realm in path : {}".format(realm_import.realm),
+        coord=realm_import._fcrd)
+  log.info("Parsing {}", pretty_fullpath)
+  with io.open(fullpath, "rb") as f:
     brf = io.BufferedReader(f)
-    r = parser.ParseReader(brf)
+    r = parser.ParseReader(brf, fullpath)
     i = interceptor.Interceptor()
     p_class = getattr(modparser, env.vars.get(EV_PSRNAME))
-    i.register(p_class.on_realm_import, on_realm_import, modparser)
+    i.register(p_class.on_realm_path, on_realm_path)
+    i.register(p_class.on_realm_domain_import, on_realm_domain_import, modparser)
     p = p_class(r, i)
     result = p()
     log.trace(spformat(r.stats))
     
     if not result:
       log.trace(spformat(result))
-      raise CompilationProblem(
-          "Could not parse {}".format(fullpath), result)
+      return parser.ParseResult(
+          error="Could not parse realm {}".format(realm_import.realm),
+          causes=[result], coord=realm_import._fcrd)
     
-    log.info("Parsed {}", fullpath)
+    log.info("Parsed {}", pretty_fullpath)
     log.trace(spformat(result.value))
-    return result.value
+    result.causes=[]
+    return result
 
 def check_variable_semantics(realm):
   result = varcheck.check_realm(realm)
@@ -103,8 +139,11 @@ def main():
       exit(1)
 
     modparser = compile_parser()
-    realm = parse_input(sys.argv[1], modparser)
-    something = check_variable_semantics(realm)
+    asked_realm = modparser.RealmDomainImport(realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord())
+    result = parse_realm(asked_realm, modparser)
+    if not result:
+      raise CompilationProblem("Could not load realm", result)
+    something = check_variable_semantics(result.value)
 
     log.info("C'est finiii!")
   except CompilationProblem as p:

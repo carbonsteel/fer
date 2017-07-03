@@ -1,4 +1,8 @@
-import typecheck
+from __future__ import absolute_import
+import os
+
+from . import typecheck
+from . import env
 
 class PformatState(object):
   def __init__(self):
@@ -82,3 +86,10 @@ def pformat(v, state=None):
 
 def spformat(v, state=None):
   return pformat(v, state).finalize()
+
+EV_PATHREL="PATHREL"
+env.vars.register(EV_PATHREL, ".")
+def pformat_path(path):
+  if path:
+    return os.path.relpath(path, env.vars.get(EV_PATHREL))
+  return path

@@ -19,6 +19,10 @@ class ParserCoord(object):
         "default": 1,
         "type": int,
       },
+      "file": {
+        "default": "",
+        "type": str
+      }
     })(self, args)
   def __str__(self):
     return "%d:%d" % (self.line, self.column)
@@ -64,7 +68,7 @@ class ParseResult(object):
       "autostr": False,
     })(self, args)
     # ouch, get rid of this dependency defined in the importer (fer.compiler)
-    self.__wtf__ = id_generator() if logger.get_level("INFO") > vars.get("LOGLEVEL") else ""
+    self.__wtf__ = id_generator() + "@" if logger.get_level("INFO") > vars.get("LOGLEVEL") else ""
     # bring value forward 
     if self.parse_kind == "value" and isinstance(self.value, ParseResult):
       self.put(causes=self.value.causes)
@@ -79,14 +83,25 @@ class ParseResult(object):
       c.__pformat__(state)
     state.add("", indent=-1)
   def __str__(self):
+    path = ""
+    if len(self.coord.file) > 1:
+      path = pformat_path(self.coord.file) + "@"
     if self.parse_kind == "value":
-      return "%s@%d,%d got : " % (self.__wtf__, self.coord.line, self.coord.column)
+      return "%s%s%d,%d got : " % (
+          path, self.__wtf__,
+          self.coord.line, self.coord.column)
     elif self.parse_kind == "error":
-      return "%s@%d,%d : %s" % (self.__wtf__, self.coord.line, self.coord.column, self.error)
+      return "%s%s%d,%d : %s" % (
+          path, self.__wtf__,
+          self.coord.line, self.coord.column, self.error)
   def get_first_deepest_cause(self):
+    return self._get_first_deepest_cause(self.coord.file)
+  def _get_first_deepest_cause(self, file):
     deepest = self
     for c in self.causes:
-      dpst = c.get_first_deepest_cause()
+      if c.coord.file != file:
+        continue
+      dpst = c.get_first_deepest_cause(file)
       if dpst.coord > deepest.coord:
         deepest = dpst
     return deepest
@@ -113,8 +128,8 @@ class ParseResult(object):
     self.causes.extend(that.causes)
 
 class ParseReader(object):
-  def __init__(self, stream):
-    self.current_coord = ParserCoord()
+  def __init__(self, stream, stream_name):
+    self.current_coord = ParserCoord(file=stream_name)
     self._stream = stream
     self.stats = {
       "total_peeks":0,

@@ -16,7 +16,7 @@ def compile_parser(grammar_file, parser_module_name, parser_name):
   log.info("Parsing grammar file")
   with io.open(grammar_file, "rb") as f:
     brf = io.BufferedReader(f)
-    r = ParseReader(brf)
+    r = ParseReader(brf, grammar_file)
     gp = GrammarParser(r)
     result = gp()
     if not result:

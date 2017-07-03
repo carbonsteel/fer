@@ -40,18 +40,17 @@
 
 . id (w pseudo-letter+@@)
 . variable-prefix (w dot)
-. realm-path (w realm-path-root@root id@realm realm-path-branch*@subrealms)
-. realm-path-root { solidus dot }
+. realm-path (w dot?@local realm-path-branch+@path) : on_realm_path
 . realm-path-branch ( solidus id@realm )
 
 . realm-domain-declaration (w domain domain-declaration@)
 . realm-domain-import (
     w from 
-    id@realm
+    realm-path@realm
     w left-curly-bracket
     import-domain+@domains
     w right-curly-bracket
-  ) : on_realm_import
+  ) : on_realm_domain_import
 . import-domain (w import id@)
 . domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
 . domain-definition (

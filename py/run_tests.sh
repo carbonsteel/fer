@@ -3,4 +3,5 @@ LogFile='application.log'
 LogDir='.'
 LogPath="$LogDir/$LogFile"
 /usr/bin/savelog -l -p -d -C -c 5 "$LogPath"
-time /usr/bin/python2 -m fer.compiler tests/basic/test.fer 1>>"$LogPath" 2>&1
+export INCPATH='tests/basic;src/include'
+time /usr/bin/python2 -m fer.compiler basic 1>>"$LogPath" 2>&1
