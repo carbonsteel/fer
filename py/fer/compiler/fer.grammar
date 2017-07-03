@@ -1,11 +1,16 @@
-. realm (realm-domain-declaration+@domains w) # root is first definition
+. realm (  # root is first definition
+    realm-domain-import*@imports
+    realm-domain-declaration+@domains
+    w) # allow whitespace after file content
 
 . ws [ \n]
 . pseudo-letter [a-zA-Z_]
 . dot '..'
-. domain 'domain'
+. domain-literal-full 'domain'
+. domain-literal-min 'd'
 . from 'from'
-. import 'import'
+. import-literal-full 'import'
+. import-literal-min 'i'
 . left-curly-bracket '{'
 . right-curly-bracket '}'
 . vertical-line '|'
@@ -26,6 +31,8 @@
 #. b 'kebab'
 #. c 'baguette'
 
+. domain { domain-literal-full domain-literal-min }
+. import { import-literal-full import-literal-min }
 
 . ww (ws* line-comment?)
 . w (ww*)
@@ -33,9 +40,19 @@
 
 . id (w pseudo-letter+@@)
 . variable-prefix (w dot)
+. realm-path (w realm-path-root@root id@realm realm-path-branch*@subrealms)
+. realm-path-root { solidus dot }
+. realm-path-branch ( solidus id@realm )
 
 . realm-domain-declaration (w domain domain-declaration@)
-. realm-domain-import (w from )
+. realm-domain-import (
+    w from 
+    id@realm
+    w left-curly-bracket
+    import-domain+@domains
+    w right-curly-bracket
+  ) : on_realm_import
+. import-domain (w import id@)
 . domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
 . domain-definition (
     w left-curly-bracket

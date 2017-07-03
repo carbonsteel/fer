@@ -1,10 +1,13 @@
-from ../Natural import Natural, NaturalMath
+from Prelude {
+  import Natural
+  i NaturalMath
+}
 
 domain Animal {
   | getLegCount -> Natural {  }
 }
 
-domain Monopod {
+d Monopod {
   | getLegCount -> Natural {
     >$ One
   } 
@@ -12,19 +15,19 @@ domain Monopod {
 
 
 
-domain DomainMath {
+d DomainMath {
   | implements {
     . interface:Domain
   }
 }
 
-domain Zoologist {
+d Zoologist {
   | countLegs -> Natural {
     . animal:Animal
     >$ animal/getLegCount()
   }
 }
 
-domain Main {
+d Main {
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }

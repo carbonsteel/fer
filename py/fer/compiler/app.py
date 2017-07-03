@@ -4,7 +4,7 @@ import os
 import sys
 
 from fer.ferutil import env, id_generator, logger, spformat
-from fer.grammer import compiler, parser
+from fer.grammer import common, compiler, interceptor, parser
 from . import varcheck 
 
 log = logger.get_logger()
@@ -16,6 +16,13 @@ def _tmpdir_init(tmpdir):
   return tmpdir
 EV_TMPDIR = "TMPDIR"
 env.vars.register(EV_TMPDIR, "/tmp", _tmpdir_init)
+
+def _incpath_init(incpath):
+  return [os.path.abspath(dir) for dir in incpath.split(";")]
+
+EV_INCPATH = "INCPATH"
+env.vars.register(EV_INCPATH, ".", _incpath_init)
+
 EV_PSRNAME = "PSRNAME" 
 env.vars.register(EV_PSRNAME, "Parser")
 EV_PSRMODNAME = "PSRMODNAME" 
@@ -38,29 +45,41 @@ class CompilationProblem(Exception):
         "{}:\n{}\n{}".format(what, str(fcause), str(lcause)))
 
 def compile_parser():
-  stats, result = compiler.compile_parser(
-      env.vars.get(EV_PSRGRAMMAR),
-      env.vars.get(EV_PSRMODNAME),
-      env.vars.get(EV_PSRNAME))
-  log.trace(spformat(stats))
-  if not result:
-    raise CompilationProblem("Could not compile fer parser", result)
+  # stats, result = compiler.compile_parser(
+  #     env.vars.get(EV_PSRGRAMMAR),
+  #     env.vars.get(EV_PSRMODNAME),
+  #     env.vars.get(EV_PSRNAME))
+  # log.trace(spformat(stats))
+  #if not result:
+  #  raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 
-def parse_input(modparser):
-  log.info("Parsing fer file")
-  with io.open(sys.argv[1], "rb") as f:
+def on_realm_import(realm_import_result, modparser):
+  if realm_import_result:
+    #log.debug(spformat(realm_import_result.value))
+    imp = realm_import_result.value
+    parse_input(common.realm_to_file(imp.realm), modparser)
+  return realm_import_result
+
+def parse_input(path, modparser):
+  fullpath = os.path.abspath(path)
+  log.info("Parsing {}", fullpath)
+  with io.open(path, "rb") as f:
     brf = io.BufferedReader(f)
     r = parser.ParseReader(brf)
-    p = getattr(modparser, env.vars.get(EV_PSRNAME))(r)
+    i = interceptor.Interceptor()
+    p_class = getattr(modparser, env.vars.get(EV_PSRNAME))
+    i.register(p_class.on_realm_import, on_realm_import, modparser)
+    p = p_class(r, i)
     result = p()
     log.trace(spformat(r.stats))
     
     if not result:
       log.trace(spformat(result))
-      raise CompilationProblem("Could not parse fer file", result)
+      raise CompilationProblem(
+          "Could not parse {}".format(fullpath), result)
     
-    log.info("Parsed fer file")
+    log.info("Parsed {}", fullpath)
     log.trace(spformat(result.value))
     return result.value
 
@@ -79,7 +98,7 @@ def main():
       exit(1)
 
     modparser = compile_parser()
-    realm = parse_input(modparser)
+    realm = parse_input(sys.argv[1], modparser)
     something = check_variable_semantics(realm)
 
     log.info("C'est finiii!")
