@@ -33,19 +33,27 @@ env.vars.register(EV_PSRGRAMMAR, os.path.join(os.path.dirname(__file__), "fer.gr
 
 class CompilationProblem(Exception):
   def __init__(self, what, result=None):
-    if result is None:
-      super(CompilationProblem, self).__init__(what)
-    else:
+    if result is not None:
+      log.trace("Extracting causes")
       # get the first farthest (first highest line,column) error
-      # which will indicate what was being parsed
-      fcause = result.get_first_deepest_cause()
+      # which will indicate what was being parsed (per file)
+      fcauses = result.get_first_deepest_cause()
 
       # get the farthest (last highest line,column) and highest level (high parser depth)
-      # error which will indicate what caused the failure
-      lcause = fcause.get_last_deepest_cause()
+      # error which will indicate what caused the failure (for each file or each cause)
+      for file, fcause in fcauses.items():
+        if fcause.parse_kind != "error":
+          continue
+        log.trace("fcause: " + str(fcause))
+        what += "\n" + str(fcause)
+        lcauses = fcause.get_last_deepest_cause()
+        for lfile, lcause in lcauses.items():
+          if lcause[0].parse_kind != "error":
+            continue
+          log.trace("- lcause: " + str(lcause[0]))
+          what += "\n- " + str(lcause[0])
 
-      super(CompilationProblem, self).__init__(
-          "{}:\n{}\n{}".format(what, str(fcause), str(lcause)))
+    super(CompilationProblem, self).__init__(what)
 
 def compile_parser():
   stats, result = compiler.compile_parser(
@@ -85,6 +93,8 @@ def find_realm_in_path(realm):
   if realm[0] == ".":
     dirs = [dirs[0]]
   else: # == '/'
+    # remove local directory
+    dirs = dirs[1:]
     # strip leading / otherwise join assumes it is root
     realm = realm[1:]
   for dir in dirs:
@@ -117,11 +127,11 @@ def parse_realm(realm_import, modparser):
       log.trace(spformat(result))
       return parser.ParseResult(
           error="Could not parse realm {}".format(realm_import.realm),
-          causes=[result], coord=realm_import._fcrd)
+          causes=[result], coord=result.coord)
     
     log.info("Parsed {}", pretty_fullpath)
     log.trace(spformat(result.value))
-    result.causes=[]
+    #result.causes=[]
     return result
 
 def check_variable_semantics(realm):
@@ -142,7 +152,7 @@ def main():
     asked_realm = modparser.RealmDomainImport(realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord())
     result = parse_realm(asked_realm, modparser)
     if not result:
-      raise CompilationProblem("Could not load realm", result)
+      raise CompilationProblem("Could not load input", result)
     something = check_variable_semantics(result.value)
 
     log.info("C'est finiii!")

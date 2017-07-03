@@ -95,28 +95,27 @@ class ParseResult(object):
           path, self.__wtf__,
           self.coord.line, self.coord.column, self.error)
   def get_first_deepest_cause(self):
-    return self._get_first_deepest_cause(self.coord.file)
-  def _get_first_deepest_cause(self, file):
-    deepest = self
+    return self._get_first_deepest_cause({})
+  def _get_first_deepest_cause(self, files):
     for c in self.causes:
-      if c.coord.file != file:
-        continue
-      dpst = c.get_first_deepest_cause(file)
-      if dpst.coord > deepest.coord:
-        deepest = dpst
-    return deepest
+      if c.coord.file not in files:
+        files[c.coord.file] = c
+      fs = c._get_first_deepest_cause(files)
+      if fs[c.coord.file].coord > files[c.coord.file].coord:
+        files[c.coord.file] = fs[c.coord.file]
+    return files
   def get_last_deepest_cause(self):
-    d, _ = self._get_last_deepest_cause()
-    return d
-  def _get_last_deepest_cause(self, level=0):
-    deepest = self
-    lvl = level
+    return self._get_last_deepest_cause(0, {})
+  def _get_last_deepest_cause(self, level, files):
     for c in self.causes:
-      dpst, lpst = c._get_last_deepest_cause(level+1)
-      if dpst.coord > deepest.coord or (dpst.coord == deepest.coord and lpst > lvl):
-        deepest = dpst
-        lvl = lpst
-    return (deepest, lvl)
+      if c.coord.file not in files:
+        files[c.coord.file] = (c, level)
+      fs = c._get_last_deepest_cause(level+1, files)
+      if (fs[c.coord.file][0].coord > files[c.coord.file][0].coord
+          or (fs[c.coord.file][0].coord == files[c.coord.file][0].coord
+              and fs[c.coord.file][1] > files[c.coord.file][1])):
+        files[c.coord.file] = fs[c.coord.file]
+    return files
   def put(self, **args):
     that = Dummy()
     StrictNamedArguments({

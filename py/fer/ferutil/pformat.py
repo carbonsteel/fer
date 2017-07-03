@@ -88,7 +88,7 @@ def spformat(v, state=None):
   return pformat(v, state).finalize()
 
 EV_PATHREL="PATHREL"
-env.vars.register(EV_PATHREL, ".")
+env.vars.register(EV_PATHREL, ".", os.path.abspath)
 def pformat_path(path):
   if path:
     return os.path.relpath(path, env.vars.get(EV_PATHREL))
