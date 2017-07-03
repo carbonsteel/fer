@@ -65,7 +65,7 @@ def compile_parser():
     raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 
-def on_realm_path(realm_path, nocontext):
+def stringnify_realm_path(realm_path, nocontext):
   if realm_path:
     parts = realm_path.value
     root = parts.local[0] if len(parts.local) > 1 else "/"
@@ -76,11 +76,14 @@ def on_realm_path(realm_path, nocontext):
   else:
     return realm_path
 
-def on_realm_domain_import(realm_import_result, modparser):
+def import_realm(realm_import_result, modparser):
   if realm_import_result:
     #log.debug(spformat(realm_import_result.value))
     imp = realm_import_result.value
-    return parse_realm(imp, modparser)
+    import_result = parse_realm(imp, modparser)
+    if not import_result:
+      return import_result
+    imp._compiler_imported = import_result.value
   return realm_import_result
 
 def realm_to_file(path, realm):
@@ -117,8 +120,8 @@ def parse_realm(realm_import, modparser):
     r = parser.ParseReader(brf, fullpath)
     i = interceptor.Interceptor()
     p_class = getattr(modparser, env.vars.get(EV_PSRNAME))
-    i.register(p_class.on_realm_path, on_realm_path)
-    i.register(p_class.on_realm_domain_import, on_realm_domain_import, modparser)
+    i.register(p_class.on_realm_path, stringnify_realm_path)
+    i.register(p_class.on_realm_domain_import, import_realm, modparser)
     p = p_class(r, i)
     result = p()
     log.trace(spformat(r.stats))
@@ -135,6 +138,7 @@ def parse_realm(realm_import, modparser):
     return result
 
 def check_variable_semantics(realm):
+  log.debug(spformat(realm))
   result = varcheck.check_realm(realm)
   if not result:
     raise CompilationProblem("Could not verify domain variable semantics", result)
