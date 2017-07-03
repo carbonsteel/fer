@@ -1,6 +1,6 @@
 . realm (  # root is first definition
     realm-domain-import*@imports
-    realm-domain-declaration+@domains
+    realm-domain-declaration*@domains
     w) # allow whitespace after file content
 
 . ws [ \n]
