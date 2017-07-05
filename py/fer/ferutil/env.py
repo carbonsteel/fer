@@ -13,7 +13,7 @@ class EnvVars(object):
       try:
         tmp = self.vars[name]["init"](val)
       except TypeError:
-        log.exception("init function for {} could not be called".format(name))
+        log.exception("init function for {} could not be called", name)
         raise
       else:
         val = tmp
