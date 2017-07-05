@@ -1,6 +1,9 @@
+from __future__ import absolute_import
 
 from fer.ferutil import *
 from fer.grammer import ParseResult
+from .loader import RealmLoader
+
 
 log = logger.get_logger()
 
@@ -16,9 +19,14 @@ class VariableAnalysis(object):
     self.interceptor.register(parser_class.on_domain_declaration_id, self.add_domain_id_partial)
 
   def add_domain_id_import(self, realm_import, nocontext):
-    #for domain_import in realm_import.domains:
-    #  if id in self.current_scope:
-    #    return ParseResult(error="Domain ")
+    if realm_import:
+      for d_import in realm_import.value.domains:
+        d_name = d_import.domain if d_import.as_domain is None else d_import.as_domain
+        if d_name in self.current_scope:
+          return ParseResult(error="Can not redefine domain named : " + d_name,
+              coord=d_import._fcrd)
+        else:
+          self.current_scope[d_name] = getattr(realm_import.value, RealmLoader.PARSED_IMPORTED_ATTR, None)
     return realm_import
 
   def add_domain_id_partial(self, id, nocontext):

@@ -35,6 +35,7 @@ def find_realm_in_path(realm):
   return None
 
 class RealmLoader(object):
+  PARSED_IMPORTED_ATTR = "_RealmLoader_imported"
   def __init__(self, interceptor, parser_class):
     self.interceptor = interceptor
     self.parser_class = parser_class
@@ -59,7 +60,7 @@ class RealmLoader(object):
       import_result = self.parse_realm(imp)
       if not import_result:
         return import_result
-      imp._compiler_imported = import_result.value
+      setattr(imp, self.PARSED_IMPORTED_ATTR, import_result.value)
     return realm_import_result
 
   def parse_realm(self, realm_import):
