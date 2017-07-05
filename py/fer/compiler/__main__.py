@@ -36,7 +36,7 @@ if __name__ == "__main__":
   except:
     print("Catastrohpic exception during initialization", file=sys.stderr)
     traceback.print_exc(10, sys.stderr)
-    sys.exit(2)
+    sys.exit(16)
 
   try:
     ec = app.main()
@@ -44,4 +44,4 @@ if __name__ == "__main__":
       sys.exit(ec)
   except:
     sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
-    sys.exit(1)
+    sys.exit(8)
