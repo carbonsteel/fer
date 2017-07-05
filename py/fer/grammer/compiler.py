@@ -62,10 +62,10 @@ class GrammarParserCompiler(object):
       if d["anchor"] is None: # there was no anchor
         continue
       elif d["anchor"] == "": # there was one anchor -> the name is the id
-        name = kebab_to_snake(d["identifier"])
+        name = id_to_var(d["identifier"])
         members[name] = {}
       elif d["anchor"] == "@": # two anchors -> the value is bound to the parent
-        name = kebab_to_camel(d["identifier"])
+        name = id_to_def(d["identifier"])
         synonym_of = name
         synonym_unicity = d["quantifier"][0] == d["quantifier"][1] == 1
         try:
@@ -124,12 +124,12 @@ class GrammarParserCompiler(object):
         if e["anchor"] is None: # there was no anchor
           anchor = ""
         elif e["anchor"] == "": # there was one anchor -> the name is the id
-          anchor = kebab_to_snake(e["identifier"])
+          anchor = id_to_var(e["identifier"])
         elif e["anchor"] == "@": # two anchors -> the value is bound to the parent
           anchor = KEY_IMMEDIATE
           is_immediate = True
         else:
-          anchor = e["anchor"] # there was a named anchor -> use that as the id
+          anchor = id_to_var(e["anchor"]) # there was a named anchor -> use that as the id
         inner_parse = None
         if e["quantifier"][0] == e["quantifier"][1] == 1:
           inner_parse = "self." + id_to_parse(e["identifier"])
