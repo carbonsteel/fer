@@ -11,6 +11,7 @@
 . from 'from'
 . import-literal-full 'import'
 . import-literal-min 'i'
+. as 'as'
 . left-curly-bracket '{'
 . right-curly-bracket '}'
 . vertical-line '|'
@@ -51,8 +52,10 @@
     import-domain+@domains
     w right-curly-bracket
   ) : on_realm_domain_import
-. import-domain (w import id@)
-. domain-declaration (id@ variable-codomain?@codomain domain-definition?@domain)
+. import-domain (w import id@ import-domain-as?@as)
+. import-domain-as (w as id@@)
+. domain-declaration (domain-declaration-id@id variable-codomain?@codomain domain-definition?@domain)
+. domain-declaration-id (id@@) : on_domain_declaration_id
 . domain-definition (
     w left-curly-bracket
     # domain-parser?@parser
