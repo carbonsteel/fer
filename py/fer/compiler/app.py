@@ -71,6 +71,8 @@ def main():
     i = interceptor.Interceptor()
 
     loader = psrhook.loader.RealmLoader(i, parser_class)
+    varcheck = psrhook.varcheck.VariableAnalysis(i, parser_class)
+
     asked_realm = modparser.RealmDomainImport(realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord())
     result = loader.parse_realm(asked_realm)
     if not result:
