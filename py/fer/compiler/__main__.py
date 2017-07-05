@@ -33,10 +33,15 @@ def init():
 if __name__ == "__main__":
   try:
     init()
-    try:
-      app.main()
-    except:
-      sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
-  except Exception as e:
+  except:
     print("Catastrohpic exception during initialization", file=sys.stderr)
     traceback.print_exc(10, sys.stderr)
+    sys.exit(2)
+
+  try:
+    ec = app.main()
+    if ec is not None and ec > 0:
+      sys.exit(ec)
+  except:
+    sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
+    sys.exit(1)
