@@ -1,16 +1,32 @@
+from __future__ import absolute_import
+import traceback
+
+from .parser import ParseResult, ParserCoord
+from fer.ferutil import of, logger
+
+log = logger.get_logger()
 
 class Interceptor(object):
   def __init__(self):
     self.calls = {}
   def register(self, call_id, f, context=None):
+    call = (f, context, traceback.format_stack())
     if call_id in self.calls:
-      self.calls[call_id].append((f,context))
+      self.calls[call_id].append(call)
     else:
-      self.calls[call_id] = [(f,context)]
+      self.calls[call_id] = [call]
 
   def trigger(self, call_id, value):
-    for f, context in self.calls[call_id]:
-      value = f(value, context)
+    for f, context, reg_stack in self.calls[call_id]:
+      try:
+        value = of(ParseResult)(f(value, context))
+      except TypeError:
+        value = ParseResult(
+            error="Expected ParseResult from callback registered at:\n"
+                + "".join(reg_stack[:-1]),
+                #+ traceback.format_exc(10),
+            coord=ParserCoord.nil())
+        break
     return value  
 
 # class Descriptor(object):

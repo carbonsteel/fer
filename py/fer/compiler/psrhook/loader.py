@@ -45,7 +45,7 @@ class RealmLoader(object):
   def stringnify_realm_path(self, realm_path, nocontext):
     if realm_path:
       parts = realm_path.value
-      root = parts.local[0] if len(parts.local) > 1 else "/"
+      root = parts.local if parts.local is not None else "/"
       return parser.ParseResult(
           value=root + "/".join(branch.realm for branch in parts.path),
           causes=[realm_path],

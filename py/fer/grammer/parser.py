@@ -8,6 +8,12 @@ from fer.ferutil import *
 log = logger.get_logger()
 
 class ParserCoord(object):
+  NIL_STR = "!nil!" # must not be a valid path
+  @classmethod
+  def nil(cls):
+    """ For implementation errors, allows ParseResults to float to the top. """
+    return ParserCoord(line=sys.maxsize, column=0, file=cls.NIL_STR)
+
   # First line begins at 1, first column begins at 1
   def __init__(self, **args):
     StrictNamedArguments({
@@ -25,7 +31,13 @@ class ParserCoord(object):
       }
     })(self, args)
   def __str__(self):
-    return "%d:%d" % (self.line, self.column)
+    if self.file == self.NIL_STR:
+      return "!"
+    else:
+      path = ""
+      if len(self.file) > 1:
+        path = spformat_path(self.file) + "@"
+      return "%s%d:%d" % (path, self.line, self.column)
   def __lt__(self, other):
     if self.line < other.line:
       return True
@@ -83,17 +95,10 @@ class ParseResult(object):
       c.__pformat__(state)
     state.add("", indent=-1)
   def __str__(self):
-    path = ""
-    if len(self.coord.file) > 1:
-      path = spformat_path(self.coord.file) + "@"
     if self.parse_kind == "value":
-      return "%s%s%d,%d got : " % (
-          path, self.__wtf__,
-          self.coord.line, self.coord.column)
+      return "%s%s got : " % (self.__wtf__, self.coord)
     elif self.parse_kind == "error":
-      return "%s%s%d,%d : %s" % (
-          path, self.__wtf__,
-          self.coord.line, self.coord.column, self.error)
+      return "%s%s : %s" % (self.__wtf__, self.coord, self.error)
   def get_first_deepest_cause(self):
     res = {}
     self._get_first_deepest_cause(res)
@@ -225,7 +230,7 @@ class ParseReader(object):
       prefix_errors.put(causes=[prefix_result])
       if not prefix_result:
         if count >= minimum_parsed:
-          return ParseResult(value=results,
+          return ParseResult(value=self._maybe_many(results, maximum_parsed),
               coord=begin_coord,
               causes=[prefix_errors, parser_errors])
         return ParseResult(
@@ -245,6 +250,17 @@ class ParseReader(object):
             causes=[prefix_errors, parser_errors])
       results.append(parser_result.value)
 
+  @staticmethod
+  def _maybe_many(results, max):
+    """ assumes that : len(results) <= max """
+    if max == 1:
+      if len(results) < 1:
+        return None
+      else:
+        return results[0]
+    else:
+      return results
+
   def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
     results = []
     begin_coord = self.get_coord()
@@ -255,7 +271,7 @@ class ParseReader(object):
       count = len(results)
       if count == maximum_parsed:
         return ParseResult(
-            value=results,
+            value=self._maybe_many(results, maximum_parsed),
             coord=begin_coord,
             causes=[parser_errors])
       parser_result = self.lookahead(parser)
@@ -264,7 +280,7 @@ class ParseReader(object):
       if (not parser_result) or (current_coord == previous_coord):
         # bad parse or nothing was successfully parsed
         if count >= minimum_parsed:
-          return ParseResult(value=results,
+          return ParseResult(value=self._maybe_many(results, maximum_parsed),
               coord=begin_coord,
               causes=[parser_errors])
         else:
