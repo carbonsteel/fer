@@ -6,10 +6,21 @@ from fer.ferutil import of, logger
 
 log = logger.get_logger()
 
+class InterceptorNotTrigerableSentinel(object):
+  pass
+
 class Interceptor(object):
+  CUSTOM_TRIGGERS = 0
   def __init__(self):
     self.calls = {}
+  # triggers >= 0 are reserved for the parser compiler
+  # triggers < 0 are for instance users
+  def register_trigger(self):
+    self.CUSTOM_TRIGGERS -= 1
+    return self.CUSTOM_TRIGGERS
   def register(self, call_id, f, context=None):
+    if call_id == InterceptorNotTrigerableSentinel:
+      raise ValueError("Trigger has not been registered and will never fire")
     call = (f, context, traceback.format_stack())
     if call_id in self.calls:
       self.calls[call_id].append(call)

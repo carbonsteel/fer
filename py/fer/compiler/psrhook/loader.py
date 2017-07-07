@@ -35,13 +35,15 @@ def find_realm_in_path(realm):
   return None
 
 class RealmLoader(object):
-  PARSED_IMPORTED_ATTR = "_RealmLoader_imported"
-  def __init__(self, interceptor, parser_class):
-    self.interceptor = interceptor
-    self.parser_class = parser_class
-
-    self.interceptor.register(self.parser_class.on_realm_path, self.stringnify_realm_path)
-    self.interceptor.register(self.parser_class.on_realm_domain_import, self.import_realm)
+  LOADER_IMPORTED_ATTR = "_RealmLoader_imported"
+  LOADER_FULLPATH_ATTR = "_RealmLoader_fullpath"
+  def __init__(self, context):
+    self.context = context
+    self.context.on_before_parse_realm = self.context.interceptor.register_trigger()
+    self.context.interceptor.register(self.context.parser_class.on_realm_path,
+        self.stringnify_realm_path)
+    self.context.interceptor.register(self.context.parser_class.on_realm_domain_import,
+        self.import_realm)
 
   def stringnify_realm_path(self, realm_path, nocontext):
     if realm_path:
@@ -56,14 +58,17 @@ class RealmLoader(object):
     
   def import_realm(self, realm_import_result, nocontext):
     if realm_import_result:
-      imp = realm_import_result.value
-      import_result = self.parse_realm(imp)
+      import_result = self.parse_realm(realm_import_result.value)
       if not import_result:
         return import_result
-      setattr(imp, self.PARSED_IMPORTED_ATTR, import_result.value)
+      setattr(realm_import_result.value, self.LOADER_IMPORTED_ATTR, import_result.value)
     return realm_import_result
 
   def parse_realm(self, realm_import):
+    value = self._parse_realm(realm_import)
+    return value
+
+  def _parse_realm(self, realm_import):
     fullpath = find_realm_in_path(realm_import.realm)
     pretty_fullpath = spformat_path(fullpath)
     if fullpath is None:
@@ -74,7 +79,9 @@ class RealmLoader(object):
     with io.open(fullpath, "rb") as f:
       brf = io.BufferedReader(f)
       r = parser.ParseReader(brf, fullpath)
-      p = self.parser_class(r, self.interceptor)
+      p = self.context.parser_class(r, self.context.interceptor)
+      setattr(realm_import, self.LOADER_FULLPATH_ATTR, fullpath)
+      value = self.context.interceptor.trigger(self.context.on_before_parse_realm, realm_import)
       result = p()
       log.trace(logger.LazyFormat(spformat, r.stats))
       

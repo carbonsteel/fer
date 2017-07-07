@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-03 17:06:46.080070
+# Updated on 2017-07-07 14:01:28.693115
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -14,6 +14,7 @@ DomainLiteralMin = str
 From = str
 ImportLiteralFull = str
 ImportLiteralMin = str
+As = str
 LeftCurlyBracket = str
 RightCurlyBracket = str
 VerticalLine = str
@@ -50,7 +51,7 @@ class RealmDomainImport(object):
     StrictNamedArguments({'domains': {}, 'realm': {}, '_fcrd': {}})(self, args)
 class ImportDomain(object):
   def __init__(self, **args):
-    StrictNamedArguments({'id': {}, '_fcrd': {}})(self, args)
+    StrictNamedArguments({'domain': {}, 'as_domain': {}, '_fcrd': {}})(self, args)
 class DomainDeclaration(object):
   def __init__(self, **args):
     StrictNamedArguments({'codomain': {}, 'id': {}, 'domain': {}, '_fcrd': {}})(self, args)
@@ -73,6 +74,8 @@ class TransformDefinition(object):
   def __init__(self, **args):
     StrictNamedArguments({'expression': {}, '_fcrd': {}, 'locals': {}, 'constraints': {}})(self, args)
 Id = str
+ImportDomainAs = Id
+DomainDeclarationId = Id
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
@@ -82,6 +85,7 @@ VariableCodomain = Expression
 class _ParserImpl(object):
   on_realm_path = 0
   on_realm_domain_import = 1
+  on_domain_declaration_id = 2
   def __init__(self, reader, interceptor):
     self._reader = reader
     self.interceptor = interceptor
@@ -94,7 +98,7 @@ class _ParserImpl(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('imports', 'expected realm-domain-import in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_import, 0, 9223372036854775807)),
-        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 1, 9223372036854775807)),
+        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 0, 9223372036854775807)),
         ('', 'expected w in realm', self._parse_w),
         ('', 'expected eof', self._reader.consume_eof),
       ])
@@ -168,6 +172,15 @@ class _ParserImpl(object):
       error='expected import-literal-min',
       parsers=[
         ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(StringPredicate('i'), 1, 1))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_as(self):
+    value = self._reader.parse_type(
+      result_type=As,
+      error='expected as',
+      parsers=[
+        ('_fimm', 'expected as', lambda: self._reader.consume_string(StringPredicate('as'), 2, 2))
       ],
       result_immediate='_fimm')
     return value
@@ -437,8 +450,20 @@ class _ParserImpl(object):
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
         ('', 'expected w in import-domain', self._parse_w),
         ('', 'expected import in import-domain', self._parse_import),
-        ('id', 'expected id in import-domain', self._parse_id),
+        ('domain', 'expected id in import-domain', self._parse_id),
+        ('as_domain', 'expected import-domain-as in import-domain', lambda: self._reader.parse_many_wp(self._parse_import_domain_as, 0, 1)),
       ])
+    return value
+  def _parse_import_domain_as(self):
+    value = self._reader.parse_type(
+      result_type=ImportDomainAs,
+      error='expected import-domain-as',
+      parsers=[
+        ('', 'expected w in import-domain-as', self._parse_w),
+        ('', 'expected as in import-domain-as', self._parse_as),
+        ('_fimm', 'expected id in import-domain-as', self._parse_id),
+      ],
+      result_immediate='_fimm')
     return value
   def _parse_domain_declaration(self):
     value = self._reader.parse_type(
@@ -446,10 +471,20 @@ class _ParserImpl(object):
       error='expected domain-declaration',
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord())),
-        ('id', 'expected id in domain-declaration', self._parse_id),
+        ('id', 'expected domain-declaration-id in domain-declaration', self._parse_domain_declaration_id),
         ('codomain', 'expected variable-codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_variable_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
       ])
+    return value
+  def _parse_domain_declaration_id(self):
+    value = self._reader.parse_type(
+      result_type=DomainDeclarationId,
+      error='expected domain-declaration-id',
+      parsers=[
+        ('_fimm', 'expected id in domain-declaration-id', self._parse_id),
+      ],
+      result_immediate='_fimm')
+    value = self.interceptor.trigger(self.on_domain_declaration_id, value)
     return value
   def _parse_domain_definition(self):
     value = self._reader.parse_type(

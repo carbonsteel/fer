@@ -69,13 +69,16 @@ def main():
     parser_class = getattr(modparser, env.vars.get(EV_PSRNAME))
 
     i = interceptor.Interceptor()
+    context = psrhook.context.CompilerContext(i, parser_class)
+    context.on_compilation_problem = i.register_trigger()
 
-    loader = psrhook.loader.RealmLoader(i, parser_class)
-    varcheck = psrhook.varcheck.VariableAnalysis(i, parser_class)
+    loader = psrhook.loader.RealmLoader(context)
+    varcheck = psrhook.varcheck.VariableAnalysis(context)
 
     asked_realm = modparser.RealmDomainImport(realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord())
     result = loader.parse_realm(asked_realm)
     if not result:
+      i.trigger(context.on_compilation_problem, result)
       raise CompilationProblem("Could not load input", result)
 
     log.info("C'est finiii!")

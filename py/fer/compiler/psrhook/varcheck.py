@@ -9,14 +9,32 @@ log = logger.get_logger()
 
 class VariableAnalysis(object):
 
-  def __init__(self, interceptor, parser_class):
-    self.interceptor = interceptor
-    self.parser_class = parser_class
-    self.global_scope = {}
+  def __init__(self, context):
+    self.context = context
+    self.global_scope = self._new_scope()
     self.current_scope = self.global_scope
 
-    self.interceptor.register(parser_class.on_realm_domain_import, self.add_domain_id_import)
-    self.interceptor.register(parser_class.on_domain_declaration_id, self.add_domain_id_partial)
+    self.context.interceptor.register(self.context.on_compilation_problem,
+        self._trace)
+    self.context.interceptor.register(self.context.on_before_parse_realm,
+        self.add_realm)
+    self.context.interceptor.register(self.context.parser_class.on_realm_domain_import,
+        self.add_domain_id_import)
+    self.context.interceptor.register(self.context.parser_class.on_domain_declaration_id,
+        self.add_domain_id_partial)
+
+  def _trace(self):
+    log.trace(logger.LazyFormat(spformat, self.global_scope))
+
+  def _new_scope(self):
+    return {}
+
+  def add_realm(self, realm_import):
+    if realm_import:
+      fullpath = getattr(realm_import.value, RealmLoader.LOADER_IMPORTED_ATTR, None)
+      self.global_scope[fullpath] = self._new_scope()
+      self.current_scope = self.global_scope[fullpath]
+    return realm_import
 
   def add_domain_id_import(self, realm_import, nocontext):
     if realm_import:
@@ -26,7 +44,7 @@ class VariableAnalysis(object):
           return ParseResult(error="Can not redefine domain named : " + d_name,
               coord=d_import._fcrd)
         else:
-          self.current_scope[d_name] = getattr(realm_import.value, RealmLoader.PARSED_IMPORTED_ATTR, None)
+          self.current_scope[d_name] = getattr(realm_import.value, RealmLoader.LOADER_IMPORTED_ATTR, None)
     return realm_import
 
   def add_domain_id_partial(self, id, nocontext):
