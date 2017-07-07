@@ -75,8 +75,12 @@ def main():
     loader = psrhook.loader.RealmLoader(context)
     varcheck = psrhook.varcheck.VariableAnalysis(context)
 
-    asked_realm = modparser.RealmDomainImport(realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord())
-    result = loader.parse_realm(asked_realm)
+    # bootstrap by firing a realm import
+    asked_realm = parser.ParseResult(
+        value=modparser.RealmDomainImport(
+            realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord()),
+        coord=parser.ParserCoord.nil())
+    result = i.trigger(parser_class.on_realm_domain_import, asked_realm)
     if not result:
       i.trigger(context.on_compilation_problem, result)
       raise CompilationProblem("Could not load input", result)

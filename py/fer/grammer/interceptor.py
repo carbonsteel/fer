@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import sys
 import traceback
 
 from .parser import ParseResult, ParserCoord
@@ -7,6 +8,9 @@ from fer.ferutil import of, logger
 log = logger.get_logger()
 
 class InterceptorNotTrigerableSentinel(object):
+  pass
+
+class InterceptorError(Exception):
   pass
 
 class Interceptor(object):
@@ -31,13 +35,23 @@ class Interceptor(object):
     for f, context, reg_stack in self.calls[call_id]:
       try:
         value = of(ParseResult)(f(value, context))
-      except TypeError:
-        value = ParseResult(
-            error="Expected ParseResult from callback registered at:\n"
-                + "".join(reg_stack[:-1]),
-                #+ traceback.format_exc(10),
-            coord=ParserCoord.nil())
-        break
+      except TypeError as e:
+        if e.message.startswith("expected value of type"):
+          # value = ParseResult(
+          #     error="Expected ParseResult from callback registered at:\n"
+          #         + "".join(reg_stack[:-1]),
+          #         #+ traceback.format_exc(10),
+          #     coord=ParserCoord.nil())
+          # break;
+          raise (InterceptorError(
+              "Interceptor expected ParseResult from callback callback registered at:\n"
+              + "".join(reg_stack[:-1])),
+              e), None, sys.exc_info()[2]
+        else:
+          raise (InterceptorError(
+              "Interceptor can not call callback registered at:\n"
+              + "".join(reg_stack[:-1])),
+              e), None, sys.exc_info()[2]
     return value  
 
 # class Descriptor(object):
