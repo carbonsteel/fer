@@ -35,7 +35,7 @@ class Interceptor(object):
       try:
         value = of(ParseResult)(f(value, context))
       except TypeError as e:
-        if e.message.startswith("expected value of type"):
+        if str(e).startswith("expected value of type"):
           # value = ParseResult(
           #     error="Expected ParseResult from callback registered at:\n"
           #         + "".join(reg_stack[:-1]),

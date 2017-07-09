@@ -6,6 +6,7 @@ from . import env
 class PformatState(object):
   def __init__(self):
     self.elems = []
+    self.instances = set()
   def add(self, elem, **args):
     self.elems.append((elem, args))
   def finalize(self, max_depth=None):
@@ -34,9 +35,15 @@ class PformatState(object):
 def pformat(v, state=None):
   if state is None:
     state = PformatState()
+  
   vformat = getattr(v, "__pformat__", None)
+  _id = id(v)
+  if _id in state.instances:
+    return pformat("<pformat detected recursion: {}>".format(_id), state)
+  else:
+    state.instances.add(_id)
   if callable(vformat):
-    vformat(state)
+      vformat(state)
   elif typecheck.ofinstance(v, tuple):
     state.add("(", indent=1, newline=True)
     for i in v[:-1]:
@@ -81,6 +88,7 @@ def pformat(v, state=None):
     state.add("}", newline=True)
   else:
     state.add(repr(v))
+  state.instances.remove(_id)
   return state
 
 def spformat(v, state=None):

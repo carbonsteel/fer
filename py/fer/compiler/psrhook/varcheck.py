@@ -17,11 +17,14 @@ class ScopePushError(Exception):
 class ScopeStack(object):
   def __init__(self, root):
     self._stack = [root]
+    self.__strict_named_attrs__ = ['_stack']
+  def __pformat__(self, state):
+    return autostr(self, state)
   def get_root(self):
     self._stack[0]
-  def push(self, scope):
+  def push(self, key, scope):
     scope.parent = self.peek()
-    scope.parent._push(scope)
+    scope.parent._push(key, scope)
     self._stack.append(scope)
   def peek(self):
     return self._stack[-1]
@@ -35,6 +38,9 @@ class GlobalScope(object):
   def __init__(self):
     self.parent = ScopeRoot
     self.realms = {}
+    self.__strict_named_attrs__ = ['parent', 'realms']
+  def __pformat__(self, state):
+    return autostr(self, state)
   def _push(self, fullpath, realm):
     if isinstance(realm, RealmScope):
       self.realms[fullpath] = realm
@@ -43,10 +49,13 @@ class GlobalScope(object):
           .format(type(realm).__name__))
 
 class RealmScope(object):
-  def __init__(self, parent):
-    self.parent = parent
+  def __init__(self):
+    self.parent = None
     self.declarations = {}
     self.definitions = {}
+    self.__strict_named_attrs__ = ['parent', 'declarations', 'definitions']
+  def __pformat__(self, state):
+    return autostr(self, state)
   def _push(self, d_name, d):
     if isinstance(realm, DomainScope):
       self.definitions[d_name] = d
@@ -55,10 +64,13 @@ class RealmScope(object):
           .format(type(d).__name__))
 
 class DomainScope(object):
-  def __init__(self, parent):
-    self.parent = parent
+  def __init__(self):
+    self.parent = None
     self.variables = {}
     self.domains = {}
+    self.__strict_named_attrs__ = ['parent', 'variables', 'domains']
+  def __pformat__(self, state):
+    return autostr(self, state)
   def _push(self, d_name, d):
     self.domains[d_name] = d
 
@@ -77,20 +89,20 @@ class VariableAnalysis(object):
         self.add_domain_id_partial)
 
   def _trace(self, result, nocontext):
-    log.trace(logger.LazyFormat(repr, self.global_scope))
+    log.trace(logger.LazyFormat(spformat, self.scope_stack))
     return result
 
   def _new_global_scope(self):
     return GlobalScope()
   def _new_realm_scope(self):
     return RealmScope()
-  def _new_domain_scope(self):
+  def _new_domain_scope(self, parent):
     return DomainScope()
 
   def add_realm(self, realm_import_result, nocontext):
     if realm_import_result:
       fullpath = getattr(realm_import_result.value, RealmLoader.LOADER_FULLPATH_ATTR, None)
-      self.scope_stack.push(self._new_realm_scope())
+      self.scope_stack.push(fullpath, self._new_realm_scope())
     return realm_import_result
 
   def add_domain_id_import(self, realm_import, nocontext):

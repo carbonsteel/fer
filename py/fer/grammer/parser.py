@@ -163,7 +163,7 @@ class ParseStream(object):
 
 class ParseReader(object):
   def __init__(self, stream, stream_name):
-    self.current_coord = ParserCoord(column=0, line=1, file=stream_name)
+    self.current_coord = ParserCoord(column=1, line=1, file=stream_name)
     self._stream = ParseStream(stream)
     self.stats = {
       "total_peeks":0,

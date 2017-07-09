@@ -2,6 +2,23 @@
 from .errors import *
 from .pformat import *
 
+
+def autostr(instance, state):
+  state.add(type(instance).__name__, indent=1, newline=True)
+  state.add("(")
+  for id in instance.__strict_named_attrs__[:-1]:
+    state.add(str(id), newline=True)
+    state.add("=", indent=1)
+    pformat(getattr(instance, id), state)
+    state.add(",", indent=-1)
+  if len(instance.__strict_named_attrs__) > 0:
+    id = instance.__strict_named_attrs__[-1]
+    state.add(str(id), newline=True)
+    state.add("=", indent=1)
+    pformat(getattr(instance, id), state)
+    state.add("", indent=-1)
+  state.add(")", indent=-1)
+
 class StrictNamedArguments(object):
   def __init__(self, definitions, superdefinitions={}, hyperdefinitions={}):
     self._definitions = definitions
@@ -66,20 +83,5 @@ class StrictNamedArguments(object):
         all_definition_id.append(id)
         setattr(instance, id, args[id])
     if "autostr" not in self._hyperdefinitions or self._hyperdefinitions["autostr"]:
-      def autostr(instance, state):
-        state.add(type(instance).__name__, indent=1, newline=True)
-        state.add("(")
-        for id in instance.__strict_named_attrs__[:-1]:
-          state.add(str(id), newline=True)
-          state.add("=", indent=1)
-          pformat(getattr(instance, id), state)
-          state.add(",", indent=-1)
-        if len(instance.__strict_named_attrs__) > 0:
-          id = instance.__strict_named_attrs__[-1]
-          state.add(str(id), newline=True)
-          state.add("=", indent=1)
-          pformat(getattr(instance, id), state)
-          state.add("", indent=-1)
-        state.add(")", indent=-1)
       setattr(instance, "__strict_named_attrs__", all_definition_id)
       setattr(type(instance), "__pformat__", autostr)
