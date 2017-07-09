@@ -1,6 +1,6 @@
 
-from errors import *
-from pformat import *
+from .errors import *
+from .pformat import *
 
 class StrictNamedArguments(object):
   def __init__(self, definitions, superdefinitions={}, hyperdefinitions={}):
@@ -22,7 +22,7 @@ class StrictNamedArguments(object):
   def __call__(self, instance, args):
     all_definition_id = []
     definitions = self._definitions.copy()
-    for id, meta in self._superdefinitions.iteritems():
+    for id, meta in self._superdefinitions.items():
       for a in meta["arguments"]:
         if a not in definitions:
           raise AttributeError("undefined argument %s in group %s" % (a, id))
@@ -46,7 +46,7 @@ class StrictNamedArguments(object):
               continue
             del definitions[x]
 
-    for id, meta in definitions.iteritems():
+    for id, meta in definitions.items():
       if id not in args:
         if StrictNamedArguments._is_required(meta):
           raise AttributeError("required argument %s is missing" % (id,))

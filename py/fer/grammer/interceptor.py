@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import sys
 import traceback
 
@@ -43,15 +42,13 @@ class Interceptor(object):
           #         #+ traceback.format_exc(10),
           #     coord=ParserCoord.nil())
           # break;
-          raise (InterceptorError(
+          raise InterceptorError(
               "Interceptor expected ParseResult from callback callback registered at:\n"
-              + "".join(reg_stack[:-1])),
-              e), None, sys.exc_info()[2]
+              + "".join(reg_stack[:-1])) from e
         else:
-          raise (InterceptorError(
-              "Interceptor can not call callback registered at:\n"
-              + "".join(reg_stack[:-1])),
-              e), None, sys.exc_info()[2]
+          raise InterceptorError(
+              "Interceptor could not call callback registered at:\n"
+              + "".join(reg_stack[:-1])) from e
     return value  
 
 # class Descriptor(object):

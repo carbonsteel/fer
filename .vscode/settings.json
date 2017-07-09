@@ -12,7 +12,8 @@
         "**/bin": true,
         "**/*.o": true,
         "**/*.d": true,
-        "**/*.pyc": true
+        "**/*.pyc": true,
+        "**/__pycache__": true
     },
     "editor.tabSize": 2,
     "editor.detectIndentation": false,

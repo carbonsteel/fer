@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import copy
 import io
 import re
@@ -85,7 +84,7 @@ class ParseResult(object):
     if self.parse_kind == "value" and isinstance(self.value, ParseResult):
       self.put(causes=self.value.causes)
       self.value = self.value.value
-  def __nonzero__(self):
+  def __bool__(self):
     return self.parse_kind == "value"
   def __pformat__(self, state):
     state.add(str(self), indent=1, newline=True)
@@ -132,18 +131,47 @@ class ParseResult(object):
     })(that, args)
     self.causes.extend(that.causes)
 
+class ParseStreamError(Exception):
+  pass
+
+class ParseStream(object):
+  def __init__(self, stream):
+    self._stream = stream
+    log.debug('ParseStream initalized with a {}'.format(type(stream).__name__))
+
+    if not self._stream.readable():
+      raise ParseStreamError("Underlying stream is not readable")
+
+    if not self._stream.seekable():
+      raise ParseStreamError("Underlying stream is not seekable")
+
+    self._init_method('read')
+    self._init_method('seek')
+    self._init_method('tell')
+
+  def _init_method(self, name, default=None):
+    if hasattr(self._stream, name):
+      log.debug('Underlying stream has method [{}]'.format(name))
+      setattr(self, name, getattr(self._stream, name, None))
+    else:
+      err = 'Underlying stream is missing method [{}]'.format(name)
+      log.debug(err)
+      if default is None:
+        raise ParseStreamError(err)
+      else:
+        setattr(self, name, default)
+
 class ParseReader(object):
   def __init__(self, stream, stream_name):
     self.current_coord = ParserCoord(file=stream_name)
-    self._stream = stream
+    self._stream = ParseStream(stream)
     self.stats = {
       "total_peeks":0,
       "total_consumes": 0,
       "total_backtracks": 0,
       "total_prunes": 0,
+      "total_consumed": 0
     }
-    if not self._stream.seekable():
-      raise GenericError("programming fault, stream must be seekable")
 
   def get_coord(self):
     return copy.deepcopy(self.current_coord)
@@ -217,7 +245,7 @@ class ParseReader(object):
         return parser_result
     return errors
 
-  def parse_many(self, prefix, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
+  def parse_many(self, prefix, parser, minimum_parsed=0, maximum_parsed=sys.maxsize):
     results = []
     begin_coord = self.get_coord()
     prefix_errors = ParseResult(error="prefix errors in many",
@@ -261,7 +289,7 @@ class ParseReader(object):
     else:
       return results
 
-  def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxint):
+  def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxsize):
     results = []
     begin_coord = self.get_coord()
     parser_errors = ParseResult(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
@@ -292,26 +320,21 @@ class ParseReader(object):
       previous_coord = current_coord
   
   def lookahead(self, parser):
-    if not self._stream.readable():
-      return ParseResult(error="stream is not readable",
-          coord=self.get_coord())
     # save state
     previous_position = self._stream.tell()
     previous_coord = self.get_coord()
     result = parser()
     if not result:
-      self.stats["total_backtracks"] += 1
       # restore state
       self._stream.seek(previous_position)
-      if not self._stream.readable():
-        return ParseResult(error="stream is not readable after seeking",
-            coord=self.get_coord())
       self.current_coord = previous_coord
-    
+      self.stats["total_backtracks"] += 1
     return result
 
   def consume_eof(self):
-    peek_bytes = self._stream.peek(1)
+    return self.lookahead(self._consume_eof)
+  def _consume_eof(self):
+    peek_bytes = self._stream.read(1)
     if len(peek_bytes) == 0:
       return ParseResult(value=None, coord=self.get_coord())
     else:
@@ -345,7 +368,7 @@ class ParseReader(object):
         ('', 'expected line-feed in line-comment', lambda: self.consume_string(StringPredicate("\n"), 0, 1)),
       ])
 
-  def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
+  def consume_token(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxsize):
     return self.parse_type(
       result_type=str,
       error='expected token',
@@ -355,47 +378,55 @@ class ParseReader(object):
         ('_', 'expected token', lambda: self.consume_string(predicate, minimum_consumed, maximum_consumed))
       ])
 
-  def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxint):
+  def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxsize):
+    return self.lookahead(lambda: self._consume_string(predicate, minimum_consumed, maximum_consumed))
+  def _consume_string(self, predicate, minimum_consumed, maximum_consumed):
     string = ""
     begin_coord = self.get_coord()
     error = ParseResult(error=predicate.what(), coord=self.get_coord())
-    if not self._stream.readable():
-      return ParseResult(error="stream is not readable", coord=self.get_coord())
     predicate_result = None
     consumed_count = 0
+    peek = None
     while True:
-      peek_bytes = self._stream.peek(predicate.peek_distance)
-      if len(peek_bytes) < predicate.peek_distance:
-        break
-      byte = peek_bytes[0]
-      consumed_count += 1
-      if consumed_count > maximum_consumed:
-        break
-      predicate_result = predicate(*(peek_bytes[:predicate.peek_distance]))
+      peek = self._stream.read(predicate.peek_distance)
       self.stats["total_peeks"] += 1
-      if not predicate_result.consume:
+      # failed to peek as far as requested
+      if len(peek) < predicate.peek_distance:
         break
-      self.stats["total_consumes"] += 1
-      self._stream.seek(io.SEEK_CUR, 1) # move forward
-      if not predicate_result.prune:
-        string += byte
-      else:
+      # send peek to predicate
+      # trim peek to requested distance as sometimes the buffer is too long
+      predicate_result = predicate(peek[:predicate.peek_distance])
+      if predicate_result.prune:
         self.stats["total_prunes"] += 1
-      if byte == "\n":
-        self.current_coord.line += 1
-        self.current_coord.column = 0
-      self.current_coord.column += 1
+        break
+      if predicate_result.consume:
+        self.stats["total_consumes"] += 1
+        consumed_count += predicate.read_distance
+        if consumed_count > maximum_consumed:
+          break
+        read = peek[:predicate.read_distance]
+        string += read
+        lineparts = read.split("\n")
+        countparts = len(lineparts)
+        if countparts > 1:
+          self.current_coord.line += countparts - 1
+          self.current_coord.column = 0
+        self.current_coord.column += len(lineparts[-1])
     if predicate_result is None:
       if consumed_count >= minimum_consumed:
+        self.stats["total_consumed"] += consumed_count
         return ParseResult(value=string, coord=begin_coord)
+      else:
+        error.put(causes=[
+            ParseResult(error="unexpected eof", coord=begin_coord)])
+        return error
+    elif not predicate_result.consume and consumed_count <= minimum_consumed:
       error.put(causes=[
-          ParseResult(error="unexpected eof", coord=begin_coord)])
+          ParseResult(error="unexpected bytes `{}'".format(peek), coord=self.get_coord())])
       return error
-    if not predicate_result.consume and consumed_count <= minimum_consumed:
-      error.put(causes=[
-          ParseResult(error="unexpected byte `%s'" % byte, coord=self.get_coord())])
-      return error
-    return ParseResult(value=string, coord=begin_coord)
+    else:
+      self.stats["total_consumed"] += consumed_count
+      return ParseResult(value=string, coord=begin_coord)
 
 class ConsumePredicateResult(object):
   def __init__(self, **args):
@@ -412,11 +443,9 @@ class ConsumePredicateResult(object):
 class StringPredicate(object):
   def __init__(self, string):
     self.string = string
-    self.index = 0
-    self.peek_distance = 1
-  def __call__(self, *peek):
-    p = peek[0] == self.string[self.index]
-    self.index += 1
+    self.read_distance = self.peek_distance = len(self.string)
+  def __call__(self, peek):
+    p = peek == self.string
     return ConsumePredicateResult(consume=p)
   def what(self):
     return "expected bytestring `%s'" % self.string
@@ -426,8 +455,9 @@ class StringPredicate(object):
 class LineCommentPredicate(object):
   def __init__(self):
     self.peek_distance = 1
+    self.read_distance = 1
     self.within_comment = False
-  def __call__(self, *peek):
+  def __call__(self, peek):
     is_comment = peek[0] == "#"
     is_eol = peek[0] == "\n"
     if is_comment:
@@ -446,8 +476,9 @@ class SimpleClassPredicate(object):
     self.ccls = ccls
     self.re = re.compile("[%s]" % ccls)
     self.peek_distance = 1
+    self.read_distance = 1
   
-  def __call__(self, *peek):
+  def __call__(self, peek):
     return ConsumePredicateResult(consume=self.re.match(peek[0]))
   def what(self):
     wh = "expected byte within [%s]" % self.ccls
@@ -463,9 +494,10 @@ class EscapedClassPredicate(object):
     self.re = re.compile("[%s]" % ccls)
     self.ree = re.compile("[%s]" % cclse)
     self.peek_distance = 2
+    self.read_distance = 1
     self.previous_escaped = False
   
-  def __call__(self, *peek):
+  def __call__(self, peek):
     consume = False
     prune = False
     if self.re.match(peek[0]):

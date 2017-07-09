@@ -1,5 +1,3 @@
-
-from __future__ import absolute_import
 from fer.grammer import InterceptorNotTrigerableSentinel
 
 class CompilerContext(object):

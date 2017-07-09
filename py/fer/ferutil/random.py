@@ -1,9 +1,6 @@
-# required otherwise it imports itself...
-from __future__ import absolute_import
 import string
 import random
 from fer.ferutil import logger
-
 
 log = logger.get_logger()
 

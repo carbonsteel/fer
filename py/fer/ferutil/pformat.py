@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 
 from . import typecheck
@@ -66,7 +65,7 @@ def pformat(v, state=None):
       state.add("]", indent=-1)
   elif typecheck.ofinstance(v, dict):
     state.add("{", indent=1, newline=True)
-    vs = list(v.iteritems())
+    vs = list(v.items())
     for k, i in vs[:-1]:
       state.add("", newline=True)
       pformat(k, state)

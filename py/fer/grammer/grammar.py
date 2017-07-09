@@ -1,7 +1,7 @@
 
 from fer.ferutil import *
-from common import *
-from parser import *
+from .common import *
+from .parser import *
 
 class GrammarClassDefinition(object):
   def __init__(self, **args):
@@ -99,9 +99,9 @@ class GrammarParser(object):
     if len(value) == 0:
       return (1, 1)
     if value == "+":
-      return (1, sys.maxint)
+      return (1, sys.maxsize)
     if value == "*":
-      return (0, sys.maxint)
+      return (0, sys.maxsize)
     if value == "?":
       return (0, 1)
 

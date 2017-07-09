@@ -1,5 +1,3 @@
-
-from __future__ import absolute_import
 import keyword
 
 def kebab_to_camel(t): # or how to undigest a desert animal

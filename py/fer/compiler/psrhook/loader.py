@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import io
 import os
 
@@ -75,9 +74,8 @@ class RealmLoader(object):
           error="Could not find realm in path : {}".format(realm_import.realm),
           coord=realm_import._fcrd)
     log.info("Parsing {}", pretty_fullpath)
-    with io.open(fullpath, "rb") as f:
-      brf = io.BufferedReader(f)
-      r = parser.ParseReader(brf, fullpath)
+    with io.open(fullpath, "r", encoding='utf-8') as f:
+      r = parser.ParseReader(f, fullpath)
       p = self.context.parser_class(r, self.context.interceptor)
       result = p()
       log.trace(logger.LazyFormat(spformat, r.stats))

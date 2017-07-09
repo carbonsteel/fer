@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .comparable import *
 from .dummy import *
 from .errors import *

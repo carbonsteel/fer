@@ -1,5 +1,5 @@
 # Prerequisistes
-pip2 install logbook
+pip3.6 install logbook
 
 # carbonsteel/fer/py
 Python implementation
