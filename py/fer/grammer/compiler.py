@@ -1,5 +1,6 @@
 import datetime
 import io
+import json
 
 from fer.ferutil import *
 from fer.grammer.common import *
@@ -24,7 +25,7 @@ def compile_parser(grammar_file, parser_module_name, parser_name):
       with io.open(parser_module_name+".py", "w+") as f:
         gpc = GrammarParserCompiler(f, result, parser_name)
         gpc()
-        bwf.flush()
+        f.flush()
         log.info("Wrote parser file")
   return (r.stats, result)
 
@@ -132,7 +133,7 @@ class GrammarParserCompiler(object):
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
           # inlines the consume call for class definitions to get an "str" instead of a list of char
-          ccls = self.known_definitions[e["identifier"]].ccls.decode('string_escape')
+          ccls = json.dumps(self.known_definitions[e["identifier"]].ccls)
           inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
             repr(ccls), e["quantifier"][0], e["quantifier"][1]
           )
@@ -146,13 +147,13 @@ class GrammarParserCompiler(object):
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
-      literal = definition.value.literal.decode('string_escape')
+      literal = json.dumps(definition.value.literal)
       W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
         repr(KEY_IMMEDIATE), definition.id, repr(literal), len(literal), len(literal)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
-      ccls = definition.value.ccls.decode('string_escape')
+      ccls = json.dumps(definition.value.ccls)
       W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
         repr(KEY_IMMEDIATE), definition.id, repr(ccls)
       )

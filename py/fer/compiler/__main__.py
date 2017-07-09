@@ -3,8 +3,9 @@ import os
 import sys
 import traceback
 
+from fer import EV_LOGLEVEL
+from fer.compiler import app
 from fer.ferutil import env, logger
-from fer.compiler import app, EV_LOGLEVEL
 
 # Big problem when Literal definition is not closed
 # https://stackoverflow.com/questions/8315389/how-do-i-print-functions-as-they-are-called

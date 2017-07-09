@@ -2,8 +2,10 @@ import io
 import unittest
 
 from .. import parser
-from fer.ferutil import env
+from fer import EV_LOGLEVEL
+from fer.ferutil import env, logger
 env.vars.init()
+logger.init(env.vars.get(EV_LOGLEVEL))
 
 class TestConsumeString(unittest.TestCase):
 

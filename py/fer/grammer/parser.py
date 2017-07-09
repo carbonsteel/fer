@@ -163,7 +163,7 @@ class ParseStream(object):
 
 class ParseReader(object):
   def __init__(self, stream, stream_name):
-    self.current_coord = ParserCoord(file=stream_name)
+    self.current_coord = ParserCoord(column=0, line=1, file=stream_name)
     self._stream = ParseStream(stream)
     self.stats = {
       "total_peeks":0,
@@ -321,14 +321,18 @@ class ParseReader(object):
   
   def lookahead(self, parser):
     # save state
+    #log.debug("Lookahead called.")
     previous_position = self._stream.tell()
     previous_coord = self.get_coord()
     result = parser()
     if not result:
       # restore state
+      #log.debug("Lookahead failed, restoring previous state.")
       self._stream.seek(previous_position)
       self.current_coord = previous_coord
       self.stats["total_backtracks"] += 1
+    #else:
+      #log.debug("Lookahead succeded, moving on.")
     return result
 
   def consume_eof(self):
@@ -379,54 +383,68 @@ class ParseReader(object):
       ])
 
   def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxsize):
-    return self.lookahead(lambda: self._consume_string(predicate, minimum_consumed, maximum_consumed))
-  def _consume_string(self, predicate, minimum_consumed, maximum_consumed):
     string = ""
     begin_coord = self.get_coord()
     error = ParseResult(error=predicate.what(), coord=self.get_coord())
     predicate_result = None
     consumed_count = 0
     peek = None
+    #log.trace("Consume called, {} {} {}", begin_coord, minimum_consumed, maximum_consumed)
+    read_tell = None
+    peek_tell = None
     while True:
-      peek = self._stream.read(predicate.peek_distance)
+      if consumed_count >= maximum_consumed:
+        break
+      read_tell = self._stream.tell()
+      read = self._stream.read(predicate.read_distance)
+      peek_tell = self._stream.tell()
+      peek = self._stream.read(predicate.peek_distance - predicate.read_distance)
+      peek = read + peek
       self.stats["total_peeks"] += 1
+      #log.trace("Peeked `{}'", peek)
       # failed to peek as far as requested
       if len(peek) < predicate.peek_distance:
-        break
+        #log.trace("Early eof")
+        error.put(causes=[
+            ParseResult(error="unexpected eof", coord=self.get_coord())])
+        self._stream.seek(read_tell)
+        return error
       # send peek to predicate
       # trim peek to requested distance as sometimes the buffer is too long
+      #log.trace("Predicate `{}'", str(predicate))
       predicate_result = predicate(peek[:predicate.peek_distance])
+      #log.trace("Predicate result `{}'", spformat(predicate_result))
       if predicate_result.prune:
+        #log.trace("Pruning")
         self.stats["total_prunes"] += 1
-        break
+        self._stream.seek(peek_tell)
+        continue
       if predicate_result.consume:
         self.stats["total_consumes"] += 1
         consumed_count += predicate.read_distance
-        if consumed_count > maximum_consumed:
-          break
-        read = peek[:predicate.read_distance]
         string += read
         lineparts = read.split("\n")
         countparts = len(lineparts)
+        #log.trace("Coord calc with {} {} {}", self.get_coord(), repr(lineparts), repr(countparts))
         if countparts > 1:
           self.current_coord.line += countparts - 1
-          self.current_coord.column = 0
+          self.current_coord.column = 1
         self.current_coord.column += len(lineparts[-1])
-    if predicate_result is None:
-      if consumed_count >= minimum_consumed:
-        self.stats["total_consumed"] += consumed_count
-        return ParseResult(value=string, coord=begin_coord)
+        #log.trace("Coord calc result {}", self.get_coord())
+        self._stream.seek(peek_tell)
       else:
-        error.put(causes=[
-            ParseResult(error="unexpected eof", coord=begin_coord)])
-        return error
-    elif not predicate_result.consume and consumed_count <= minimum_consumed:
-      error.put(causes=[
-          ParseResult(error="unexpected bytes `{}'".format(peek), coord=self.get_coord())])
-      return error
-    else:
+        self._stream.seek(read_tell)
+        break
+    if consumed_count >= minimum_consumed:
+      #log.trace("ok, count ({}) >= min ({})", consumed_count, minimum_consumed)
       self.stats["total_consumed"] += consumed_count
       return ParseResult(value=string, coord=begin_coord)
+    else:
+      #log.trace("unexpected bytes `{}'", peek)
+      error.put(causes=[
+          ParseResult(error="unexpected bytes `{}'".format(peek), coord=self.get_coord())])
+      self._stream.seek(read_tell)
+      return error
 
 class ConsumePredicateResult(object):
   def __init__(self, **args):
@@ -447,10 +465,11 @@ class StringPredicate(object):
   def __call__(self, peek):
     p = peek == self.string
     return ConsumePredicateResult(consume=p)
+  def __str__(self):
+    return 'StringPredicate(string={}, read_distance={}, peek_distance={})'.format(
+        repr(self.string), repr(self.read_distance), repr(self.peek_distance))
   def what(self):
     return "expected bytestring `%s'" % self.string
-  def __str__(self):
-    return """StringPredicate(string=%s)""" % repr(self.string)
 
 class LineCommentPredicate(object):
   def __init__(self):
@@ -468,7 +487,8 @@ class LineCommentPredicate(object):
     wh = "expected line comment"
     return wh
   def __str__(self):
-    return """LineCommentPredicate(within_comment=%s)""" % repr(self.within_comment)
+    return 'LineCommentPredicate(within_comment={}, read_distance={}, peek_distance={})'.format(
+        repr(self.within_comment), repr(self.read_distance), repr(self.peek_distance))
 
 
 class SimpleClassPredicate(object):
@@ -479,13 +499,14 @@ class SimpleClassPredicate(object):
     self.read_distance = 1
   
   def __call__(self, peek):
-    return ConsumePredicateResult(consume=self.re.match(peek[0]))
+    #log.trace("{} {} {} {}", repr(peek), repr(peek[0]), repr(self.re.pattern), repr(self.re.match(peek)))
+    return ConsumePredicateResult(consume=self.re.match(peek))
   def what(self):
     wh = "expected byte within [%s]" % self.ccls
     return wh
   def __str__(self):
-    return """SimpleClassPredicate(ccls=%s)""" % (
-        repr(self.ccls),)
+    return 'SimpleClassPredicate(ccls={}, read_distance={}, peek_distance={})'.format(
+        repr(self.ccls), repr(self.read_distance), repr(self.peek_distance))
 
 class EscapedClassPredicate(object):
   def __init__(self, ccls, cclse):
@@ -514,5 +535,5 @@ class EscapedClassPredicate(object):
     wh = "expected byte within [%s]" % self.ccls
     return wh
   def __str__(self):
-    return """EscapedClassPredicate(ccls=%s, cclse=%s)""" % (
-        repr(self.ccls), repr(self.cclse))
+    return 'EscapedClassPredicate(ccls={}, cclse={}, read_distance={}, peek_distance={})'.format(
+        repr(self.ccls), repr(self.cclse), repr(self.read_distance), repr(self.peek_distance))
