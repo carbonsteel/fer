@@ -25,6 +25,7 @@ env.vars.register(EV_PSRGRAMMAR, os.path.join(os.path.dirname(__file__), "fer.gr
 
 class CompilationProblem(Exception):
   def __init__(self, what, result=None):
+    self.result = result
     if result is not None:
       log.trace("Extracting causes")
       # get the first farthest (first highest line,column) error
@@ -59,6 +60,8 @@ def compile_parser():
   return __import__(env.vars.get(EV_PSRMODNAME))
 
 def main():
+  i = None
+  context = None
   try:
     log.info("Welcome to carbonsteel/fer")
     if len(sys.argv) < 2:
@@ -71,6 +74,7 @@ def main():
     i = interceptor.Interceptor()
     context = psrhook.context.CompilerContext(i, parser_class)
     context.on_compilation_problem = i.register_trigger()
+    context.on_compiler_problem = i.register_trigger()
 
     loader = psrhook.loader.RealmLoader(context)
     varcheck = psrhook.varcheck.VariableAnalysis(context)
@@ -88,3 +92,9 @@ def main():
     log.info("C'est finiii!")
   except CompilationProblem as p:
     log.error(p)
+  except:
+    if i is not None and context is not None:
+      i.trigger(context.on_compiler_problem, parser.ParseResult(
+          error="Compiler exception", coord=parser.ParserCoord.nil()))
+    raise
+  

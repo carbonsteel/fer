@@ -324,6 +324,7 @@ class ParseReader(object):
     #log.debug("Lookahead called.")
     previous_position = self._stream.tell()
     previous_coord = self.get_coord()
+    previous_consumed = self.stats["total_consumed"]
     result = parser()
     if not result:
       # restore state
@@ -331,6 +332,7 @@ class ParseReader(object):
       self._stream.seek(previous_position)
       self.current_coord = previous_coord
       self.stats["total_backtracks"] += 1
+      self.stats["total_consumed"] = previous_consumed
     #else:
       #log.debug("Lookahead succeded, moving on.")
     return result
@@ -408,7 +410,7 @@ class ParseReader(object):
         error.put(causes=[
             ParseResult(error="unexpected eof", coord=self.get_coord())])
         self._stream.seek(read_tell)
-        return error
+        break
       # send peek to predicate
       # trim peek to requested distance as sometimes the buffer is too long
       #log.trace("Predicate `{}'", str(predicate))
@@ -438,11 +440,11 @@ class ParseReader(object):
     if consumed_count >= minimum_consumed:
       #log.trace("ok, count ({}) >= min ({})", consumed_count, minimum_consumed)
       self.stats["total_consumed"] += consumed_count
-      return ParseResult(value=string, coord=begin_coord)
+      return ParseResult(value=string, coord=begin_coord, causes=[error])
     else:
       #log.trace("unexpected bytes `{}'", peek)
       error.put(causes=[
-          ParseResult(error="unexpected bytes `{}'".format(peek), coord=self.get_coord())])
+          ParseResult(error="unexpected bytes {}".format(repr(peek)), coord=self.get_coord())])
       self._stream.seek(read_tell)
       return error
 

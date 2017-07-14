@@ -57,10 +57,12 @@ class RealmScope(object):
   def __pformat__(self, state):
     return autostr(self, state)
   def _push(self, d_name, d):
-    if isinstance(realm, DomainScope):
+    if isinstance(d, DomainScope):
       self.definitions[d_name] = d
+    elif isinstance(d, RealmScope):
+      self.declarations[d_name] = d
     else:
-      raise ScopePushError("RealmScope can only contain domains, got {}."
+      raise ScopePushError("Unexpected type in RealmScope, got {}."
           .format(type(d).__name__))
 
 class DomainScope(object):
@@ -80,6 +82,8 @@ class VariableAnalysis(object):
     self.scope_stack = ScopeStack(self._new_global_scope())
 
     self.context.interceptor.register(self.context.on_compilation_problem,
+        self._trace)
+    self.context.interceptor.register(self.context.on_compiler_problem,
         self._trace)
     self.context.interceptor.register(self.context.on_before_parse_realm,
         self.add_realm)
@@ -112,7 +116,7 @@ class VariableAnalysis(object):
         if d_name in self.scope_stack.peek().declarations:
           return ParseResult(
               error="Import {} conflicting with another at {}".format(
-                  d_name, self.scope_stack.peek().declaration[d_name]._fcrd),
+                  d_name, self.scope_stack.peek().declarations[d_name]._fcrd),
               coord=d_import._fcrd)
         else:
           self.scope_stack.peek().declarations[d_name] = getattr(realm_import.value, RealmLoader.LOADER_IMPORTED_ATTR, None)

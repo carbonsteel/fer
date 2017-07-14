@@ -133,9 +133,9 @@ class GrammarParserCompiler(object):
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
           # inlines the consume call for class definitions to get an "str" instead of a list of char
-          ccls = json.dumps(self.known_definitions[e["identifier"]].ccls)
-          inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
-            repr(ccls), e["quantifier"][0], e["quantifier"][1]
+          ccls = json.dumps(self.known_definitions[e["identifier"]].ccls)[1:-1]
+          inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate('%s'), %d, %d)" % (
+            (ccls), e["quantifier"][0], e["quantifier"][1]
           )
         else:
           inner_parse = "lambda: self._reader.parse_many_wp(self.%s, %d, %d)" % (
@@ -147,15 +147,15 @@ class GrammarParserCompiler(object):
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
-      literal = json.dumps(definition.value.literal)
-      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
-        repr(KEY_IMMEDIATE), definition.id, repr(literal), len(literal), len(literal)
+      literal = json.dumps(definition.value.literal)[1:-1]
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate('%s'), %d, %d))" % (
+        repr(KEY_IMMEDIATE), definition.id, (literal), len(literal), len(literal)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
-      ccls = json.dumps(definition.value.ccls)
-      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
-        repr(KEY_IMMEDIATE), definition.id, repr(ccls)
+      ccls = json.dumps(definition.value.ccls)[1:-1]
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate('%s'), 1, 1))" % (
+        repr(KEY_IMMEDIATE), definition.id, (ccls)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarAlternativeDefinition):

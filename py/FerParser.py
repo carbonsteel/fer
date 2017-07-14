@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-09 17:34:50.810963
+# Updated on 2017-07-14 16:34:39.031414
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -108,7 +108,7 @@ class _ParserImpl(object):
       result_type=Ws,
       error='expected ws',
       parsers=[
-        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate('" \\\\n"'), 1, 1))
+        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -117,7 +117,7 @@ class _ParserImpl(object):
       result_type=PseudoLetter,
       error='expected pseudo-letter',
       parsers=[
-        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate('"a-zA-Z_"'), 1, 1))
+        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -126,7 +126,7 @@ class _ParserImpl(object):
       result_type=Dot,
       error='expected dot',
       parsers=[
-        ('_fimm', 'expected dot', lambda: self._reader.consume_string(StringPredicate('"."'), 3, 3))
+        ('_fimm', 'expected dot', lambda: self._reader.consume_string(StringPredicate('.'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -135,7 +135,7 @@ class _ParserImpl(object):
       result_type=DomainLiteralFull,
       error='expected domain-literal-full',
       parsers=[
-        ('_fimm', 'expected domain-literal-full', lambda: self._reader.consume_string(StringPredicate('"domain"'), 8, 8))
+        ('_fimm', 'expected domain-literal-full', lambda: self._reader.consume_string(StringPredicate('domain'), 6, 6))
       ],
       result_immediate='_fimm')
     return value
@@ -144,7 +144,7 @@ class _ParserImpl(object):
       result_type=DomainLiteralMin,
       error='expected domain-literal-min',
       parsers=[
-        ('_fimm', 'expected domain-literal-min', lambda: self._reader.consume_string(StringPredicate('"d"'), 3, 3))
+        ('_fimm', 'expected domain-literal-min', lambda: self._reader.consume_string(StringPredicate('d'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -153,7 +153,7 @@ class _ParserImpl(object):
       result_type=From,
       error='expected from',
       parsers=[
-        ('_fimm', 'expected from', lambda: self._reader.consume_string(StringPredicate('"from"'), 6, 6))
+        ('_fimm', 'expected from', lambda: self._reader.consume_string(StringPredicate('from'), 4, 4))
       ],
       result_immediate='_fimm')
     return value
@@ -162,7 +162,7 @@ class _ParserImpl(object):
       result_type=ImportLiteralFull,
       error='expected import-literal-full',
       parsers=[
-        ('_fimm', 'expected import-literal-full', lambda: self._reader.consume_string(StringPredicate('"import"'), 8, 8))
+        ('_fimm', 'expected import-literal-full', lambda: self._reader.consume_string(StringPredicate('import'), 6, 6))
       ],
       result_immediate='_fimm')
     return value
@@ -171,7 +171,7 @@ class _ParserImpl(object):
       result_type=ImportLiteralMin,
       error='expected import-literal-min',
       parsers=[
-        ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(StringPredicate('"i"'), 3, 3))
+        ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(StringPredicate('i'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -180,7 +180,7 @@ class _ParserImpl(object):
       result_type=As,
       error='expected as',
       parsers=[
-        ('_fimm', 'expected as', lambda: self._reader.consume_string(StringPredicate('"as"'), 4, 4))
+        ('_fimm', 'expected as', lambda: self._reader.consume_string(StringPredicate('as'), 2, 2))
       ],
       result_immediate='_fimm')
     return value
@@ -189,7 +189,7 @@ class _ParserImpl(object):
       result_type=LeftCurlyBracket,
       error='expected left-curly-bracket',
       parsers=[
-        ('_fimm', 'expected left-curly-bracket', lambda: self._reader.consume_string(StringPredicate('"{"'), 3, 3))
+        ('_fimm', 'expected left-curly-bracket', lambda: self._reader.consume_string(StringPredicate('{'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -198,7 +198,7 @@ class _ParserImpl(object):
       result_type=RightCurlyBracket,
       error='expected right-curly-bracket',
       parsers=[
-        ('_fimm', 'expected right-curly-bracket', lambda: self._reader.consume_string(StringPredicate('"}"'), 3, 3))
+        ('_fimm', 'expected right-curly-bracket', lambda: self._reader.consume_string(StringPredicate('}'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -207,7 +207,7 @@ class _ParserImpl(object):
       result_type=VerticalLine,
       error='expected vertical-line',
       parsers=[
-        ('_fimm', 'expected vertical-line', lambda: self._reader.consume_string(StringPredicate('"|"'), 3, 3))
+        ('_fimm', 'expected vertical-line', lambda: self._reader.consume_string(StringPredicate('|'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -216,7 +216,7 @@ class _ParserImpl(object):
       result_type=Colon,
       error='expected colon',
       parsers=[
-        ('_fimm', 'expected colon', lambda: self._reader.consume_string(StringPredicate('":"'), 3, 3))
+        ('_fimm', 'expected colon', lambda: self._reader.consume_string(StringPredicate(':'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -225,7 +225,7 @@ class _ParserImpl(object):
       result_type=GreaterThanSign,
       error='expected greater-than-sign',
       parsers=[
-        ('_fimm', 'expected greater-than-sign', lambda: self._reader.consume_string(StringPredicate('">"'), 3, 3))
+        ('_fimm', 'expected greater-than-sign', lambda: self._reader.consume_string(StringPredicate('>'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -234,7 +234,7 @@ class _ParserImpl(object):
       result_type=EqualsSign,
       error='expected equals-sign',
       parsers=[
-        ('_fimm', 'expected equals-sign', lambda: self._reader.consume_string(StringPredicate('"="'), 3, 3))
+        ('_fimm', 'expected equals-sign', lambda: self._reader.consume_string(StringPredicate('='), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -243,7 +243,7 @@ class _ParserImpl(object):
       result_type=DollarSign,
       error='expected dollar-sign',
       parsers=[
-        ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(StringPredicate('"$"'), 3, 3))
+        ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(StringPredicate('$'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -252,7 +252,7 @@ class _ParserImpl(object):
       result_type=LeftParenthesis,
       error='expected left-parenthesis',
       parsers=[
-        ('_fimm', 'expected left-parenthesis', lambda: self._reader.consume_string(StringPredicate('"("'), 3, 3))
+        ('_fimm', 'expected left-parenthesis', lambda: self._reader.consume_string(StringPredicate('('), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -261,7 +261,7 @@ class _ParserImpl(object):
       result_type=RightParenthesis,
       error='expected right-parenthesis',
       parsers=[
-        ('_fimm', 'expected right-parenthesis', lambda: self._reader.consume_string(StringPredicate('")"'), 3, 3))
+        ('_fimm', 'expected right-parenthesis', lambda: self._reader.consume_string(StringPredicate(')'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -270,7 +270,7 @@ class _ParserImpl(object):
       result_type=Tilde,
       error='expected tilde',
       parsers=[
-        ('_fimm', 'expected tilde', lambda: self._reader.consume_string(StringPredicate('"~"'), 3, 3))
+        ('_fimm', 'expected tilde', lambda: self._reader.consume_string(StringPredicate('~'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -279,7 +279,7 @@ class _ParserImpl(object):
       result_type=Solidus,
       error='expected solidus',
       parsers=[
-        ('_fimm', 'expected solidus', lambda: self._reader.consume_string(StringPredicate('"/"'), 3, 3))
+        ('_fimm', 'expected solidus', lambda: self._reader.consume_string(StringPredicate('/'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -288,7 +288,7 @@ class _ParserImpl(object):
       result_type=PercentSign,
       error='expected percent-sign',
       parsers=[
-        ('_fimm', 'expected percent-sign', lambda: self._reader.consume_string(StringPredicate('"%"'), 3, 3))
+        ('_fimm', 'expected percent-sign', lambda: self._reader.consume_string(StringPredicate('%'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -297,7 +297,7 @@ class _ParserImpl(object):
       result_type=Octothorp,
       error='expected octothorp',
       parsers=[
-        ('_fimm', 'expected octothorp', lambda: self._reader.consume_string(StringPredicate('"#"'), 3, 3))
+        ('_fimm', 'expected octothorp', lambda: self._reader.consume_string(StringPredicate('#'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -306,7 +306,7 @@ class _ParserImpl(object):
       result_type=LineFeed,
       error='expected line-feed',
       parsers=[
-        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('"\\\\n"'), 5, 5))
+        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('\\n'), 3, 3))
       ],
       result_immediate='_fimm')
     return value
@@ -315,7 +315,7 @@ class _ParserImpl(object):
       result_type=LineCommentContent,
       error='expected line-comment-content',
       parsers=[
-        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('"^\\\\n"'), 1, 1))
+        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -324,7 +324,7 @@ class _ParserImpl(object):
       result_type=LeftToRightArrow,
       error='expected left-to-right-arrow',
       parsers=[
-        ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(StringPredicate('"->"'), 4, 4))
+        ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(StringPredicate('->'), 2, 2))
       ],
       result_immediate='_fimm')
     return value
@@ -351,7 +351,7 @@ class _ParserImpl(object):
       result_type=Ww,
       error='expected ww',
       parsers=[
-        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate('" \\\\n"'), 0, 9223372036854775807)),
+        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self._parse_line_comment, 0, 1)),
       ])
     return value
@@ -369,7 +369,7 @@ class _ParserImpl(object):
       error='expected line-comment',
       parsers=[
         ('', 'expected octothorp in line-comment', self._parse_octothorp),
-        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('"^\\\\n"'), 0, 9223372036854775807)),
+        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self._parse_line_feed, 0, 1)),
       ])
     return value
@@ -379,7 +379,7 @@ class _ParserImpl(object):
       error='expected id',
       parsers=[
         ('', 'expected w in id', self._parse_w),
-        ('_fimm', 'expected pseudo-letter in id', lambda: self._reader.consume_string(SimpleClassPredicate('"a-zA-Z_"'), 1, 9223372036854775807)),
+        ('_fimm', 'expected pseudo-letter in id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
       ],
       result_immediate='_fimm')
     return value
