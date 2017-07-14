@@ -31,6 +31,8 @@ class Interceptor(object):
       self.calls[call_id] = [call]
 
   def trigger(self, call_id, value):
+    if call_id not in self.calls:
+      return value
     for f, context, reg_stack in self.calls[call_id]:
       try:
         value = of(ParseResult)(f(value, context))
