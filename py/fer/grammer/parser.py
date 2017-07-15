@@ -31,10 +31,11 @@ class ParseCoord(object):
   def __pformat__(self, state):
     state.add(str(self))
   def copy(self):
-    cls = self.__class__
-    cpy = cls.__new__(cls)
-    cpy.__dict__.update(self.__dict__)
-    return cpy
+    return fastcopy.deepcopy(self)
+    # cls = self.__class__
+    # cpy = cls.__new__(cls)
+    # cpy.__dict__.update(self.__dict__)
+    # return cpy
 
 class ParseResultBase(object):
   _COUNTER = 0
@@ -86,7 +87,7 @@ class ParseValue(ParseResultBase):
     state.add(str(self), indent=1, newline=True)
     pformat(self.value, state)
     for c in self.causes:
-      c.__pformat__(state)
+      pformat(c, state)
     state.add("", indent=-1)
 
 class ParseError(ParseResultBase):
@@ -100,7 +101,7 @@ class ParseError(ParseResultBase):
   def __pformat__(self, state):
     state.add(str(self), indent=1, newline=True)
     for c in self.causes:
-      c.__pformat__(state)
+      pformat(c, state)
     state.add("", indent=-1)
 
 class ParseStreamError(Exception):
@@ -148,9 +149,8 @@ class ParseReader(object):
 
   def get_coord(self):
     return self.current_coord.copy()
-    #return fastcopy.deepcopy(self.current_coord)
     if self._current_coord_cache is None:
-      cpy = fastcopy.deepcopy(self.current_coord)
+      cpy = self.current_coord.copy()
       self._current_coord_cache = cpy
     return self._current_coord_cache
 
@@ -385,12 +385,12 @@ class ParseReader(object):
           self.current_coord.line += countparts - 1
           self.current_coord.column = 1
         self.current_coord.column += len(lineparts[-1])
-        self._current_coord_cache = None
         #log.trace("Coord calc result {}", self.get_coord())
         self._stream.seek(peek_tell)
       else:
         self._stream.seek(read_tell)
         break
+    self._current_coord_cache = None
     if consumed_count >= minimum_consumed:
       #log.trace("ok, count ({}) >= min ({})", consumed_count, minimum_consumed)
       self.stats["total_consumed"] += consumed_count
@@ -418,7 +418,7 @@ class StringPredicate(object):
     return 'StringPredicate(string={}, read_distance={}, peek_distance={})'.format(
         repr(self.string), repr(self.read_distance), repr(self.peek_distance))
   def what(self):
-    return "expected bytestring `%s'" % self.string
+    return "expected bytestring {}".format(repr(self.string))
 
 class LineCommentPredicate(object):
   def __init__(self):
@@ -451,7 +451,7 @@ class SimpleClassPredicate(object):
     #log.trace("{} {} {} {}", repr(peek), repr(peek[0]), repr(self.re.pattern), repr(self.re.match(peek)))
     return ConsumePredicateResult(consume=self.re.match(peek))
   def what(self):
-    wh = "expected byte within [%s]" % self.ccls
+    wh = "expected byte matching {}".format(repr(self.re.pattern))
     return wh
   def __str__(self):
     return 'SimpleClassPredicate(ccls={}, read_distance={}, peek_distance={})'.format(
@@ -481,7 +481,7 @@ class EscapedClassPredicate(object):
       prune = True
     return ConsumePredicateResult(consume=consume, prune=prune)
   def what(self):
-    wh = "expected byte within [%s]" % self.ccls
+    wh = "expected byte matching {}".format(repr(self.re.pattern))
     return wh
   def __str__(self):
     return 'EscapedClassPredicate(ccls={}, cclse={}, read_distance={}, peek_distance={})'.format(

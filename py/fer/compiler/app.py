@@ -1,4 +1,5 @@
 import io
+import _pickle
 import os
 import sys
 
@@ -35,13 +36,13 @@ class CompilationProblem(Exception):
       # get the farthest (last highest line,column) and highest level (high parser depth)
       # error which will indicate what caused the failure (for each file or each cause)
       for file, fcause in fcauses.items():
-        if fcause.parse_kind != "error":
+        if fcause:
           continue
         log.trace("fcause: " + str(fcause))
         what += "\n" + str(fcause)
         lcauses = fcause.get_last_deepest_cause()
         for lfile, lcause in lcauses.items():
-          if lcause[0].parse_kind != "error":
+          if lcause[0]:
             continue
           log.trace("- lcause: " + str(lcause[0]))
           what += "\n- " + str(lcause[0])
@@ -54,8 +55,8 @@ def compile_parser():
       env.vars.get(EV_PSRMODNAME),
       env.vars.get(EV_PSRNAME))
   log.trace("Grammar compiling statistics {}", logger.LazyFormat(spformat, stats))
+  log.trace("Grammar compiling complete result {}", logger.LazyFormat(spformat, result))
   if not result:
-    log.trace("Grammar compiling complete result {}", logger.LazyFormat(spformat, result))
     raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 

@@ -12,13 +12,13 @@ from fer.ferutil import env, logger
 # Big problem when Literal definition is not closed
 # https://stackoverflow.com/questions/8315389/how-do-i-print-functions-as-they-are-called
 def tracefunc(frame, event, arg, indent=[0]):
-      if event == "call":
-          indent[0] += 2
-          print("-" * indent[0] + "> call function", frame.f_code.co_name)
-      elif event == "return":
-          print("<" + "-" * indent[0], "exit function", frame.f_code.co_name)
-          indent[0] -= 2
-      return tracefunc
+  if event == "call":
+    indent[0] += 2
+    print("-" * indent[0] + "> call function", frame.f_code.co_name)
+  elif event == "return":
+    print("<" + "-" * indent[0], "exit function", frame.f_code.co_name)
+    indent[0] -= 2
+  return tracefunc
 
 #sys.setprofile(tracefunc)
 
@@ -30,9 +30,9 @@ def init():
   env.vars.forall(lambda k, v: modmain.log.debug("{} = {}".format(k, repr(v))))
 
 if __name__ == "__main__":
-  pr = cProfile.Profile()
+  #pr = cProfile.Profile()
   try:
-    pr.enable()
+    #pr.enable()
     try:
       init()
     except:
@@ -48,6 +48,6 @@ if __name__ == "__main__":
       sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
       sys.exit(8)
   finally:
-    pr.disable()
-    pr.dump_stats('fer.stats')
+    #pr.disable()
+    #pr.dump_stats('fer.stats')
     pass

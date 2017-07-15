@@ -2,12 +2,16 @@ import os
 
 from . import typecheck
 from . import env
+from . import logger
+
+log = logger.get_logger()
 
 class PformatState(object):
   def __init__(self):
     self.elems = []
     self.instances = set()
   def add(self, elem, **args):
+    log.trace("PformatState.add({}, {}", repr(elem), repr(args))
     self.elems.append((elem, args))
   def finalize(self, max_depth=None):
     l = {
@@ -33,11 +37,12 @@ class PformatState(object):
     return "\n".join(l["lines"])
 
 def pformat(v, state):
-  
   vformat = getattr(v, "__pformat__", None)
   _id = id(v)
+  log.trace("pformat {} {}", type(v).__name__, _id)
   if _id in state.instances:
-    return pformat("<pformat detected recursion: {}>".format(_id), state)
+    pformat("<pformat detected recursion: {} {}>".format(type(v).__name__, _id), state)
+    return
   else:
     state.instances.add(_id)
   if callable(vformat):

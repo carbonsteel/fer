@@ -70,7 +70,7 @@ class RealmLoader(object):
   def parse_realm(self, realm_import, fullpath):
     pretty_fullpath = spformat_path(fullpath)
     if fullpath is None:
-      return parser.ParseValue(
+      return parser.ParseError(
           error="Could not find realm in path : {}".format(realm_import.realm),
           coord=realm_import._fcrd)
     log.info("Parsing {}", pretty_fullpath)

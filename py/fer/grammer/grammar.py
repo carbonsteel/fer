@@ -195,7 +195,7 @@ class GrammarParser(object):
     prefix = self._reader.consume_token(StringPredicate("."), 1, 1)
     if not prefix:
       return ParseError(error="expected definition prefix",
-          coord=self._reader.current_coord)
+          coord=self._reader.get_coord())
     return prefix
 
   def __call__(self):
