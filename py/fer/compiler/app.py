@@ -4,7 +4,7 @@ import sys
 
 from fer.ferutil import env, id_generator, logger, spformat
 from fer.grammer import common, compiler, interceptor, parser
-from . import psrhook 
+from . import psrhook, common
 
 log = logger.get_logger()
 
@@ -77,13 +77,14 @@ def main():
     context.on_compiler_problem = i.register_trigger()
 
     loader = psrhook.loader.RealmLoader(context)
-    varcheck = psrhook.varcheck.VariableAnalysis(context)
+    #varcheck = psrhook.varcheck.VariableAnalysis(context)
 
     # bootstrap by firing a realm import
-    asked_realm = parser.ParseResult(
+    asked_realm = parser.ParseValue(
         value=modparser.RealmDomainImport(
-            realm="./" + sys.argv[1], domains=[], _fcrd=parser.ParserCoord()),
-        coord=parser.ParserCoord.nil())
+            realm="./" + sys.argv[1], domains=[],
+            _fcrd=common.CompilerCoord()),
+        coord=common.CompilerCoord())
     result = i.trigger(parser_class.on_realm_domain_import, asked_realm)
     if not result:
       i.trigger(context.on_compilation_problem, result)
@@ -94,7 +95,7 @@ def main():
     log.error(p)
   except:
     if i is not None and context is not None:
-      i.trigger(context.on_compiler_problem, parser.ParseResult(
-          error="Compiler exception", coord=parser.ParserCoord.nil()))
+      i.trigger(context.on_compiler_problem, parser.ParseError(
+          error="Compiler exception", coord=common.CompilerCoord()))
     raise
   

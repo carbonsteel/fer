@@ -32,9 +32,7 @@ class PformatState(object):
     fore("", {"newline":True}) # flush remainder
     return "\n".join(l["lines"])
 
-def pformat(v, state=None):
-  if state is None:
-    state = PformatState()
+def pformat(v, state):
   
   vformat = getattr(v, "__pformat__", None)
   _id = id(v)
@@ -89,10 +87,11 @@ def pformat(v, state=None):
   else:
     state.add(repr(v))
   state.instances.remove(_id)
-  return state
 
-def spformat(v, state=None):
-  return pformat(v, state).finalize()
+def spformat(v):
+  state = PformatState()
+  pformat(v, state)
+  return state.finalize()
 
 EV_PATHREL="PATHREL"
 env.vars.register(EV_PATHREL, ".", os.path.abspath)
@@ -100,3 +99,19 @@ def spformat_path(path):
   if path:
     return os.path.relpath(path, env.vars.get(EV_PATHREL))
   return path
+
+def pformat_class(members, instance, state):
+  state.add(type(instance).__name__, indent=1, newline=True)
+  state.add("(")
+  for id in members[:-1]:
+    state.add(str(id), newline=True)
+    state.add("=", indent=1)
+    pformat(getattr(instance, id), state)
+    state.add(",", indent=-1)
+  if len(members) > 0:
+    id = members[-1]
+    state.add(str(id), newline=True)
+    state.add("=", indent=1)
+    pformat(getattr(instance, id), state)
+    state.add("", indent=-1)
+  state.add(")", indent=-1)

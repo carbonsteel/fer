@@ -1,4 +1,3 @@
-import copy
 import io
 import re
 import sys
@@ -6,44 +5,19 @@ import sys
 from fer.ferutil import *
 log = logger.get_logger()
 
-class ParserCoord(object):
-  NIL_STR = "!nil!" # must not be a valid path
-  @classmethod
-  def nil(cls):
-    """ For implementation errors, allows ParseResults to float to the top. """
-    return ParserCoord(line=sys.maxsize, column=0, file=cls.NIL_STR)
-
-  # First line begins at 1, first column begins at 1
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "column": {
-        "default": 1,
-        "type": int,
-      },
-      "line": {
-        "default": 1,
-        "type": int,
-      },
-      "file": {
-        "default": "",
-        "type": str
-      }
-    })(self, args)
+class ParseCoord(object):
+  def __init__(self, file, line, column):
+    self.file = file
+    self.line = line
+    self.column = column
   def __str__(self):
-    if self.file == self.NIL_STR:
-      return "!"
-    else:
-      path = ""
-      if len(self.file) > 1:
-        path = spformat_path(self.file) + "@"
-      return "%s%d:%d" % (path, self.line, self.column)
+    return "{}:{}:{}".format(spformat_path(self.file), self.line, self.column)
   def __lt__(self, other):
     if self.line < other.line:
       return True
     if self.line > other.line:
       return False
-    return self.column < other.column 
-  
+    return self.column < other.column
   def __eq__(self, other):
     return not self<other and not other<self
   def __ne__(self, other):
@@ -54,50 +28,29 @@ class ParserCoord(object):
     return not self<other
   def __le__(self, other):
     return not other<self
-
-class ParseResult(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "value": {
-      },
-      "error": {
-        "type": str,
-      },
-      "coord": {
-        "type": of(ParserCoord),
-      },
-      "causes": {
-        "default": [],
-        "type": seq_of(ParseResult),
-      }
-    }, {
-      "parse_kind": {
-        "arguments": ["value", "error"],
-        "mutually_exclusive": True,
-      } 
-    }, {
-      "autostr": False,
-    })(self, args)
-    # ouch, get rid of this dependency defined in the importer (fer.compiler)
-    self.__wtf__ = id_generator() + "@" if logger.get_level("INFO") > vars.get("LOGLEVEL") else ""
-    # bring value forward 
-    if self.parse_kind == "value" and isinstance(self.value, ParseResult):
-      self.put(causes=self.value.causes)
-      self.value = self.value.value
-  def __bool__(self):
-    return self.parse_kind == "value"
   def __pformat__(self, state):
-    state.add(str(self), indent=1, newline=True)
-    if self.parse_kind == "value":
-      pformat(self.value, state)
-    for c in self.causes:
-      c.__pformat__(state)
-    state.add("", indent=-1)
+    state.add(str(self))
+  def copy(self):
+    cls = self.__class__
+    cpy = cls.__new__(cls)
+    cpy.__dict__.update(self.__dict__)
+    return cpy
+
+class ParseResultBase(object):
+  _COUNTER = 0
+  def __init__(self, coord, causes):
+    self.coord = coord
+    self.causes = causes
+    ParseResultBase._COUNTER += 1
+    self.uid = ParseResultBase._COUNTER
+  def __bool__(self):
+    raise NotImplementedError()
   def __str__(self):
-    if self.parse_kind == "value":
-      return "%s%s got : " % (self.__wtf__, self.coord)
-    elif self.parse_kind == "error":
-      return "%s%s : %s" % (self.__wtf__, self.coord, self.error)
+    raise NotImplementedError()
+  def __pformat__(self, state):
+    raise NotImplementedError()
+  def put(self, causes):
+    self.causes.extend(causes)
   def get_first_deepest_cause(self):
     res = {}
     self._get_first_deepest_cause(res)
@@ -108,7 +61,6 @@ class ParseResult(object):
           or c.coord > files[c.coord.file].coord):
         files[c.coord.file] = c
       c._get_first_deepest_cause(files)
-    
   def get_last_deepest_cause(self):
     res = {}
     self._get_last_deepest_cause(0, res)
@@ -121,15 +73,35 @@ class ParseResult(object):
                 and level > files[c.coord.file][1]))):
         files[c.coord.file] = (c, level)
       c._get_last_deepest_cause(level+1, files)
-  def put(self, **args):
-    that = Dummy()
-    StrictNamedArguments({
-      "causes": {
-        "default": [],
-        "type": seq_of(ParseResult),
-      }
-    })(that, args)
-    self.causes.extend(that.causes)
+
+class ParseValue(ParseResultBase):
+  def __init__(self, value, coord, causes=[]):
+    super().__init__(coord, causes)
+    self.value = value
+  def __bool__(self):
+    return True
+  def __str__(self):
+    return "{}@{} got : ".format(self.uid, self.coord)
+  def __pformat__(self, state):
+    state.add(str(self), indent=1, newline=True)
+    pformat(self.value, state)
+    for c in self.causes:
+      c.__pformat__(state)
+    state.add("", indent=-1)
+
+class ParseError(ParseResultBase):
+  def __init__(self, error, coord, causes=[]):
+    super().__init__(coord, causes)
+    self.error = error
+  def __bool__(self):
+    return False
+  def __str__(self):
+    return "{}@{} : {}".format(self.uid, self.coord, self.error)
+  def __pformat__(self, state):
+    state.add(str(self), indent=1, newline=True)
+    for c in self.causes:
+      c.__pformat__(state)
+    state.add("", indent=-1)
 
 class ParseStreamError(Exception):
   pass
@@ -163,7 +135,8 @@ class ParseStream(object):
 
 class ParseReader(object):
   def __init__(self, stream, stream_name):
-    self.current_coord = ParserCoord(column=1, line=1, file=stream_name)
+    self.current_coord = ParseCoord(column=1, line=1, file=stream_name)
+    self._current_coord_cache = self.current_coord
     self._stream = ParseStream(stream)
     self.stats = {
       "total_peeks":0,
@@ -174,44 +147,25 @@ class ParseReader(object):
     }
 
   def get_coord(self):
-    return copy.deepcopy(self.current_coord)
+    return self.current_coord.copy()
+    #return fastcopy.deepcopy(self.current_coord)
+    if self._current_coord_cache is None:
+      cpy = fastcopy.deepcopy(self.current_coord)
+      self._current_coord_cache = cpy
+    return self._current_coord_cache
+
 
   def parse_nothing(self, value=None):
-    return ParseResult(value=value, coord=self.get_coord())
-    
-  def parse_type(self, **args):
-    this = Dummy()
-    StrictNamedArguments({
-      "result_type": {
-      },
-      "error": {
-        "type": str,
-      },
-      "parsers": {
-        "type": seq_of(
-          tuple_of(
-            str,
-            str,
-            like(callable, "that is callable (and argument-less)"))),
-      },
-      "result_immediate": {
-        "type": str,
-        "default": None,
-      },
-      "any": {
-        "default": False,
-      }
-    })(this, args)
+    return ParseValue(value=value, coord=self.get_coord())
+  
+  def parse_type(self, result_type, error, parsers, result_immediate=None):
     type_args = {}
     begin_coord = self.get_coord()
-    parser_errors = ParseResult(error=this.error, coord=begin_coord)
-    for id, error, parser in this.parsers:
+    parser_errors = ParseError(error=error, coord=begin_coord)
+    for id, error, parser in parsers:
       #log.debug("parse_type trying %s %s:%s"%(str(self.get_coord()),repr(id),repr(error)))
       parser_result = parser()
-      parser_errors.put(causes=[
-          parser_result
-      #    ParseResult(error=error, coord=self.get_coord(), causes=[parser_result])
-      ])
+      parser_errors.put(causes=[parser_result])
       if not parser_result:
         parser_errors.coord = self.get_coord()
         parser_result.error += " (%s)" % (error,)
@@ -219,23 +173,23 @@ class ParseReader(object):
       if len(id) > 0:
         type_args[id] = parser_result.value
     value = None
-    if this.result_immediate is None:
-      value = this.result_type(**type_args)
+    if result_immediate is None:
+      value = result_type(**type_args)
     else:
-      imm = type_args[this.result_immediate]
+      imm = type_args[result_immediate]
       try:
-        value = this.result_type(imm)
+        value = result_type(imm)
       except TypeError:
-        if ofinstance(imm, this.result_type):
+        if ofinstance(imm, result_type):
           value = imm
         else:
           raise
-    return ParseResult(value=value,
+    return ParseValue(value=value,
         coord=begin_coord,
         causes=[parser_errors])
 
   def parse_any(self, parsers):
-    errors = ParseResult(error="expected any", coord=self.get_coord())
+    errors = ParseError(error="expected any", coord=self.get_coord())
     for parser in parsers:
       parser_result = self.lookahead(parser)
       errors.put(causes=[parser_result])
@@ -248,9 +202,9 @@ class ParseReader(object):
   def parse_many(self, prefix, parser, minimum_parsed=0, maximum_parsed=sys.maxsize):
     results = []
     begin_coord = self.get_coord()
-    prefix_errors = ParseResult(error="prefix errors in many",
+    prefix_errors = ParseError(error="prefix errors in many",
         coord=self.get_coord())
-    parser_errors = ParseResult(error="inner parser errors in many",
+    parser_errors = ParseError(error="inner parser errors in many",
         coord=self.get_coord())
     while True:
       count = len(results)
@@ -258,22 +212,22 @@ class ParseReader(object):
       prefix_errors.put(causes=[prefix_result])
       if not prefix_result:
         if count >= minimum_parsed:
-          return ParseResult(value=self._maybe_many(results, maximum_parsed),
+          return ParseValue(value=self._maybe_many(results, maximum_parsed),
               coord=begin_coord,
               causes=[prefix_errors, parser_errors])
-        return ParseResult(
+        return ParseError(
             error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
             coord=self.get_coord(),
             causes=[prefix_errors, parser_errors])
       if count >= maximum_parsed:
-        return ParseResult(
+        return ParseError(
             error="expected at most %d instances in many" % (maximum_parsed,),
             coord=self.get_coord(),
             causes=[prefix_errors, parser_errors])
       parser_result = parser()
       parser_errors.put(causes=[parser_result])
       if not parser_result:
-        return ParseResult(error="expected instance after prefix in many",
+        return ParseError(error="expected instance after prefix in many",
             coord=self.get_coord(),
             causes=[prefix_errors, parser_errors])
       results.append(parser_result.value)
@@ -292,13 +246,13 @@ class ParseReader(object):
   def parse_many_wp(self, parser, minimum_parsed=0, maximum_parsed=sys.maxsize):
     results = []
     begin_coord = self.get_coord()
-    parser_errors = ParseResult(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
+    parser_errors = ParseError(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
         coord=self.get_coord())
     previous_coord = begin_coord
     while True:
       count = len(results)
       if count == maximum_parsed:
-        return ParseResult(
+        return ParseValue(
             value=self._maybe_many(results, maximum_parsed),
             coord=begin_coord,
             causes=[parser_errors])
@@ -308,11 +262,11 @@ class ParseReader(object):
       if (not parser_result) or (current_coord == previous_coord):
         # bad parse or nothing was successfully parsed
         if count >= minimum_parsed:
-          return ParseResult(value=self._maybe_many(results, maximum_parsed),
+          return ParseValue(value=self._maybe_many(results, maximum_parsed),
               coord=begin_coord,
               causes=[parser_errors])
         else:
-          return ParseResult(
+          return ParseError(
               error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
               coord=self.get_coord(),
               causes=[parser_errors])
@@ -342,9 +296,9 @@ class ParseReader(object):
   def _consume_eof(self):
     peek_bytes = self._stream.read(1)
     if len(peek_bytes) == 0:
-      return ParseResult(value=None, coord=self.get_coord())
+      return ParseValue(value=None, coord=self.get_coord())
     else:
-      return ParseResult(error="expected eof", coord=self.get_coord())
+      return ParseError(error="expected eof", coord=self.get_coord())
 
   def consume_ws (self):
     return self.parse_type(
@@ -358,7 +312,6 @@ class ParseReader(object):
     return self.parse_type(
       result_type=str,
       error='expected w',
-      any=True,
       parsers=[
         ('', 'expected ws in ww', lambda: self.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self.parse_many_wp(self.parse_line_comment, 0, 1)),
@@ -387,7 +340,7 @@ class ParseReader(object):
   def consume_string(self, predicate, minimum_consumed=0, maximum_consumed=sys.maxsize):
     string = ""
     begin_coord = self.get_coord()
-    error = ParseResult(error=predicate.what(), coord=self.get_coord())
+    error = ParseError(error=predicate.what(), coord=self.get_coord())
     predicate_result = None
     consumed_count = 0
     peek = None
@@ -408,7 +361,7 @@ class ParseReader(object):
       if len(peek) < predicate.peek_distance:
         #log.trace("Early eof")
         error.put(causes=[
-            ParseResult(error="unexpected eof", coord=self.get_coord())])
+            ParseError(error="unexpected eof", coord=self.get_coord())])
         self._stream.seek(read_tell)
         break
       # send peek to predicate
@@ -432,6 +385,7 @@ class ParseReader(object):
           self.current_coord.line += countparts - 1
           self.current_coord.column = 1
         self.current_coord.column += len(lineparts[-1])
+        self._current_coord_cache = None
         #log.trace("Coord calc result {}", self.get_coord())
         self._stream.seek(peek_tell)
       else:
@@ -440,25 +394,18 @@ class ParseReader(object):
     if consumed_count >= minimum_consumed:
       #log.trace("ok, count ({}) >= min ({})", consumed_count, minimum_consumed)
       self.stats["total_consumed"] += consumed_count
-      return ParseResult(value=string, coord=begin_coord, causes=[error])
+      return ParseValue(value=string, coord=begin_coord, causes=[error])
     else:
       #log.trace("unexpected bytes `{}'", peek)
       error.put(causes=[
-          ParseResult(error="unexpected bytes {}".format(repr(peek)), coord=self.get_coord())])
+          ParseError(error="unexpected bytes {}".format(repr(peek)), coord=self.get_coord())])
       self._stream.seek(read_tell)
       return error
 
 class ConsumePredicateResult(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "prune": {
-        "default": False,
-        "type": bool,
-      },
-      "consume": {
-        "type": bool,
-      }
-    })(self, args)
+  def __init__(self, consume, prune=False):
+    self.consume = consume
+    self.prune = prune
 
 class StringPredicate(object):
   def __init__(self, string):

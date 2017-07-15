@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from .parser import ParseResult, ParserCoord
+from .parser import ParseResultBase
 from fer.ferutil import of, logger
 
 log = logger.get_logger()
@@ -35,15 +35,9 @@ class Interceptor(object):
       return value
     for f, context, reg_stack in self.calls[call_id]:
       try:
-        value = of(ParseResult)(f(value, context))
+        value = of(ParseResultBase)(f(value, context))
       except TypeError as e:
         if str(e).startswith("expected value of type"):
-          # value = ParseResult(
-          #     error="Expected ParseResult from callback registered at:\n"
-          #         + "".join(reg_stack[:-1]),
-          #         #+ traceback.format_exc(10),
-          #     coord=ParserCoord.nil())
-          # break;
           raise InterceptorError(
               "Interceptor expected ParseResult from callback callback registered at:\n"
               + "".join(reg_stack[:-1])) from e

@@ -1,3 +1,5 @@
+import cProfile
+
 import io
 import os
 import sys
@@ -28,17 +30,24 @@ def init():
   env.vars.forall(lambda k, v: modmain.log.debug("{} = {}".format(k, repr(v))))
 
 if __name__ == "__main__":
+  pr = cProfile.Profile()
   try:
-    init()
-  except:
-    print("Catastrohpic exception during initialization", file=sys.stderr)
-    traceback.print_exc(10, sys.stderr)
-    sys.exit(16)
+    pr.enable()
+    try:
+      init()
+    except:
+      print("Catastrohpic exception during initialization", file=sys.stderr)
+      traceback.print_exc(10, sys.stderr)
+      sys.exit(16)
 
-  try:
-    ec = app.main()
-    if ec is not None and ec > 0:
-      sys.exit(ec)
-  except:
-    sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
-    sys.exit(8)
+    try:
+      ec = app.main()
+      if ec is not None and ec > 0:
+        sys.exit(ec)
+    except:
+      sys.modules[__name__].log.exception("Unhandled exception in __main__.main()")
+      sys.exit(8)
+  finally:
+    pr.disable()
+    pr.dump_stats('fer.stats')
+    pass

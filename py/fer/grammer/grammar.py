@@ -4,54 +4,42 @@ from .common import *
 from .parser import *
 
 class GrammarClassDefinition(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "ccls": {
-        "type": str,
-      },
-    })(self, args)
+  def __init__(self, ccls):
+    self.ccls = ccls
+  def __pformat__(self, state):
+    pformat_class(['ccls'], self, state)
 
 class GrammarLiteralDefinition(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "literal": {
-        "type": str,
-      },
-    })(self, args)
+  def __init__(self, literal):
+    self.literal = literal
+  def __pformat__(self, state):
+    pformat_class(['literal'], self, state)
 
 class GrammarDefinition(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "id": {
-        "type": str,
-      },
-      "value": {
-      },
-      "hook": {
-      }
-    })(self, args)
+  def __init__(self, id, value, hook):
+    self.id = id
+    self.value = value
+    self.hook = hook
+  def __pformat__(self, state):
+    pformat_class(['id', 'hook', 'value'], self, state)
 
 class GrammarCompositeDefinition(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "expression": {
-      },
-    })(self, args)
+  def __init__(self, expression):
+    self.expression = expression
+  def __pformat__(self, state):
+    pformat_class(['expression'], self, state)
 
 class GrammarAlternativeDefinition(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "alternative": {
-      },
-    })(self, args)
+  def __init__(self, alternative):
+    self.alternative = alternative
+  def __pformat__(self, state):
+    pformat_class(['alternative'], self, state)
 
 class ExpressionQuantifier(object):
-  def __init__(self, **args):
-    StrictNamedArguments({
-      "expression": {
-      },
-    })(self, args)
-
+  def __init__(self, expression):
+    self.expression = expression
+  def __pformat__(self, state):
+    pformat_class(['expression'], self, state)
 
 class GrammarParser(object):
   def __init__(self, reader):
@@ -206,7 +194,7 @@ class GrammarParser(object):
   def parse_definition_prefix(self):
     prefix = self._reader.consume_token(StringPredicate("."), 1, 1)
     if not prefix:
-      return ParseResult(error="expected definition prefix",
+      return ParseError(error="expected definition prefix",
           coord=self._reader.current_coord)
     return prefix
 

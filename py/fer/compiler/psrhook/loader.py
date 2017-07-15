@@ -48,7 +48,7 @@ class RealmLoader(object):
     if realm_path:
       parts = realm_path.value
       root = parts.local if parts.local is not None else "/"
-      return parser.ParseResult(
+      return parser.ParseValue(
           value=root + "/".join(branch.realm for branch in parts.path),
           causes=[realm_path],
           coord=realm_path.coord)
@@ -70,7 +70,7 @@ class RealmLoader(object):
   def parse_realm(self, realm_import, fullpath):
     pretty_fullpath = spformat_path(fullpath)
     if fullpath is None:
-      return parser.ParseResult(
+      return parser.ParseValue(
           error="Could not find realm in path : {}".format(realm_import.realm),
           coord=realm_import._fcrd)
     log.info("Parsing {}", pretty_fullpath)
@@ -82,7 +82,7 @@ class RealmLoader(object):
       
       if not result:
         log.trace(logger.LazyFormat(spformat, result))
-        return parser.ParseResult(
+        return parser.ParseError(
             error="Could not parse realm {}".format(realm_import.realm),
             causes=[result], coord=result.coord)
       

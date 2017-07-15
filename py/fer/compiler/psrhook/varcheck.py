@@ -1,5 +1,5 @@
 from fer.ferutil import *
-from fer.grammer import ParseResult
+from fer.grammer import ParseError
 from .loader import RealmLoader
 
 
@@ -114,7 +114,7 @@ class VariableAnalysis(object):
       for d_import in realm_import.value.domains:
         d_name = d_import.domain if d_import.as_domain is None else d_import.as_domain
         if d_name in self.scope_stack.peek().declarations:
-          return ParseResult(
+          return ParseError(
               error="Import {} conflicting with another at {}".format(
                   d_name, self.scope_stack.peek().declarations[d_name]._fcrd),
               coord=d_import._fcrd)

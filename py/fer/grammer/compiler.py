@@ -76,9 +76,13 @@ class GrammarParserCompiler(object):
     W = self.get_writer()
     if len(members) > 0:
       members[KEY_FER_COORD] = {}
-      W += "class %s(object):" % id_to_def(definition.id)
-      W += "  def __init__(self, **args):"
-      W += "    StrictNamedArguments(%s)(self, args)" % repr(members)
+      members_keys = members.keys()
+      W += "class {}(object):".format(id_to_def(definition.id))
+      W += "  def __init__(self, {}):".format(", ".join(members_keys))
+      for m_name in members_keys:
+        W += "    self.{0} = {0}".format(m_name)
+      W += "  def __pformat__(self, state):"
+      W += "    pformat_class({}, self, state)".format(repr(sorted(members_keys)))
       return None
     elif synonym_of is None:
       W += "%s = str" % id_to_def(definition.id)
@@ -114,7 +118,7 @@ class GrammarParserCompiler(object):
           has_imm = True
           break
       if not(has_imm or qty_anchors == 0):
-        W += "        (%s, 'built-in coord record', lambda: ParseResult(value=self._reader.get_coord(), coord=ParserCoord()))," % repr(KEY_FER_COORD)
+        W += "        (%s, 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None))," % repr(KEY_FER_COORD)
       for e in composite.expression:
         if e["identifier"] not in self.known_definitions:
           raise ValueError("%s is used but is not defined" % e["identifier"])
