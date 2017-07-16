@@ -55,8 +55,8 @@ def compile_parser():
       env.vars.get(EV_PSRMODNAME),
       env.vars.get(EV_PSRNAME))
   log.trace("Grammar compiling statistics {}", logger.LazyFormat(spformat, stats))
-  log.trace("Grammar compiling complete result {}", logger.LazyFormat(spformat, result))
   if not result:
+    log.trace("Grammar compiling complete result {}", logger.LazyFormat(spformat, result))
     raise CompilationProblem("Could not compile fer parser", result)
   return __import__(env.vars.get(EV_PSRMODNAME))
 

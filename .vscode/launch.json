@@ -1,6 +1,27 @@
 {
     "version": "0.2.0",
     "configurations": [
+    {
+      "name": "fer.compiler",
+      "type": "python",
+      "request": "launch",
+      "stopOnEntry": true,
+      "pythonPath": "/usr/bin/python3.6",
+      "module": "fer.compiler",
+      "cwd": "${workspaceRoot}/py",
+      "env": {
+        "INCPATH":"tests/basic;src/include"
+      },
+      "envFile": "${workspaceRoot}/py/.env",
+      "debugOptions": [
+        "WaitOnAbnormalExit",
+        "WaitOnNormalExit",
+        "RedirectOutput"
+      ],
+      "args": [
+        "basic"
+      ]
+    },
         {
             "name": "C++ Launch",
             "type": "cppdbg",

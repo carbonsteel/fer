@@ -11,7 +11,7 @@ class PformatState(object):
     self.elems = []
     self.instances = set()
   def add(self, elem, **args):
-    log.trace("PformatState.add({}, {}", repr(elem), repr(args))
+    #log.trace("PformatState.add({}, {})", repr(elem), repr(args))
     self.elems.append((elem, args))
   def finalize(self, max_depth=None):
     l = {
@@ -39,7 +39,7 @@ class PformatState(object):
 def pformat(v, state):
   vformat = getattr(v, "__pformat__", None)
   _id = id(v)
-  log.trace("pformat {} {}", type(v).__name__, _id)
+  #log.trace("pformat {} {}", type(v).__name__, _id)
   if _id in state.instances:
     pformat("<pformat detected recursion: {} {}>".format(type(v).__name__, _id), state)
     return

@@ -1,6 +1,7 @@
 import io
 import re
 import sys
+#import traceback
 
 from fer.ferutil import *
 log = logger.get_logger()
@@ -41,7 +42,7 @@ class ParseResultBase(object):
   _COUNTER = 0
   def __init__(self, coord, causes):
     self.coord = coord
-    self.causes = (causes)
+    self.causes = [] if causes is None else causes
     ParseResultBase._COUNTER += 1
     self.uid = ParseResultBase._COUNTER
   def __bool__(self):
@@ -51,7 +52,7 @@ class ParseResultBase(object):
   def __pformat__(self, state):
     raise NotImplementedError()
   def put(self, cause):
-    self.causes.append((cause))
+    self.causes.append(cause)
   def get_first_deepest_cause(self):
     res = {}
     self._get_first_deepest_cause(res)
@@ -76,33 +77,39 @@ class ParseResultBase(object):
       c._get_last_deepest_cause(level+1, files)
 
 class ParseValue(ParseResultBase):
-  def __init__(self, value, coord, causes=[]):
+  def __init__(self, value, coord, causes=None):
     super().__init__(coord, causes)
+    #log.trace('ParseValue {} {} __init__ called from \n{}', id(self), self.uid, "".join(traceback.format_stack()[:-1]))
     self.value = value
   def __bool__(self):
     return True
   def __str__(self):
     return "{}@{} got : ".format(self.uid, self.coord)
   def __pformat__(self, state):
+    log.trace('ParseValue {} {} __pformat__ called', id(self), self.uid)
     state.add(str(self), indent=1, newline=True)
     pformat(self.value, state)
     for c in self.causes:
       pformat(c, state)
     state.add("", indent=-1)
+    #log.trace('ParseValue {} {} __pformat__ done', id(self), self.uid)
 
 class ParseError(ParseResultBase):
-  def __init__(self, error, coord, causes=[]):
+  def __init__(self, error, coord, causes=None):
     super().__init__(coord, causes)
+    #log.trace('ParseError {} {} __init__ called from \n{}', id(self), self.uid, "".join(traceback.format_stack()[:-1]))
     self.error = error
   def __bool__(self):
     return False
   def __str__(self):
     return "{}@{} : {}".format(self.uid, self.coord, self.error)
   def __pformat__(self, state):
+    #log.trace('ParseError {} {} __pformat__ called', id(self), self.uid)
     state.add(str(self), indent=1, newline=True)
     for c in self.causes:
       pformat(c, state)
     state.add("", indent=-1)
+    #log.trace('ParseError {} {} __pformat__ done', id(self), self.uid)
 
 class ParseStreamError(Exception):
   pass
