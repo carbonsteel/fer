@@ -2,6 +2,8 @@
 bin/
 application.log*
 py/prof/fer*.pstats*
+py/fer.stats
+
 
 
 # Visual Studio Code
