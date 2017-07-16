@@ -41,7 +41,7 @@ class ParseResultBase(object):
   _COUNTER = 0
   def __init__(self, coord, causes):
     self.coord = coord
-    self.causes = causes
+    self.causes = (causes)
     ParseResultBase._COUNTER += 1
     self.uid = ParseResultBase._COUNTER
   def __bool__(self):
@@ -50,8 +50,8 @@ class ParseResultBase(object):
     raise NotImplementedError()
   def __pformat__(self, state):
     raise NotImplementedError()
-  def put(self, causes):
-    self.causes.extend(causes)
+  def put(self, cause):
+    self.causes.append((cause))
   def get_first_deepest_cause(self):
     res = {}
     self._get_first_deepest_cause(res)
@@ -165,7 +165,7 @@ class ParseReader(object):
     for id, error, parser in parsers:
       #log.debug("parse_type trying %s %s:%s"%(str(self.get_coord()),repr(id),repr(error)))
       parser_result = parser()
-      parser_errors.put(causes=[parser_result])
+      parser_errors.put(parser_result)
       if not parser_result:
         parser_errors.coord = self.get_coord()
         parser_result.error += " (%s)" % (error,)
@@ -192,7 +192,7 @@ class ParseReader(object):
     errors = ParseError(error="expected any", coord=self.get_coord())
     for parser in parsers:
       parser_result = self.lookahead(parser)
-      errors.put(causes=[parser_result])
+      errors.put(parser_result)
       if not parser_result:
         continue
       else:
@@ -209,7 +209,7 @@ class ParseReader(object):
     while True:
       count = len(results)
       prefix_result = self.lookahead(prefix)
-      prefix_errors.put(causes=[prefix_result])
+      prefix_errors.put(prefix_result)
       if not prefix_result:
         if count >= minimum_parsed:
           return ParseValue(value=self._maybe_many(results, maximum_parsed),
@@ -225,7 +225,7 @@ class ParseReader(object):
             coord=self.get_coord(),
             causes=[prefix_errors, parser_errors])
       parser_result = parser()
-      parser_errors.put(causes=[parser_result])
+      parser_errors.put(parser_result)
       if not parser_result:
         return ParseError(error="expected instance after prefix in many",
             coord=self.get_coord(),
@@ -257,7 +257,7 @@ class ParseReader(object):
             coord=begin_coord,
             causes=[parser_errors])
       parser_result = self.lookahead(parser)
-      parser_errors.put(causes=[parser_result])
+      parser_errors.put(parser_result)
       current_coord = self.get_coord()
       if (not parser_result) or (current_coord == previous_coord):
         # bad parse or nothing was successfully parsed
@@ -360,8 +360,7 @@ class ParseReader(object):
       # failed to peek as far as requested
       if len(peek) < predicate.peek_distance:
         #log.trace("Early eof")
-        error.put(causes=[
-            ParseError(error="unexpected eof", coord=self.get_coord())])
+        error.put(ParseError(error="unexpected eof", coord=self.get_coord()))
         self._stream.seek(read_tell)
         break
       # send peek to predicate
@@ -397,8 +396,9 @@ class ParseReader(object):
       return ParseValue(value=string, coord=begin_coord, causes=[error])
     else:
       #log.trace("unexpected bytes `{}'", peek)
-      error.put(causes=[
-          ParseError(error="unexpected bytes {}".format(repr(peek)), coord=self.get_coord())])
+      error.put(ParseError(
+          error="unexpected bytes {}".format(repr(peek)),
+          coord=self.get_coord()))
       self._stream.seek(read_tell)
       return error
 
