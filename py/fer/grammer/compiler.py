@@ -118,7 +118,7 @@ class GrammarParserCompiler(object):
           has_imm = True
           break
       if not(has_imm or qty_anchors == 0):
-        W += "        (%s, 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None))," % repr(KEY_FER_COORD)
+        W += "        (%s, 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord()))," % repr(KEY_FER_COORD)
       for e in composite.expression:
         if e["identifier"] not in self.known_definitions:
           raise ValueError("%s is used but is not defined" % e["identifier"])

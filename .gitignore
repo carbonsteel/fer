@@ -1,6 +1,8 @@
 # carbonsteel
 bin/
 application.log*
+py/prof/fer*.pstats*
+
 
 # Visual Studio Code
 .vscode/*

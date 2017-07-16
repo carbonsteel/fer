@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-16 13:49:39.908082
+# Updated on 2017-07-16 11:36:03.553432
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -150,7 +150,7 @@ class _ParserImpl(object):
       result_type=Realm,
       error='expected realm',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('imports', 'expected realm-domain-import in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_import, 0, 9223372036854775807)),
         ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 0, 9223372036854775807)),
         ('', 'expected w in realm', self._parse_w),
@@ -451,7 +451,7 @@ class _ParserImpl(object):
       result_type=RealmPath,
       error='expected realm-path',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in realm-path', self._parse_w),
         ('local', 'expected dot in realm-path', lambda: self._reader.parse_many_wp(self._parse_dot, 0, 1)),
         ('path', 'expected realm-path-branch in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 1, 9223372036854775807)),
@@ -463,7 +463,7 @@ class _ParserImpl(object):
       result_type=RealmPathBranch,
       error='expected realm-path-branch',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected solidus in realm-path-branch', self._parse_solidus),
         ('realm', 'expected id in realm-path-branch', self._parse_id),
       ])
@@ -473,7 +473,7 @@ class _ParserImpl(object):
       result_type=RealmDomainDeclaration,
       error='expected realm-domain-declaration',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in realm-domain-declaration', self._parse_w),
         ('', 'expected domain in realm-domain-declaration', self._parse_domain),
         ('domain_declaration', 'expected domain-declaration in realm-domain-declaration', self._parse_domain_declaration),
@@ -484,7 +484,7 @@ class _ParserImpl(object):
       result_type=RealmDomainImport,
       error='expected realm-domain-import',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected from in realm-domain-import', self._parse_from),
         ('realm', 'expected realm-path in realm-domain-import', self._parse_realm_path),
@@ -501,7 +501,7 @@ class _ParserImpl(object):
       result_type=ImportDomain,
       error='expected import-domain',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in import-domain', self._parse_w),
         ('', 'expected import in import-domain', self._parse_import),
         ('domain', 'expected id in import-domain', self._parse_id),
@@ -524,7 +524,7 @@ class _ParserImpl(object):
       result_type=DomainDeclaration,
       error='expected domain-declaration',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected domain-declaration-id in domain-declaration', self._parse_domain_declaration_id),
         ('codomain', 'expected variable-codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_variable_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
@@ -545,7 +545,7 @@ class _ParserImpl(object):
       result_type=DomainDefinition,
       error='expected domain-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self._parse_left_curly_bracket),
         ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_definition, 0, 9223372036854775807)),
@@ -571,7 +571,7 @@ class _ParserImpl(object):
       result_type=VariableDefinition,
       error='expected variable-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected variable-prefix in variable-definition', self._parse_variable_prefix),
         ('id', 'expected id in variable-definition', self._parse_id),
         ('domain', 'expected variable-domain in variable-definition', lambda: self._reader.parse_many_wp(self._parse_variable_domain, 0, 1)),
@@ -582,7 +582,7 @@ class _ParserImpl(object):
       result_type=Expression,
       error='expected expression',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected id in expression', self._parse_id),
         ('arguments', 'expected expression-arguments in expression', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
         ('lookup', 'expected expression-lookup in expression', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
@@ -593,7 +593,7 @@ class _ParserImpl(object):
       result_type=ExpressionArgument,
       error='expected expression-argument',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected variable-prefix in expression-argument', self._parse_variable_prefix),
         ('id', 'expected id in expression-argument', self._parse_id),
         ('', 'expected w in expression-argument', self._parse_w),
@@ -652,7 +652,7 @@ class _ParserImpl(object):
       result_type=VariableConstraint,
       error='expected variable-constraint',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected variable-prefix in variable-constraint', self._parse_variable_prefix),
         ('id', 'expected id in variable-constraint', self._parse_id),
         ('', 'expected equals-sign in variable-constraint', self._parse_equals_sign),
@@ -664,7 +664,7 @@ class _ParserImpl(object):
       result_type=TransformDefinition,
       error='expected transform-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=None)),
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected greater-than-sign in transform-definition', self._parse_greater_than_sign),
         ('constraints', 'expected variable-constraint in transform-definition', lambda: self._reader.parse_many_wp(self._parse_variable_constraint, 0, 9223372036854775807)),

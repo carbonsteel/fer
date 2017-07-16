@@ -32,11 +32,11 @@ class ParseCoord(object):
   def __pformat__(self, state):
     state.add(str(self))
   def copy(self):
-    return fastcopy.deepcopy(self)
-    # cls = self.__class__
-    # cpy = cls.__new__(cls)
-    # cpy.__dict__.update(self.__dict__)
-    # return cpy
+    #return fastcopy.deepcopy(self)
+    cls = self.__class__
+    cpy = cls.__new__(cls)
+    cpy.__dict__.update(self.__dict__)
+    return cpy
 
 class ParseResultBase(object):
   _COUNTER = 0
@@ -86,7 +86,7 @@ class ParseValue(ParseResultBase):
   def __str__(self):
     return "{}@{} got : ".format(self.uid, self.coord)
   def __pformat__(self, state):
-    log.trace('ParseValue {} {} __pformat__ called', id(self), self.uid)
+    #log.trace('ParseValue {} {} __pformat__ called', id(self), self.uid)
     state.add(str(self), indent=1, newline=True)
     pformat(self.value, state)
     for c in self.causes:
@@ -155,7 +155,7 @@ class ParseReader(object):
     }
 
   def get_coord(self):
-    return self.current_coord.copy()
+    #return self.current_coord.copy()
     if self._current_coord_cache is None:
       cpy = self.current_coord.copy()
       self._current_coord_cache = cpy
