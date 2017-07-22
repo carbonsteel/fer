@@ -4,7 +4,7 @@ import sys
 
 def get_level(level_name):
   try:
-    return logbook.lookup_level(level_name)
+    return logbook.lookup_level(level_name.upper())
   except LookupError:
     return logbook.ERROR
 

@@ -28,6 +28,7 @@ class CompilationProblem(Exception):
   def __init__(self, what, result=None):
     self.result = result
     if result is not None:
+      log.trace(logger.LazyFormat(spformat, result))
       log.trace("Extracting causes")
       # get the first farthest (first highest line,column) error
       # which will indicate what was being parsed (per file)
@@ -40,9 +41,9 @@ class CompilationProblem(Exception):
           continue
         log.trace("fcause: " + str(fcause))
         what += "\n" + str(fcause)
-        lcauses = fcause.get_last_deepest_cause()
+        lcauses, max_level = fcause.get_last_deepest_cause()
         for lfile, lcause in lcauses.items():
-          if lcause[0]:
+          if lcause[0] or lcause[0].coord.level < max_level:
             continue
           log.trace("- lcause: " + str(lcause[0]))
           what += "\n- " + str(lcause[0])
@@ -74,11 +75,10 @@ def main():
 
     i = interceptor.Interceptor()
     context = psrhook.context.CompilerContext(i, parser_class)
-    context.on_compilation_problem = i.register_trigger()
-    context.on_compiler_problem = i.register_trigger()
+    context.on_compilation_done = i.register_trigger()
 
     loader = psrhook.loader.RealmLoader(context)
-    #varcheck = psrhook.varcheck.VariableAnalysis(context)
+    varcheck = psrhook.varcheck.VariableAnalysis(context)
 
     # bootstrap by firing a realm import
     asked_realm = parser.ParseValue(
@@ -87,16 +87,15 @@ def main():
             _fcrd=common.CompilerCoord()),
         coord=common.CompilerCoord())
     result = i.trigger(parser_class.on_realm_domain_import, asked_realm)
+    result = i.trigger(context.on_compilation_done, result)
     if not result:
-      i.trigger(context.on_compilation_problem, result)
       raise CompilationProblem("Could not load input", result)
 
     log.info("C'est finiii!")
   except CompilationProblem as p:
     log.error(p)
   except:
-    if i is not None and context is not None:
-      i.trigger(context.on_compiler_problem, parser.ParseError(
-          error="Compiler exception", coord=common.CompilerCoord()))
+    # if i is not None and context is not None:
+    #   i.trigger(context.on_compiler_problem, parser.ParseError(
+    #       error="Compiler exception", coord=common.CompilerCoord()))
     raise
-  

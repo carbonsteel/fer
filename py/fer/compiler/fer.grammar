@@ -49,10 +49,11 @@
     w from 
     realm-path@realm
     w left-curly-bracket
-    import-domain+@domains
+    import-domain-w+@domains
     w right-curly-bracket
   ) : on_realm_domain_import
-. import-domain (w import id@domain import-domain-as?@as_domain)
+. import-domain (import id@domain import-domain-as?@as_domain)
+. import-domain-w (w import-domain@@)
 . import-domain-as (w as id@@)
 . domain-declaration (domain-declaration-id@id variable-codomain?@codomain domain-definition?@domain)
 . domain-declaration-id (id@@) : on_domain_declaration_id

@@ -30,7 +30,7 @@ def find_realm_in_path(realm):
     path = realm_to_file(dir, realm)
     log.debug("Looking for realm {} at {}", realm, spformat_path(path))
     if os.path.isfile(path):
-      return path
+      return os.path.realpath(path)
   return None
 
 class RealmLoader(object):
@@ -38,7 +38,10 @@ class RealmLoader(object):
   LOADER_FULLPATH_ATTR = "_RealmLoader_fullpath"
   def __init__(self, context):
     self.context = context
+    self.loading_realms = set()
+    self.loaded_realms = {}
     self.context.on_before_parse_realm = self.context.interceptor.register_trigger()
+    self.context.on_after_parse_realm = self.context.interceptor.register_trigger()
     self.context.interceptor.register(self.context.parser_class.on_realm_path,
         self.stringnify_realm_path)
     self.context.interceptor.register(self.context.parser_class.on_realm_domain_import,
@@ -65,6 +68,7 @@ class RealmLoader(object):
       if not import_result:
         return import_result
       setattr(realm_import_result.value, self.LOADER_IMPORTED_ATTR, import_result.value)
+      self.context.interceptor.trigger(self.context.on_after_parse_realm, realm_import_result)
     return realm_import_result
 
   def parse_realm(self, realm_import, fullpath):
@@ -72,7 +76,15 @@ class RealmLoader(object):
     if fullpath is None:
       return parser.ParseError(
           error="Could not find realm in path : {}".format(realm_import.realm),
-          coord=realm_import._fcrd)
+          coord=realm_import._fcrd.levelup())
+    if fullpath in self.loading_realms:
+      return parser.ParseError(
+          error="Circular realm import : {}".format(realm_import.realm),
+          coord=realm_import._fcrd.levelup())
+    if fullpath in self.loaded_realms:
+      return self.loaded_realms[fullpath]
+
+    self.loading_realms.add(fullpath)
     log.info("Parsing {}", pretty_fullpath)
     with io.open(fullpath, "r", encoding='utf-8') as f:
       r = parser.ParseReader(f, fullpath)
@@ -87,6 +99,8 @@ class RealmLoader(object):
             causes=[result], coord=result.coord)
       
       log.info("Parsed {}", pretty_fullpath)
-      log.trace(logger.LazyFormat(spformat, result.value))
+      self.loading_realms.remove(fullpath)
+      self.loaded_realms[fullpath] = result
+      #log.trace(logger.LazyFormat(spformat, result.value))
       #result.causes=[]
       return result

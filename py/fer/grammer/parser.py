@@ -7,18 +7,23 @@ from fer.ferutil import *
 log = logger.get_logger()
 
 class ParseCoord(object):
-  def __init__(self, file, line, column):
+  def __init__(self, file, line, column, level=1):
     self.file = file
     self.line = line
     self.column = column
+    self.level = level
   def __str__(self):
     return "{}:{}:{}".format(spformat_path(self.file), self.line, self.column)
   def __lt__(self, other):
-    if self.line < other.line:
+    if self.level < other.level:
       return True
-    if self.line > other.line:
-      return False
-    return self.column < other.column
+    if self.level == other.level:
+      if self.line < other.line:
+        return True
+      if self.line == other.line:
+        return self.column < other.column
+    return False
+
   def __eq__(self, other):
     return not self<other and not other<self
   def __ne__(self, other):
@@ -36,6 +41,10 @@ class ParseCoord(object):
     cls = self.__class__
     cpy = cls.__new__(cls)
     cpy.__dict__.update(self.__dict__)
+    return cpy
+  def levelup(self):
+    cpy = self.copy()
+    cpy.level += 1
     return cpy
 
 class ParseResultBase(object):
@@ -65,16 +74,22 @@ class ParseResultBase(object):
       c._get_first_deepest_cause(files)
   def get_last_deepest_cause(self):
     res = {}
-    self._get_last_deepest_cause(0, res)
-    return res
-  def _get_last_deepest_cause(self, level, files):
+    max_level = self._get_last_deepest_cause(0, res)
+    return res, max_level
+  def _get_last_deepest_cause(self, depth, files):
+    max_level = 0
     for c in self.causes:
       if (c.coord.file not in files
           or (c.coord > files[c.coord.file][0].coord
             or (c.coord == files[c.coord.file][0].coord
-                and level > files[c.coord.file][1]))):
-        files[c.coord.file] = (c, level)
-      c._get_last_deepest_cause(level+1, files)
+                and depth > files[c.coord.file][1]))):
+        files[c.coord.file] = (c, depth)
+        if c.coord.level > max_level:
+          max_level = c.coord.level
+      level = c._get_last_deepest_cause(depth+1, files)
+      if level > max_level:
+        max_level = level
+    return max_level
 
 class ParseValue(ParseResultBase):
   def __init__(self, value, coord, causes=None):

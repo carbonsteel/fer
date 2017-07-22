@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-16 11:36:03.553432
+# Updated on 2017-07-22 11:43:23.703384
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -128,6 +128,7 @@ class TransformDefinition(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'constraints', 'expression', 'locals'], self, state)
 Id = str
+ImportDomainW = ImportDomain
 ImportDomainAs = Id
 DomainDeclarationId = Id
 InnerDomainDeclaration = DomainDeclaration
@@ -490,7 +491,7 @@ class _ParserImpl(object):
         ('realm', 'expected realm-path in realm-domain-import', self._parse_realm_path),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected left-curly-bracket in realm-domain-import', self._parse_left_curly_bracket),
-        ('domains', 'expected import-domain in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain, 1, 9223372036854775807)),
+        ('domains', 'expected import-domain-w in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain_w, 1, 9223372036854775807)),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected right-curly-bracket in realm-domain-import', self._parse_right_curly_bracket),
       ])
@@ -502,11 +503,20 @@ class _ParserImpl(object):
       error='expected import-domain',
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('', 'expected w in import-domain', self._parse_w),
         ('', 'expected import in import-domain', self._parse_import),
         ('domain', 'expected id in import-domain', self._parse_id),
         ('as_domain', 'expected import-domain-as in import-domain', lambda: self._reader.parse_many_wp(self._parse_import_domain_as, 0, 1)),
       ])
+    return value
+  def _parse_import_domain_w(self):
+    value = self._reader.parse_type(
+      result_type=ImportDomainW,
+      error='expected import-domain-w',
+      parsers=[
+        ('', 'expected w in import-domain-w', self._parse_w),
+        ('_fimm', 'expected import-domain in import-domain-w', self._parse_import_domain),
+      ],
+      result_immediate='_fimm')
     return value
   def _parse_import_domain_as(self):
     value = self._reader.parse_type(
