@@ -28,11 +28,11 @@ class CompilationProblem(Exception):
   def __init__(self, what, result=None):
     self.result = result
     if result is not None:
-      log.trace(logger.LazyFormat(spformat, result))
+      top_result = parser.ParseError(error="", causes=[result], coord=common.CompilerCoord())
       log.trace("Extracting causes")
       # get the first farthest (first highest line,column) error
       # which will indicate what was being parsed (per file)
-      fcauses = result.get_first_deepest_cause()
+      fcauses = top_result.get_first_deepest_cause()
 
       # get the farthest (last highest line,column) and highest level (high parser depth)
       # error which will indicate what caused the failure (for each file or each cause)

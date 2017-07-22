@@ -102,11 +102,12 @@ class ParseValue(ParseResultBase):
     return "{}@{} got : ".format(self.uid, self.coord)
   def __pformat__(self, state):
     #log.trace('ParseValue {} {} __pformat__ called', id(self), self.uid)
+    state.add("", indent=1)
     state.add(str(self), indent=1, newline=True)
     pformat(self.value, state)
+    state.add("", indent=-2)
     for c in self.causes:
       pformat(c, state)
-    state.add("", indent=-1)
     #log.trace('ParseValue {} {} __pformat__ done', id(self), self.uid)
 
 class ParseError(ParseResultBase):
@@ -170,11 +171,11 @@ class ParseReader(object):
     }
 
   def get_coord(self):
-    #return self.current_coord.copy()
-    if self._current_coord_cache is None:
-      cpy = self.current_coord.copy()
-      self._current_coord_cache = cpy
-    return self._current_coord_cache
+    return self.current_coord.copy()
+    # if self._current_coord_cache is None:
+    #   cpy = self.current_coord.copy()
+    #   self._current_coord_cache = cpy
+    # return self._current_coord_cache
 
 
   def parse_nothing(self, value=None):

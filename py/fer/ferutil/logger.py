@@ -21,6 +21,8 @@ class LazyFormat(object):
   def __str__(self):
     return self.callback(*self.args, **self.kwargs)
 
+Z = LazyFormat
+
 def init(level):
   #log_handler = logbook.FileHandler('application.log', 'w')
   log_handler = logbook.StreamHandler(sys.stdout, level=level)

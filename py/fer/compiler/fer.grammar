@@ -44,7 +44,6 @@
 . realm-path (w dot?@local realm-path-branch+@path) : on_realm_path
 . realm-path-branch ( solidus id@realm )
 
-. realm-domain-declaration (w domain domain-declaration@)
 . realm-domain-import (
     w from 
     realm-path@realm
@@ -56,6 +55,7 @@
 . import-domain-w (w import-domain@@)
 . import-domain-as (w as id@@)
 . domain-declaration (domain-declaration-id@id variable-codomain?@codomain domain-definition?@domain)
+. realm-domain-declaration (w domain domain-declaration@@)
 . domain-declaration-id (id@@) : on_domain_declaration_id
 . domain-definition (
     w left-curly-bracket

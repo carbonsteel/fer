@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-22 11:43:23.703384
+# Updated on 2017-07-22 15:53:54.850884
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -54,12 +54,6 @@ class RealmPathBranch(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'realm'], self, state)
-class RealmDomainDeclaration(object):
-  def __init__(self, domain_declaration, _fcrd):
-    self.domain_declaration = domain_declaration
-    self._fcrd = _fcrd
-  def __pformat__(self, state):
-    pformat_class(['_fcrd', 'domain_declaration'], self, state)
 class RealmDomainImport(object):
   def __init__(self, realm, domains, _fcrd):
     self.realm = realm
@@ -130,6 +124,7 @@ class TransformDefinition(object):
 Id = str
 ImportDomainW = ImportDomain
 ImportDomainAs = Id
+RealmDomainDeclaration = DomainDeclaration
 DomainDeclarationId = Id
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
@@ -469,17 +464,6 @@ class _ParserImpl(object):
         ('realm', 'expected id in realm-path-branch', self._parse_id),
       ])
     return value
-  def _parse_realm_domain_declaration(self):
-    value = self._reader.parse_type(
-      result_type=RealmDomainDeclaration,
-      error='expected realm-domain-declaration',
-      parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('', 'expected w in realm-domain-declaration', self._parse_w),
-        ('', 'expected domain in realm-domain-declaration', self._parse_domain),
-        ('domain_declaration', 'expected domain-declaration in realm-domain-declaration', self._parse_domain_declaration),
-      ])
-    return value
   def _parse_realm_domain_import(self):
     value = self._reader.parse_type(
       result_type=RealmDomainImport,
@@ -539,6 +523,17 @@ class _ParserImpl(object):
         ('codomain', 'expected variable-codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_variable_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
       ])
+    return value
+  def _parse_realm_domain_declaration(self):
+    value = self._reader.parse_type(
+      result_type=RealmDomainDeclaration,
+      error='expected realm-domain-declaration',
+      parsers=[
+        ('', 'expected w in realm-domain-declaration', self._parse_w),
+        ('', 'expected domain in realm-domain-declaration', self._parse_domain),
+        ('_fimm', 'expected domain-declaration in realm-domain-declaration', self._parse_domain_declaration),
+      ],
+      result_immediate='_fimm')
     return value
   def _parse_domain_declaration_id(self):
     value = self._reader.parse_type(
