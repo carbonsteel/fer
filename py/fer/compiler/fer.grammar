@@ -39,7 +39,8 @@
 . w (ww*)
 . line-comment (octothorp line-comment-content* line-feed?)
 
-. id (w pseudo-letter+@@)
+. _id (pseudo-letter+@@)
+. id (w _id@@)
 . variable-prefix (w dot)
 . realm-path (w dot?@local realm-path-branch+@path) : on_realm_path
 . realm-path-branch ( solidus id@realm )
@@ -55,8 +56,8 @@
 . import-domain-w (w import-domain@@)
 . import-domain-as (w as id@@)
 . domain-declaration (domain-declaration-id@id variable-codomain?@codomain domain-definition?@domain)
-. realm-domain-declaration (w domain domain-declaration@@)
-. domain-declaration-id (id@@) : on_domain_declaration_id
+. realm-domain-declaration (w domain w domain-declaration@@)
+. domain-declaration-id (_id@@) : on_domain_declaration_id
 . domain-definition (
     w left-curly-bracket
     # domain-parser?@parser
@@ -68,7 +69,7 @@
   )
 #. alts { a b c }
 #. domain-parser (w percent-sign __grammar@@)
-. inner-domain-declaration (w vertical-line domain-declaration@@)
+. inner-domain-declaration (w vertical-line w domain-declaration@@)
 . variable-definition (variable-prefix id@ variable-domain?@domain)
 . expression ( 
     id@ expression-arguments?@arguments expression-lookup?@lookup

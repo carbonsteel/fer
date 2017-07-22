@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-22 15:53:54.850884
+# Updated on 2017-07-22 16:03:23.140630
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -121,11 +121,12 @@ class TransformDefinition(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'constraints', 'expression', 'locals'], self, state)
-Id = str
+_id = str
+Id = _id
 ImportDomainW = ImportDomain
 ImportDomainAs = Id
 RealmDomainDeclaration = DomainDeclaration
-DomainDeclarationId = Id
+DomainDeclarationId = _id
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
@@ -423,13 +424,22 @@ class _ParserImpl(object):
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self._parse_line_feed, 0, 1)),
       ])
     return value
+  def _parse__id(self):
+    value = self._reader.parse_type(
+      result_type=_id,
+      error='expected _id',
+      parsers=[
+        ('_fimm', 'expected pseudo-letter in _id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
+      ],
+      result_immediate='_fimm')
+    return value
   def _parse_id(self):
     value = self._reader.parse_type(
       result_type=Id,
       error='expected id',
       parsers=[
         ('', 'expected w in id', self._parse_w),
-        ('_fimm', 'expected pseudo-letter in id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
+        ('_fimm', 'expected _id in id', self._parse__id),
       ],
       result_immediate='_fimm')
     return value
@@ -531,6 +541,7 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in realm-domain-declaration', self._parse_w),
         ('', 'expected domain in realm-domain-declaration', self._parse_domain),
+        ('', 'expected w in realm-domain-declaration', self._parse_w),
         ('_fimm', 'expected domain-declaration in realm-domain-declaration', self._parse_domain_declaration),
       ],
       result_immediate='_fimm')
@@ -540,7 +551,7 @@ class _ParserImpl(object):
       result_type=DomainDeclarationId,
       error='expected domain-declaration-id',
       parsers=[
-        ('_fimm', 'expected id in domain-declaration-id', self._parse_id),
+        ('_fimm', 'expected _id in domain-declaration-id', self._parse__id),
       ],
       result_immediate='_fimm')
     value = self.interceptor.trigger(self.on_domain_declaration_id, value)
@@ -567,6 +578,7 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in inner-domain-declaration', self._parse_w),
         ('', 'expected vertical-line in inner-domain-declaration', self._parse_vertical_line),
+        ('', 'expected w in inner-domain-declaration', self._parse_w),
         ('_fimm', 'expected domain-declaration in inner-domain-declaration', self._parse_domain_declaration),
       ],
       result_immediate='_fimm')
