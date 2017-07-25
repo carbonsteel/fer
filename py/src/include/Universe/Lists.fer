@@ -1,0 +1,30 @@
+from /Universe/Naturals {
+  i Natural
+  i NaturalMath
+}
+
+domain List {
+  . element_type
+  | Empty
+  | Node {
+    . next : List( . element_type ~ element_type)
+    . value : element_type 
+  }
+  >$ Empty
+}
+
+d ListMath {
+  . element_type
+  . list_type ~ List( . element_type ~ element_type)
+  | sum -> list_type {
+    . a : list_type
+    . b : list_type
+    > . a = Empty $ b
+    > . b = Empty $ a
+    >$ Node(.next~sum(.a~a/next .b~b) . value ~ a/value)
+  }
+}
+
+d Main {
+  >$ List(.element_type~Natural) # would return Empty of Natural
+}

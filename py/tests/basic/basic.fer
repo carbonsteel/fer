@@ -7,8 +7,6 @@ domain Animal {
   | getLegCount -> Natural {  }
 }
 
-d Animal
-
 d Monopod {
   | getLegCount -> Natural {
     >$ One

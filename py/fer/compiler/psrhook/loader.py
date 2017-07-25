@@ -70,7 +70,7 @@ class RealmLoader(object):
         return import_result
       setattr(realm_import_result.value, self.LOADER_IMPORTED_ATTR, import_result.value)
       realm_import_result = self.context.interceptor.trigger(self.context.on_after_parse_realm, realm_import_result)
-      log.trace(logger.Z(spformat, realm_import_result))
+      #log.trace(logger.Z(spformat, realm_import_result))
     return realm_import_result
 
   def parse_realm(self, realm_import, fullpath):

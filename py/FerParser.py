@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-22 16:03:23.140630
+# Updated on 2017-07-25 08:45:28.120030
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -35,8 +35,8 @@ Octothorp = str
 LineFeed = str
 LineCommentContent = str
 LeftToRightArrow = str
-Domain = str
-Import = str
+Domain = idem
+Import = idem
 Ww = str
 W = str
 LineComment = str
@@ -84,13 +84,33 @@ class DomainDefinition(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'domains', 'transforms', 'variables'], self, state)
-class VariableDefinition(object):
-  def __init__(self, id, domain, _fcrd):
-    self.id = id
-    self.domain = domain
+class VariableDeclaration(object):
+  def __init__(self, definition, _fcrd):
+    self.definition = definition
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'domain', 'id'], self, state)
+    pformat_class(['_fcrd', 'definition'], self, state)
+VariableDefinition = idem
+class VariableUnbound(object):
+  def __init__(self, id, _fcrd):
+    self.id = id
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'id'], self, state)
+class VariableBound(object):
+  def __init__(self, id, expression, _fcrd):
+    self.id = id
+    self.expression = expression
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'expression', 'id'], self, state)
+class VariableConstant(object):
+  def __init__(self, id, expression, _fcrd):
+    self.id = id
+    self.expression = expression
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'expression', 'id'], self, state)
 class Expression(object):
   def __init__(self, id, arguments, lookup, _fcrd):
     self.id = id
@@ -106,7 +126,7 @@ class ExpressionArgument(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'expression', 'id'], self, state)
-class VariableConstraint(object):
+class TransformConstraint(object):
   def __init__(self, id, expression, _fcrd):
     self.id = id
     self.expression = expression
@@ -130,8 +150,7 @@ DomainDeclarationId = _id
 InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
-VariableDomain = Expression
-VariableCodomain = Expression
+Codomain = Expression
 # Main parser
 class _ParserImpl(object):
   on_realm_path = 0
@@ -530,7 +549,7 @@ class _ParserImpl(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected domain-declaration-id in domain-declaration', self._parse_domain_declaration_id),
-        ('codomain', 'expected variable-codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_variable_codomain, 0, 1)),
+        ('codomain', 'expected codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
       ])
     return value
@@ -564,7 +583,7 @@ class _ParserImpl(object):
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self._parse_left_curly_bracket),
-        ('variables', 'expected variable-definition in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_definition, 0, 9223372036854775807)),
+        ('variables', 'expected variable-declaration in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_declaration, 0, 9223372036854775807)),
         ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self._parse_inner_domain_declaration, 0, 9223372036854775807)),
         ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self._parse_transform_definition, 0, 9223372036854775807)),
         ('', 'expected w in domain-definition', self._parse_w),
@@ -583,15 +602,57 @@ class _ParserImpl(object):
       ],
       result_immediate='_fimm')
     return value
+  def _parse_variable_declaration(self):
+    value = self._reader.parse_type(
+      result_type=VariableDeclaration,
+      error='expected variable-declaration',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('', 'expected variable-prefix in variable-declaration', self._parse_variable_prefix),
+        ('', 'expected w in variable-declaration', self._parse_w),
+        ('definition', 'expected variable-definition in variable-declaration', self._parse_variable_definition),
+      ])
+    return value
   def _parse_variable_definition(self):
     value = self._reader.parse_type(
       result_type=VariableDefinition,
       error='expected variable-definition',
       parsers=[
+        ('_fimm', 'expected variable-definition, any of variable-constant, variable-bound, variable-unbound', lambda: self._reader.parse_any([self._parse_variable_constant,self._parse_variable_bound,self._parse_variable_unbound]))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_variable_unbound(self):
+    value = self._reader.parse_type(
+      result_type=VariableUnbound,
+      error='expected variable-unbound',
+      parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('', 'expected variable-prefix in variable-definition', self._parse_variable_prefix),
-        ('id', 'expected id in variable-definition', self._parse_id),
-        ('domain', 'expected variable-domain in variable-definition', lambda: self._reader.parse_many_wp(self._parse_variable_domain, 0, 1)),
+        ('id', 'expected _id in variable-unbound', self._parse__id),
+      ])
+    return value
+  def _parse_variable_bound(self):
+    value = self._reader.parse_type(
+      result_type=VariableBound,
+      error='expected variable-bound',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('id', 'expected _id in variable-bound', self._parse__id),
+        ('', 'expected w in variable-bound', self._parse_w),
+        ('', 'expected colon in variable-bound', self._parse_colon),
+        ('expression', 'expected expression in variable-bound', self._parse_expression),
+      ])
+    return value
+  def _parse_variable_constant(self):
+    value = self._reader.parse_type(
+      result_type=VariableConstant,
+      error='expected variable-constant',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('id', 'expected _id in variable-constant', self._parse__id),
+        ('', 'expected w in variable-constant', self._parse_w),
+        ('', 'expected tilde in variable-constant', self._parse_tilde),
+        ('expression', 'expected expression in variable-constant', self._parse_expression),
       ])
     return value
   def _parse_expression(self):
@@ -642,38 +703,29 @@ class _ParserImpl(object):
       ],
       result_immediate='_fimm')
     return value
-  def _parse_variable_domain(self):
+  def _parse_codomain(self):
     value = self._reader.parse_type(
-      result_type=VariableDomain,
-      error='expected variable-domain',
+      result_type=Codomain,
+      error='expected codomain',
       parsers=[
-        ('', 'expected colon in variable-domain', self._parse_colon),
-        ('_fimm', 'expected expression in variable-domain', self._parse_expression),
+        ('', 'expected w in codomain', self._parse_w),
+        ('', 'expected left-to-right-arrow in codomain', self._parse_left_to_right_arrow),
+        ('', 'expected w in codomain', self._parse_w),
+        ('_fimm', 'expected expression in codomain', self._parse_expression),
       ],
       result_immediate='_fimm')
     return value
-  def _parse_variable_codomain(self):
+  def _parse_transform_constraint(self):
     value = self._reader.parse_type(
-      result_type=VariableCodomain,
-      error='expected variable-codomain',
-      parsers=[
-        ('', 'expected w in variable-codomain', self._parse_w),
-        ('', 'expected left-to-right-arrow in variable-codomain', self._parse_left_to_right_arrow),
-        ('', 'expected w in variable-codomain', self._parse_w),
-        ('_fimm', 'expected expression in variable-codomain', self._parse_expression),
-      ],
-      result_immediate='_fimm')
-    return value
-  def _parse_variable_constraint(self):
-    value = self._reader.parse_type(
-      result_type=VariableConstraint,
-      error='expected variable-constraint',
+      result_type=TransformConstraint,
+      error='expected transform-constraint',
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('', 'expected variable-prefix in variable-constraint', self._parse_variable_prefix),
-        ('id', 'expected id in variable-constraint', self._parse_id),
-        ('', 'expected equals-sign in variable-constraint', self._parse_equals_sign),
-        ('expression', 'expected expression in variable-constraint', self._parse_expression),
+        ('', 'expected variable-prefix in transform-constraint', self._parse_variable_prefix),
+        ('id', 'expected id in transform-constraint', self._parse_id),
+        ('', 'expected w in transform-constraint', self._parse_w),
+        ('', 'expected equals-sign in transform-constraint', self._parse_equals_sign),
+        ('expression', 'expected expression in transform-constraint', self._parse_expression),
       ])
     return value
   def _parse_transform_definition(self):
@@ -684,7 +736,7 @@ class _ParserImpl(object):
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected greater-than-sign in transform-definition', self._parse_greater_than_sign),
-        ('constraints', 'expected variable-constraint in transform-definition', lambda: self._reader.parse_many_wp(self._parse_variable_constraint, 0, 9223372036854775807)),
+        ('constraints', 'expected transform-constraint in transform-definition', lambda: self._reader.parse_many_wp(self._parse_transform_constraint, 0, 9223372036854775807)),
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected dollar-sign in transform-definition', self._parse_dollar_sign),
         ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self._parse_expression_argument, 0, 9223372036854775807)),

@@ -34,19 +34,24 @@ class CompilationProblem(Exception):
       # which will indicate what was being parsed (per file)
       fcauses = top_result.get_first_deepest_cause()
 
-      # get the farthest (last highest line,column) and highest level (high parser depth)
-      # error which will indicate what caused the failure (for each file or each cause)
+      _fcause = None
       for file, fcause in fcauses.items():
         if fcause:
           continue
         log.trace("fcause: " + str(fcause))
         what += "\n" + str(fcause)
-        lcauses, max_level = fcause.get_last_deepest_cause()
-        for lfile, lcause in lcauses.items():
-          if lcause[0] or lcause[0].coord.level < max_level:
-            continue
-          log.trace("- lcause: " + str(lcause[0]))
-          what += "\n- " + str(lcause[0])
+        _fcause = fcause
+      
+      # get the farthest (last highest line,column) and highest level (high parser depth)
+      # error which will indicate what caused the failure (for the last file only)
+      lcauses, max_level = _fcause.get_last_deepest_cause()
+      for lfile, lcause in lcauses.items():
+        if (lcause[0] 
+            or lcause[0].coord.level < max_level 
+            or lcause[0].coord.file != _fcause.coord.file):
+          continue
+        log.trace("- lcause: " + str(lcause[0]))
+        what += "\n- " + str(lcause[0])
 
     super(CompilationProblem, self).__init__(what)
 

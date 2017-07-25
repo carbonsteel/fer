@@ -1,3 +1,4 @@
+import collections
 import io
 import re
 import sys
@@ -13,7 +14,7 @@ class ParseCoord(object):
     self.column = column
     self.level = level
   def __str__(self):
-    return "{}:{}:{}".format(spformat_path(self.file), self.line, self.column)
+    return "{}:{}:{}^{}".format(spformat_path(self.file), self.line, self.column, self.level)
   def __lt__(self, other):
     if self.level < other.level:
       return True
@@ -63,7 +64,7 @@ class ParseResultBase(object):
   def put(self, cause):
     self.causes.append(cause)
   def get_first_deepest_cause(self):
-    res = {}
+    res = collections.OrderedDict()
     self._get_first_deepest_cause(res)
     return res
   def _get_first_deepest_cause(self, files):
@@ -73,7 +74,7 @@ class ParseResultBase(object):
         files[c.coord.file] = c
       c._get_first_deepest_cause(files)
   def get_last_deepest_cause(self):
-    res = {}
+    res = collections.OrderedDict()
     max_level = self._get_last_deepest_cause(0, res)
     return res, max_level
   def _get_last_deepest_cause(self, depth, files):

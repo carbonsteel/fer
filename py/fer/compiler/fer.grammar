@@ -28,9 +28,6 @@
 . line-feed '\n'
 . line-comment-content [^\n]
 . left-to-right-arrow '->'
-#. a 'poutine'
-#. b 'kebab'
-#. c 'baguette'
 
 . domain { domain-literal-full domain-literal-min }
 . import { import-literal-full import-literal-min }
@@ -55,28 +52,33 @@
 . import-domain (import id@domain import-domain-as?@as_domain)
 . import-domain-w (w import-domain@@)
 . import-domain-as (w as id@@)
-. domain-declaration (domain-declaration-id@id variable-codomain?@codomain domain-definition?@domain)
+
+. domain-declaration (domain-declaration-id@id codomain?@ domain-definition?@domain)
 . realm-domain-declaration (w domain w domain-declaration@@)
 . domain-declaration-id (_id@@) : on_domain_declaration_id
 . domain-definition (
     w left-curly-bracket
     # domain-parser?@parser
     # w alts?@
-    variable-definition*@variables
+    variable-declaration*@variables
     inner-domain-declaration*@domains
     transform-definition*@transforms
     w right-curly-bracket
   )
-#. alts { a b c }
 #. domain-parser (w percent-sign __grammar@@)
 . inner-domain-declaration (w vertical-line w domain-declaration@@)
-. variable-definition (variable-prefix id@ variable-domain?@domain)
+
+. variable-declaration (variable-prefix w variable-definition@definition)
+. variable-definition { variable-constant variable-bound variable-unbound }
+. variable-unbound (_id@id)
+. variable-bound (_id@id w colon expression@)
+. variable-constant (_id@id w tilde expression@)
+
 . expression ( 
     id@ expression-arguments?@arguments expression-lookup?@lookup
   )
 . expression-argument (
-    variable-prefix id@
-    w tilde expression@
+    variable-prefix id@ w tilde expression@
   )
 . expression-arguments (
     w left-parenthesis
@@ -84,11 +86,11 @@
     w right-parenthesis
   )
 . expression-lookup (w solidus expression@@)
-. variable-domain (colon expression@@)
-. variable-codomain (w left-to-right-arrow w expression@@)
-. variable-constraint (variable-prefix id@ equals-sign expression@)
+. codomain (w left-to-right-arrow w expression@@)
+
+. transform-constraint (variable-prefix id@ w equals-sign expression@)
 . transform-definition (
-    w greater-than-sign variable-constraint*@constraints
+    w greater-than-sign transform-constraint*@constraints
     w dollar-sign expression-argument*@locals expression@
   )
 

@@ -88,6 +88,8 @@ class VariableAnalysis(object):
 
   def get_current_realm_scope(self):
     return self.realms[self.realm_stack[-1]]
+  def get_parent_realm_scope(self):
+    return self.realms[self.realm_stack[-2]]
 
   def _trace(self, result, nocontext):
     log.trace(logger.LazyFormat(spformat, self.realms))
@@ -144,6 +146,16 @@ class VariableAnalysis(object):
         if result is not None and not result:
           result.put(realm_import_result)
           return result
+        for imp in realm_import_result.value.domains:
+          if imp.domain not in self.get_current_realm_scope().domains:
+            return ParseError(
+                error="Import {} not found within realm {}".format(
+                    imp.domain,
+                    realm_import_result.value.realm),
+                coord=imp._fcrd.levelup())
+          else:
+            d_name = imp.domain if imp.as_domain is None else imp.as_domain
+            self.get_parent_realm_scope().domains[d_name] = self.get_current_realm_scope().domains[imp.domain]
 
       return realm_import_result
     finally:

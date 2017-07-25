@@ -1,6 +1,7 @@
 domain Natural {
   | One
   | Next { . n:Natural }
+  >$ One
 }
 domain NaturalMath {
   | sum -> Natural {

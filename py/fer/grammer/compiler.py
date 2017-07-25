@@ -196,6 +196,8 @@ class GrammarParserCompiler(object):
         first = False
         if synonym is not None:
           synonyms.append(synonym)
+      elif ofinstance(g.value, GrammarAlternativeDefinition):
+        W += "%s = idem" % id_to_def(g.id)
       else:
         W += "%s = str" % id_to_def(g.id)
       self.known_definitions[g.id] = g.value
