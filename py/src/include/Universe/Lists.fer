@@ -2,29 +2,54 @@ from /Universe/Naturals {
   i Natural
   i NaturalMath
 }
+from /Universe/Maybes {
+  i Maybe
+}
+from /Universe/Comparisons {
+  i Eq
+}
 
 domain List {
-  . element_type
+  . Element
   | Empty
   | Node {
-    . next : List( . element_type ~ element_type)
-    . value : element_type 
+    . next : List( . Element ~ Element)
+    . value : Element 
   }
   >$ Empty
 }
 
 d ListMath {
-  . element_type
-  . list_type ~ List( . element_type ~ element_type)
-  | sum -> list_type {
-    . a : list_type
-    . b : list_type
+  . Element
+  . List ~ List( . Element ~ Element)
+  | sum -> List {
+    . a : List
+    . b : List
     > . a = Empty $ b
     > . b = Empty $ a
     >$ Node(.next~sum(.a~a/next .b~b) . value ~ a/value)
   }
 }
 
-d Main {
-  >$ List(.element_type~Natural) # would return Empty of Natural
+d ListUtil {
+  . Element
+  . List ~ List(.Element~Element)
+  . eq ~ Eq(.Element~Element)/equals
+  | find -> Maybe(.Value~Element) {
+    . l : List
+    . e : Element
+    | pred {
+      .b : Boolean
+      .v : Element
+      > .b=True $ Just(.v~v)
+    }
+    | iter {
+      .m : Maybe(.Value~Element)
+      .l : List
+      .e : Element
+      > .m=Nothing $ find(.l~l .e~e)
+    }
+    > .l = Empty $ Nothing
+    >$ iter(.m~pred(.b~eq(.a~e .b~l/value) .v~e) .l~l .e~e)
+  }
 }

@@ -55,6 +55,7 @@ class GrammarParserCompiler(object):
     members = {}
     synonym_of = None
     synonym_unicity = True
+    synonym_maybe = False
     synonym_is_str = False
     for d in composite.expression:
       if d["anchor"] is None: # there was no anchor
@@ -66,6 +67,7 @@ class GrammarParserCompiler(object):
         name = id_to_def(d["identifier"])
         synonym_of = name
         synonym_unicity = d["quantifier"][0] == d["quantifier"][1] == 1
+        synonym_maybe = d["quantifier"][0] == 0 and d["quantifier"][1] == 1
         try:
           synonym_is_str = type(self.known_definitions[d["identifier"]]) == GrammarClassDefinition
         except KeyError:
@@ -88,7 +90,9 @@ class GrammarParserCompiler(object):
       W += "%s = str" % id_to_def(definition.id)
       return None
     else:
-      if synonym_unicity:
+      if synonym_maybe:
+        return "%s = idem" % id_to_def(definition.id)
+      elif synonym_unicity:
         return "%s = %s" % (id_to_def(definition.id), id_to_def(synonym_of))
       elif synonym_is_str:
         return "%s = str" % id_to_def(definition.id)

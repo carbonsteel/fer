@@ -1,0 +1,13 @@
+d Boolean {
+  | False
+  | True
+}
+
+d Eq {
+  . Element
+  | equals -> Boolean {
+    . a : Element
+    . b : Element
+    >$ Element/equals(.a~a .b~b)
+  }
+}

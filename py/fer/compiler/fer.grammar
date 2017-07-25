@@ -14,8 +14,11 @@
 . as 'as'
 . left-curly-bracket '{'
 . right-curly-bracket '}'
+. left-square-bracket '['
+. right-square-bracket ']'
 . vertical-line '|'
 . colon ':'
+. double-colon '::'
 . greater-than-sign '>'
 . equals-sign '='
 . dollar-sign '$'
@@ -68,12 +71,6 @@
 #. domain-parser (w percent-sign __grammar@@)
 . inner-domain-declaration (w vertical-line w domain-declaration@@)
 
-. variable-declaration (variable-prefix w variable-definition@definition)
-. variable-definition { variable-constant variable-bound variable-unbound }
-. variable-unbound (_id@id)
-. variable-bound (_id@id w colon expression@)
-. variable-constant (_id@id w tilde expression@)
-
 . expression ( 
     id@ expression-arguments?@arguments expression-lookup?@lookup
   )
@@ -88,9 +85,18 @@
 . expression-lookup (w solidus expression@@)
 . codomain (w left-to-right-arrow w expression@@)
 
-. transform-constraint (variable-prefix id@ w equals-sign expression@)
+. variable-declaration (variable-prefix w variable-definition@definition)
+. variable-definition { variable-constant variable-bound variable-unbound }
+. variable-unbound (_id@id)
+. variable-constraints-argument (variable-prefix expression@@)
+. variable-constraints (w double-colon w left-square-bracket variable-constraints-argument+@constraints right-square-bracket)
+. variable-domain (w colon expression@@)
+. variable-bound (_id@id variable-domain?@ variable-constraints?@)
+. variable-constant (_id@id w tilde expression@)
+
+. transform-compare (variable-prefix id@ w equals-sign expression@)
 . transform-definition (
-    w greater-than-sign transform-constraint*@constraints
+    w greater-than-sign transform-compare*@compares
     w dollar-sign expression-argument*@locals expression@
   )
 

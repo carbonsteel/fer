@@ -1,6 +1,6 @@
 
 d Maybe {
-  . value_type
-  | Just { .v:value_type }
+  . Value
+  | Just { .v:Value }
   | Nothing
 }
