@@ -15,11 +15,11 @@ d Monopod {
 
 
 
-d DomainMath {
-  | implements {
-    . interface:Domain
-  }
-}
+#d DomainMath {
+#  | implements {
+#    . interface:Domain
+#  }
+#}
 
 d Zoologist {
   | countLegs -> Natural {

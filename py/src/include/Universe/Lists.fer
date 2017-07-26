@@ -7,6 +7,7 @@ from /Universe/Maybes {
 }
 from /Universe/Comparisons {
   i Eq
+  i Boolean
 }
 
 domain List {
@@ -45,9 +46,9 @@ d ListUtil {
     }
     | iter {
       .m : Maybe(.Value~Element)
-      .l : List
-      .e : Element
-      > .m=Nothing $ find(.l~l .e~e)
+      .k : List
+      .f : Element
+      > .m=Nothing $ find(.l~k .e~f)
     }
     > .l = Empty $ Nothing
     >$ iter(.m~pred(.b~eq(.a~e .b~l/value) .v~e) .l~l .e~e)

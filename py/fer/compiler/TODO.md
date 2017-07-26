@@ -4,7 +4,10 @@
 1. Parse source file - Done
 1. 1. Add imports - Done
 1. 1. Look at adding decorators to parser methods to to inline semantics - Done
-1. Verify domain, codomain and subdomain variable semantics
+1. Verify variable semantics
+1. 1. No domain overrides another within the same scope - Done
+1. 1. Codomains are valid expressions
+1. 1. Variables bounds are valid expressions
 1. Find code paths
 1. Verify domain transform semantics
 1. Apply constant contraints and arguments

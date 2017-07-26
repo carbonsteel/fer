@@ -85,9 +85,8 @@
 . expression-lookup (w solidus expression@@)
 . codomain (w left-to-right-arrow w expression@@)
 
-. variable-declaration (variable-prefix w variable-definition@definition)
-. variable-definition { variable-constant variable-bound variable-unbound }
-. variable-unbound (_id@id)
+. variable-definition { variable-constant variable-bound }
+. variable-declaration (variable-prefix w variable-definition@@)
 . variable-constraints-argument (variable-prefix expression@@)
 . variable-constraints (w double-colon w left-square-bracket variable-constraints-argument+@constraints right-square-bracket)
 . variable-domain (w colon expression@@)

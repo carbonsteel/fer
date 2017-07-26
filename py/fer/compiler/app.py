@@ -79,7 +79,7 @@ def main():
     parser_class = getattr(modparser, env.vars.get(EV_PSRNAME))
 
     i = interceptor.Interceptor()
-    context = psrhook.context.CompilerContext(i, parser_class)
+    context = psrhook.context.CompilerContext(i, modparser, parser_class)
     context.on_compilation_done = i.register_trigger()
 
     loader = psrhook.loader.RealmLoader(context)

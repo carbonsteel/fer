@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-25 15:00:26.980418
+# Updated on 2017-07-26 14:05:32.755034
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -102,19 +102,7 @@ class ExpressionArgument(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'expression', 'id'], self, state)
-class VariableDeclaration(object):
-  def __init__(self, definition, _fcrd):
-    self.definition = definition
-    self._fcrd = _fcrd
-  def __pformat__(self, state):
-    pformat_class(['_fcrd', 'definition'], self, state)
 VariableDefinition = idem
-class VariableUnbound(object):
-  def __init__(self, id, _fcrd):
-    self.id = id
-    self._fcrd = _fcrd
-  def __pformat__(self, state):
-    pformat_class(['_fcrd', 'id'], self, state)
 class VariableConstraints(object):
   def __init__(self, constraints, _fcrd):
     self.constraints = constraints
@@ -161,6 +149,7 @@ InnerDomainDeclaration = DomainDeclaration
 ExpressionArguments = list
 ExpressionLookup = Expression
 Codomain = Expression
+VariableDeclaration = VariableDefinition
 VariableConstraintsArgument = Expression
 VariableDomain = Expression
 # Main parser
@@ -701,34 +690,25 @@ class _ParserImpl(object):
       ],
       result_immediate='_fimm')
     return value
-  def _parse_variable_declaration(self):
-    value = self._reader.parse_type(
-      result_type=VariableDeclaration,
-      error='expected variable-declaration',
-      parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('', 'expected variable-prefix in variable-declaration', self._parse_variable_prefix),
-        ('', 'expected w in variable-declaration', self._parse_w),
-        ('definition', 'expected variable-definition in variable-declaration', self._parse_variable_definition),
-      ])
-    return value
   def _parse_variable_definition(self):
     value = self._reader.parse_type(
       result_type=VariableDefinition,
       error='expected variable-definition',
       parsers=[
-        ('_fimm', 'expected variable-definition, any of variable-constant, variable-bound, variable-unbound', lambda: self._reader.parse_any([self._parse_variable_constant,self._parse_variable_bound,self._parse_variable_unbound]))
+        ('_fimm', 'expected variable-definition, any of variable-constant, variable-bound', lambda: self._reader.parse_any([self._parse_variable_constant,self._parse_variable_bound]))
       ],
       result_immediate='_fimm')
     return value
-  def _parse_variable_unbound(self):
+  def _parse_variable_declaration(self):
     value = self._reader.parse_type(
-      result_type=VariableUnbound,
-      error='expected variable-unbound',
+      result_type=VariableDeclaration,
+      error='expected variable-declaration',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
-        ('id', 'expected _id in variable-unbound', self._parse__id),
-      ])
+        ('', 'expected variable-prefix in variable-declaration', self._parse_variable_prefix),
+        ('', 'expected w in variable-declaration', self._parse_w),
+        ('_fimm', 'expected variable-definition in variable-declaration', self._parse_variable_definition),
+      ],
+      result_immediate='_fimm')
     return value
   def _parse_variable_constraints_argument(self):
     value = self._reader.parse_type(
