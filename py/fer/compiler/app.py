@@ -93,8 +93,10 @@ def main():
         coord=common.CompilerCoord())
     result = i.trigger(parser_class.on_realm_domain_import, asked_realm)
     result = i.trigger(context.on_compilation_done, result)
+    log.trace(spformat(result))
     if not result:
       raise CompilationProblem("Could not load input", result)
+    log.trace(spformat(getattr(result.value, psrhook.loader.RealmLoader.LOADER_IMPORTED_ATTR, None)))
 
     log.info("C'est finiii!")
   except CompilationProblem as p:

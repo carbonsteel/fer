@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-26 15:25:26.902694
+# Updated on 2017-07-26 16:46:52.904155
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -29,6 +29,7 @@ DoubleColon = str
 GreaterThanSign = str
 EqualsSign = str
 DollarSign = str
+Ampersand = str
 LeftParenthesis = str
 RightParenthesis = str
 Tilde = str
@@ -88,13 +89,14 @@ class DomainDefinition(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'domains', 'transforms', 'variables'], self, state)
 class Expression(object):
-  def __init__(self, id, arguments, lookup, _fcrd):
+  def __init__(self, domainof, id, arguments, lookup, _fcrd):
+    self.domainof = domainof
     self.id = id
     self.arguments = arguments
     self.lookup = lookup
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'arguments', 'id', 'lookup'], self, state)
+    pformat_class(['_fcrd', 'arguments', 'domainof', 'id', 'lookup'], self, state)
 class ExpressionArgument(object):
   def __init__(self, id, expression, _fcrd):
     self.id = id
@@ -342,6 +344,15 @@ class _ParserImpl(object):
       error='expected dollar-sign',
       parsers=[
         ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(StringPredicate('$'), 1, 1))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_ampersand(self):
+    value = self._reader.parse_type(
+      result_type=Ampersand,
+      error='expected ampersand',
+      parsers=[
+        ('_fimm', 'expected ampersand', lambda: self._reader.consume_string(StringPredicate('&'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -636,6 +647,8 @@ class _ParserImpl(object):
       error='expected expression',
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('', 'expected w in expression', self._parse_w),
+        ('domainof', 'expected ampersand in expression', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
         ('id', 'expected id in expression', self._parse_id),
         ('arguments', 'expected expression-arguments in expression', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
         ('lookup', 'expected expression-lookup in expression', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),

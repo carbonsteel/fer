@@ -51,3 +51,40 @@ domain D {
 ```
 
 In these invocations 1:`D(.x~Animal/Zebra)/E` and 2:`D(.x~Animal/Elephant)/E` subdomains `E` are not equivalent. Within `E` in the context of 1, `x` will be `Animal/Zebra` (Zebra of Animal) and in the context of 2, `x` will be `Animal/Elephant` (Elephant of Animal).
+
+Note that `.` (dot) is a prefix used to name expressions.
+
+Also note that in an expression, `/` (slash) is used like a path delimiter, for instance `Animal/Elephant` is reaching for `Elephant` inside `Animal`.
+
+# Transforms
+
+Any domain may also define transforms. If no transform is defined, the default behavior is to simply  return the domain itself.
+
+Note that transforms are evaluated in the order they are defined.
+
+## Codomains
+
+A domain that does not explicitly specify a codomain has its codomain set to itself. Any invocation of such domain can only return that domain.
+
+The following definitions are equivalent
+```
+domain T
+```
+```
+domain T {
+  >$ T
+}
+```
+
+If a domain specifies a codomain, its transforms must return one of the codomain's direct subdomains.
+
+```
+domain A -> Animal {
+  >$ Zebra
+}
+```
+
+To retreive a domain specifing a codomain, use `&` (ampersand) before its name in an expression. `&A` returns `A` itself, while `A` will evaluate A's transforms and return `Zebra`.
+
+## Compares
+

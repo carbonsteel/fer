@@ -9,8 +9,8 @@ domain Animal {
 
 d Monopod {
   | getLegCount -> Natural {
-    >$ One
-  
+    >$ &One
+  }
 }
 
 

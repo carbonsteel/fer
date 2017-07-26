@@ -22,6 +22,7 @@
 . greater-than-sign '>'
 . equals-sign '='
 . dollar-sign '$'
+. ampersand '&'
 . left-parenthesis '('
 . right-parenthesis ')'
 . tilde '~'
@@ -72,7 +73,7 @@
 . inner-domain-declaration (w vertical-line w domain-declaration@@)
 
 . expression ( 
-    id@ expression-arguments?@arguments expression-lookup?@lookup
+    w ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup
   )
 . expression-argument (
     variable-prefix id@ w tilde expression@
