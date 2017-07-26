@@ -88,3 +88,63 @@ To retreive a domain specifing a codomain, use `&` (ampersand) before its name i
 
 ## Compares
 
+Compares allow for any variable to be checked if its value is a given domain. The left-hand side of `=` (equal) must be a variable from the current scope and the right-hand side must be domain name, it must not be an expression.
+
+### Why not an expression (This could be 100% wrong)
+
+I want to compile transforms as jump tables in order to try to gain efficiency (trading speed for size) by avoiding conditionnal branchments and keep the CPU's pipeline full as much as possible.
+
+By associating an index to a given domain, I think I could be able to compile a domain's transforms as a jump table with its index matching a truth table and thus evaluate all of its compares at once by only calculating the index from the variables. (Rephrase that dear god)
+
+Example: (this is not how Natural would be compiled (see optimization goals), it just a convienient example)
+```
+# A natural number, 1: One, 2:Next(.n~One), 3:Next(.n~Next(.n~One)), etc.
+domain Natural {
+  | One
+  | Next { . n:Natural }
+}
+domain NaturalMath {
+  | sum -> Natural {
+    . a:Natural
+    . b:Natural
+
+    # If a is One (case 1 and 2, b could be either One or Next, it does not matter)
+    # then the sum is Next of b (1+b)
+    > . a=One
+    $ Next( . n~b )
+
+    # If a is Next and b is One (case 2)
+    # then the sum is Next of a (1+a)
+    > . b=One
+    $ Next( . n~a )
+
+    # If a is not One and b is not One (case 4)
+    # then the sum is Next of Next of sum of remainders (2+sum(a-1, b-1))
+    >$ Next( . n~Next( . n~sum(
+        . a~a/n
+        . b~b/n
+    )))
+  }
+```
+
+```
+Natural = 0
+NaturalMath = 1
+
+NaturalBits=1
+One = 0
+Next = 1
+sum(a, b) {
+  i = (a << NaturalBits) + b
+  return [
+    # address of case 1,
+    # address of case 2,
+    # address of case 3,
+    # address of case 4
+  ][i]()
+}
+
+```
+
+# Optimization goals
+## Natural to integer

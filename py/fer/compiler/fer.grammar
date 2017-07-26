@@ -94,7 +94,7 @@
 . variable-bound (_id@id variable-domain?@ variable-constraints?@)
 . variable-constant (_id@id w tilde expression@)
 
-. transform-compare (variable-prefix id@ w equals-sign expression@)
+. transform-compare (variable-prefix id@ w equals-sign id@)
 . transform-definition (
     w greater-than-sign transform-compare*@compares
     w dollar-sign expression-argument*@locals expression@
