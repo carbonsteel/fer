@@ -92,16 +92,62 @@ class DomainScope(object):
   # def _push(self, d_name, d):
   #   self.domains[d_name] = d
 
-class ZipDictStrictError(Exception):
+def expr_equals(a, b):
+  """ return True if expression a is equivalent to expression b """
+  if a.id != b.id or a.domainof != b.domainof:
+    return False
+  if a.arguments is None and b.arguments is None:
+    pass
+  elif (a.arguments is not None and b.arguments is not None
+      and len(a.arguments) == len(b.arguments)):
+    for i in range(0, len(a.arguments)):
+      if a.arguments[i].id != b.arguments[i].id:
+        return False
+      if not expr_equals(a.arguments[i].expression, b.arguments[i].expression)
+        return False
+  else:
+    return False
+  if a.lookup is None and b.lookup is None:
+    pass
+  elif a.lookup is not None and b.lookup is not None:
+    return expr_equals(a.lookup, b.lookup)
+  else:
+    return False
+  return True
+
+def expr_subdomain_of(a, b):
+  """ return True if expression a is a subdomain of expression b
+      expressions must be canonical
+      ie:
+        a = Boolean/True, b = Boolean, True
+        a = True, b = Boolean, False
+        a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Boolean), True
+        a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Natural), False
+  """
   pass
 
-def zipDictStrict(*dicts):
-  base = dicts[0].keys()
-  for d in dicts[1:]:
-    if base != d.keys():
-      raise ZipDictStrictError('All dicts must have the same keys.')
-  for k in base:
-    yield tuple(v for v in dicts[k])
+def expr_canon(a, scope, lookup_scope):
+  """ return the canonical expression of expression a
+      ie:
+      1 d tautology -> Boolean {
+          >$ True
+        }
+        The canonical expression of True 
+          where scope is tautology 
+                lookup_scope is Boolean 
+          is Boolean/True
+      2 d pure -> Maybe(.v~X) {
+          . x
+          . X ~ &x
+          >$ Just(.v~x)
+        }
+        The canonical expression of Just(.v~x)
+          where scope is pure 
+                lookup_scope is Maybe(.v~x)
+          is Maybe(.v~&x)/Just(.v~x)
+  """
+  if 
+
 
 class VariableAnalysis(object):
   def __init__(self, context):
@@ -150,7 +196,7 @@ class VariableAnalysis(object):
         # the domain has variables, and thus needs arguments
         return ParseError(
             error="Domain {} used without arguments, needs: {}".format(expr.id,
-              ", ".join([var.id for var in variables])),
+              ", ".join(var for var in variables)),
             coord=expr._fcrd.levelup())
       else:
         # the domain has no variables, OK
@@ -177,7 +223,11 @@ class VariableAnalysis(object):
                   coord=expr._fcrd.levelup())
             elif ofinstance(variables[arg.id], self.context.parser_module.VariableBound):
               # an argument must match the bound for its variable
-              # todo
+              # check expression of argument
+              argcheckresult = self.check_expression(arg.expression, scope, scope)
+              if not argcheckresult:
+                return argcheckresult
+              # todo check expression of argument is a subdomain of the variable's domain
               #result = self.check_expression()
               pass
           else:
@@ -188,11 +238,13 @@ class VariableAnalysis(object):
                 coord=expr._fcrd.levelup())
     return True
 
-  def check_expression(self, expr, scope):
+  def check_expression(self, expr, scope, lookup_scope):
     # check if usage succeeds definition
+    # variables must come from the scope in which the expression resides
     scope_var = scope.variable(expr.id)
     if not scope_var:
-      scope_domain = scope.domain(expr.id)
+      # domains must come from within the scope of the domain being looked up
+      scope_domain = lookup_scope.domain(expr.id)
       if not scope_domain:
         return ParseError(
             error="Expression identifier {} is not defined".format(expr.id),
@@ -202,9 +254,19 @@ class VariableAnalysis(object):
         argcheckresult = self.check_domain_expression_arguments(expr, scope_domain, scope)
         if not argcheckresult:
           return argcheckresult
-        if expr.lookup is not None:
-          # todo check if lookup in domain
-          return self.check_expression(expr.lookup, scope)
+        if expr.lookup is None:
+          # # if there is no lookup, the value of the expression, is 
+          # #   the current domain along with its arguments. (just expr)
+          # return expr
+          return True
+        else:
+          # check if lookup in current domain
+          if expr.lookup.id not in scope_domain.domains:
+            return ParseError(
+                error="Expression lookup {} is not a subdomain of {}".format(
+                  expr.lookup.id, expr.id),
+                coord=expr._fcrd.levelup())
+          return self.check_expression(expr.lookup, scope, scope_domain)
     else:
       # check if arguments match after resolving the variable bounds
       pass
@@ -223,7 +285,7 @@ class VariableAnalysis(object):
       # boohoo polymorphism
       if ofinstance(var, self.context.parser_module.VariableBound):
         if var.variable_domain is not None:
-          result = self.check_expression(var.variable_domain, scope)
+          result = self.check_expression(var.variable_domain, scope, scope)
           if not result:
             return result
         if var.variable_constraints is not None:
@@ -266,7 +328,7 @@ class VariableAnalysis(object):
           result = self.check_domain_declaration(domain_definition, domain_scope)
           if not result:
             return result
-          # todo check domain transforms (need expressions)
+          # todo check domain transforms (need codomain)
     return True
 
   def done_realm(self, realm_import_result, nocontext):

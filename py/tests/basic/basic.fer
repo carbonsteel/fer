@@ -31,3 +31,14 @@ d Zoologist {
 d Main {
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
+
+
+
+d Abc {
+  | a | b | c
+}
+
+d getAa -> Abc {
+  >$ a
+}
+

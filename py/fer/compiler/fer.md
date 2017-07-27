@@ -90,6 +90,20 @@ To retreive a domain specifing a codomain, use `&` (ampersand) before its name i
 
 Compares allow for any variable to be checked if its value is a given domain. The left-hand side of `=` (equal) must be a variable from the current scope and the right-hand side must be domain name, it must not be an expression.
 
+```
+domain Boolean {
+  | False
+  | True
+}
+
+domain not -> Boolean {
+  . b : Boolean
+  > .b=True $ False
+  >$ True
+}
+```
+Here, using the domain `Boolean`, the function `not` can be implemented with a domain transform where the variable `b` is compared to `Boolean/True` then negated if equal or else, if it is `False`, also negated.
+
 ### Why not an expression (This could be 100% wrong)
 
 I want to compile transforms as jump tables in order to try to gain efficiency (trading speed for size) by avoiding conditionnal branchments and keep the CPU's pipeline full as much as possible.
@@ -148,3 +162,4 @@ sum(a, b) {
 
 # Optimization goals
 ## Natural to integer
+(see the whiteboard snapshot)

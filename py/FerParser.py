@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-26 16:46:52.904155
+# Updated on 2017-07-27 12:05:22.359834
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -127,12 +127,11 @@ class VariableConstant(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'expression', 'id'], self, state)
 class TransformCompare(object):
-  def __init__(self, id, expression, _fcrd):
+  def __init__(self, id, _fcrd):
     self.id = id
-    self.expression = expression
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'expression', 'id'], self, state)
+    pformat_class(['_fcrd', 'id'], self, state)
 class TransformDefinition(object):
   def __init__(self, compares, locals, expression, _fcrd):
     self.compares = compares
@@ -791,7 +790,7 @@ class _ParserImpl(object):
         ('id', 'expected id in transform-compare', self._parse_id),
         ('', 'expected w in transform-compare', self._parse_w),
         ('', 'expected equals-sign in transform-compare', self._parse_equals_sign),
-        ('expression', 'expected expression in transform-compare', self._parse_expression),
+        ('id', 'expected id in transform-compare', self._parse_id),
       ])
     return value
   def _parse_transform_definition(self):
