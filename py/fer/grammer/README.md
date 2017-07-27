@@ -27,7 +27,9 @@ token <expr> := /[ \n]*/ <expr>
 
 # Composites use expressions inspired of regular expression to combine other
 #   grammar definitions with optional multiplicities and anchors with which the
-#   parser will define python classes in which to store parsed values.
+#   parser will define python classes in which to store parsed values. Generated
+#   python classes will use the camel-translated name of the definition (ie:
+#   my-def -> MyDef)
 <composite> := token(/\(/) <composite-expression>+ token(/\)/)
 
 # A composite expression refers by name to another grammar definition that 
@@ -42,7 +44,8 @@ token <expr> := /[ \n]*/ <expr>
 
 # Anchors will map parsed values to fields in python objects corresponding to 
 #   the complete composite definition. 
-# A single anchor @ will create a field using the same name as the definition. 
+# A single anchor @ will create a field using the snake-translated name of the
+#   definition. (ie: my-def -> my_def)
 # A double anchor @@ will use the parsed value as the value of the current 
 #   composite. A double anchor must be the only anchor of a composite. 
 #   Composites using a double anchor must be defined after the definition they 
