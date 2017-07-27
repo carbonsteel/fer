@@ -4,7 +4,7 @@
     w) # allow whitespace after file content
 
 . ws [ \n]
-. pseudo-letter [a-zA-Z_]
+. pseudo-letter [a-zA-Z_']
 . dot '..'
 . domain-literal-full 'domain'
 . domain-literal-min 'd'

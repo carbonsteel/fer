@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-27 12:05:22.359834
+# Updated on 2017-07-27 16:30:15.411140
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -189,7 +189,7 @@ class _ParserImpl(object):
       result_type=PseudoLetter,
       error='expected pseudo-letter',
       parsers=[
-        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 1))
+        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -486,7 +486,7 @@ class _ParserImpl(object):
       result_type=_id,
       error='expected _id',
       parsers=[
-        ('_fimm', 'expected pseudo-letter in _id', lambda: self._reader.consume_string(SimpleClassPredicate('a-zA-Z_'), 1, 9223372036854775807)),
+        ('_fimm', 'expected pseudo-letter in _id', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), 1, 9223372036854775807)),
       ],
       result_immediate='_fimm')
     return value

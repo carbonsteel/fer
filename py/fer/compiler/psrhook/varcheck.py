@@ -158,6 +158,11 @@ def expr_canon(a, scope, lookup_expr):
           where scope is contradiction
                 lookup_expr is Natural
           is ParseError(...)
+      4 >$ Maybe(.Value~Boolean)/Just(.v~True)
+        The canonical expression of True
+          where scope is <anything>
+                lookup_expr is Maybe(.Value~Boolean)
+          is Boolean/True
   """
   if a is None:
     return None
@@ -183,9 +188,9 @@ class VariableAnalysis(object):
   """
   def __init__(self, context):
     self.context = context
-    # self.scope_stack = ScopeStack(self._new_global_scope())
-    self.realms = {'<compiler>': self._new_realm_scope()}
-    self.realm_stack = ['<compiler>']
+    root_realm = '<compiler>'
+    self.realms = {root_realm: RealmScope()}
+    self.realm_stack = [root_realm]
 
     self.context.interceptor.register(self.context.on_compilation_done,
         self._trace)
@@ -203,17 +208,10 @@ class VariableAnalysis(object):
     log.trace(logger.LazyFormat(spformat, self.realms))
     return result
 
-  def _new_global_scope(self):
-    return GlobalScope()
-  def _new_realm_scope(self):
-    return RealmScope()
-  def _new_domain_scope(self, parent):
-    return DomainScope()
-
   def add_realm(self, realm_import_result, nocontext):
     if realm_import_result:
       fullpath = getattr(realm_import_result.value, RealmLoader.LOADER_FULLPATH_ATTR, None)
-      self.realms[fullpath] = self._new_realm_scope()
+      self.realms[fullpath] = RealmScope()
       self.realm_stack.append(fullpath)
     return realm_import_result
 
