@@ -5,7 +5,8 @@ Note: The actual grammar is hard coded in python (see grammar.py).
 ```
 token <expr> := /[ \n]*/ <expr>
 
-# A grammar is a list of definitions
+# A grammar is a list of definitions. The root definition of the generated 
+#   parser is the first definition occuring in the grammar file.
 <root> := <definition>*
 
 # Each definition is named, valued and optionaly hooked
@@ -25,8 +26,8 @@ token <expr> := /[ \n]*/ <expr>
 <literal> := token(/'/) /.+'/
 
 # Composites use expressions inspired of regular expression to combine other
-#   grammar definitions with optional multiplicities and anchors in which the
-#   parsed values will be stored into.
+#   grammar definitions with optional multiplicities and anchors with which the
+#   parser will define python classes in which to store parsed values.
 <composite> := token(/\(/) <composite-expression>+ token(/\)/)
 
 # A composite expression refers by name to another grammar definition that 
@@ -43,7 +44,9 @@ token <expr> := /[ \n]*/ <expr>
 #   the complete composite definition. 
 # A single anchor @ will create a field using the same name as the definition. 
 # A double anchor @@ will use the parsed value as the value of the current 
-#   composite. Only a single double anchor is allowed per composite. 
+#   composite. A double anchor must be the only anchor of a composite. 
+#   Composites using a double anchor must be defined after the definition they 
+#   refer to.
 # A named anchor @id will create a field for the expression using the name 
 #   following the anchor.
 <expression-anchor> := /@/ (/@/ | <identifier>)?
