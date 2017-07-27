@@ -88,7 +88,12 @@ def main():
     # bootstrap by firing a realm import
     asked_realm = parser.ParseValue(
         value=modparser.RealmDomainImport(
-            realm="./" + sys.argv[1], domains=[],
+            realm='./'+sys.argv[1], domains=[
+                modparser.ImportDomain(
+                    _fcrd=common.CompilerCoord(),
+                    as_domain=None,
+                    domain='Main')
+            ],
             _fcrd=common.CompilerCoord()),
         coord=common.CompilerCoord())
     result = i.trigger(parser_class.on_realm_domain_import, asked_realm)
