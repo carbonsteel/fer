@@ -48,7 +48,8 @@ token <expr> := /[ \n]*/ <expr>
 #   Composites using a double anchor must be defined after the definition they 
 #   refer to.
 # A named anchor @id will create a field for the expression using the name 
-#   following the anchor.
+#   following the anchor. A named anchor may not use the name _fcrd, it is 
+#   reserved to store coordinates at which the instance was found.
 <expression-anchor> := /@/ (/@/ | <identifier>)?
 
 # An alternative is a left-to-right list of definition which the parser will 
