@@ -129,7 +129,7 @@ class GrammarParser(object):
         ("quantifier", "expected expression quantifier",
           self.parse_quantifier),
         ("anchor", "expected expression anchor",
-          lambda: self._reader.parse_any([self.parse_anchor, self._reader.parse_nothing])),
+          lambda: self._reader.parse_many_wp(self.parse_anchor, 0, 1)),
     ])
   
   def parse_composite(self):
@@ -188,7 +188,7 @@ class GrammarParser(object):
         ("value", "expected definition value",
           self.parse_definition_value),
         ("hook", "expected definition hook",
-          lambda: self._reader.parse_any([self.parse_definition_hook, self._reader.parse_nothing])),
+          lambda: self._reader.parse_many_wp(self.parse_definition_hook, 0, 1)),
     ])
 
   def parse_definition_prefix(self):
