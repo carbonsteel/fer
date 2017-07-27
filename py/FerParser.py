@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-27 16:30:15.411140
+# Updated on 2017-07-27 17:19:41.931983
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -180,7 +180,7 @@ class _ParserImpl(object):
       result_type=Ws,
       error='expected ws',
       parsers=[
-        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 1, 1))
+        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -414,7 +414,7 @@ class _ParserImpl(object):
       result_type=LineFeed,
       error='expected line-feed',
       parsers=[
-        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('\\n'), 3, 3))
+        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate('\n'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -423,7 +423,7 @@ class _ParserImpl(object):
       result_type=LineCommentContent,
       error='expected line-comment-content',
       parsers=[
-        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 1, 1))
+        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -459,7 +459,7 @@ class _ParserImpl(object):
       result_type=Ww,
       error='expected ww',
       parsers=[
-        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \\n'), 0, 9223372036854775807)),
+        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self._parse_line_comment, 0, 1)),
       ])
     return value
@@ -477,7 +477,7 @@ class _ParserImpl(object):
       error='expected line-comment',
       parsers=[
         ('', 'expected octothorp in line-comment', self._parse_octothorp),
-        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\\n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self._parse_line_feed, 0, 1)),
       ])
     return value

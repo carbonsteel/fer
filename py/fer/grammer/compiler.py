@@ -1,6 +1,7 @@
 import datetime
 import io
 import json
+import re
 
 from fer.ferutil import *
 from fer.grammer.common import *
@@ -141,7 +142,11 @@ class GrammarParserCompiler(object):
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
           # inlines the consume call for class definitions to get an "str" instead of a list of char
-          ccls = json.dumps(self.known_definitions[e["identifier"]].ccls)[1:-1].encode().decode('unicode_escape')
+          ccls = self.known_definitions[e["identifier"]].ccls.encode().decode('unicode_escape')
+          try:
+            re.compile(ccls)
+          except re.error as e:
+            raise ValueError('Invalid class in definition {}'.format(ccls)) from e
           inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
             repr(ccls), e["quantifier"][0], e["quantifier"][1]
           )
@@ -155,13 +160,17 @@ class GrammarParserCompiler(object):
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
-      literal = json.dumps(definition.value.literal)[1:-1]
-      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate('%s'), %d, %d))" % (
-        repr(KEY_IMMEDIATE), definition.id, (literal), len(literal), len(literal)
+      literal = definition.value.literal.encode().decode('unicode_escape')
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
+        repr(KEY_IMMEDIATE), definition.id, repr(literal), len(literal), len(literal)
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
-      ccls = json.dumps(definition.value.ccls)[1:-1].encode().decode('unicode_escape')
+      ccls = definition.value.ccls.encode().decode('unicode_escape')
+      try:
+        re.compile(ccls)
+      except re.error as e:
+        raise ValueError('Invalid class in definition {}'.format(ccls)) from e
       W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
         repr(KEY_IMMEDIATE), definition.id, repr(ccls)
       )
