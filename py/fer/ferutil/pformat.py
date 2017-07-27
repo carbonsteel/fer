@@ -74,21 +74,24 @@ def pformat(v, state):
       pformat(v[0], state)
       state.add("]", indent=-1)
   elif typecheck.ofinstance(v, dict):
-    state.add("{", indent=1, newline=True)
     vs = list(v.items())
-    for k, i in vs[:-1]:
-      state.add("", newline=True)
-      pformat(k, state)
-      state.add(": ")
-      pformat(i, state)
-      state.add(",")
-    if len(vs) > 0:
-      state.add("", newline=True)
-      pformat(vs[-1][0], state)
-      state.add(": ")
-      pformat(vs[-1][1], state)
-    state.add("", indent=-1)
-    state.add("}", newline=True)
+    if len(vs) < 1:
+      state.add("{}")
+    else:
+      state.add("{", indent=1, newline=True)
+      for k, i in vs[:-1]:
+        state.add("", newline=True)
+        pformat(k, state)
+        state.add(": ", indent=1)
+        pformat(i, state)
+        state.add(",", indent=-1)
+      if len(vs) > 0:
+        state.add("", newline=True)
+        pformat(vs[-1][0], state)
+        state.add(": ", indent=1)
+        pformat(vs[-1][1], state)
+      state.add("", indent=-2)
+      state.add("}", newline=True)
   else:
     state.add(repr(v))
   state.instances.remove(_id)
