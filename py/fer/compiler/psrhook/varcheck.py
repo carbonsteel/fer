@@ -103,7 +103,7 @@ def expr_equals(a, b):
     for i in range(0, len(a.arguments)):
       if a.arguments[i].id != b.arguments[i].id:
         return False
-      if not expr_equals(a.arguments[i].expression, b.arguments[i].expression)
+      if not expr_equals(a.arguments[i].expression, b.arguments[i].expression):
         return False
   else:
     return False
@@ -124,37 +124,68 @@ def expr_subdomain_of(a, b):
         a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Boolean), True
         a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Natural), False
   """
+  if b is None:
+    return True
   pass
 
-def expr_canon(a, scope, lookup_scope):
+def expr_canon(a, scope, lookup_expr):
   """ return the canonical expression of expression a
+      expressions a and lookup_expr must be valid
+      returned expression is guaranteed to be valid within its context
       ie:
       1 d tautology -> Boolean {
           >$ True
         }
         The canonical expression of True 
           where scope is tautology 
-                lookup_scope is Boolean 
+                lookup_expr is Boolean 
           is Boolean/True
-      2 d pure -> Maybe(.v~X) {
+      2 d pure -> M {
           . x
           . X ~ &x
-          >$ Just(.v~x)
+          . M ~ Maybe(.v~X)
+          . J ~ Just(.v~x)
+          >$ J
         }
-        The canonical expression of Just(.v~x)
-          where scope is pure 
-                lookup_scope is Maybe(.v~x)
+        The canonical expression of J
+          where scope is pure
+                lookup_expr is M
           is Maybe(.v~&x)/Just(.v~x)
+      3 d contradiction -> Natural {
+          >$ Boolean/False
+        }
+        The canonical expression of Boolean/False
+          where scope is contradiction
+                lookup_expr is Natural
+          is ParseError(...)
   """
-  if 
+  if a is None:
+    return None
+  lookup_canon = expr_canon(lookup_expr, scope, None)
+  scope_a_domain = scope.domain(a.id)
+  if scope_a_domain:
+    # if the valid expression a refers to a domain in scope
+    #   it is already canonical
+    # check if it matches the context
+    if expr_subdomain_of(a, lookup_canon):
+      return a
+    else:
+      return ParseError(error='Expression {} is not a subdomain of {} at {}'.format(
+          a, lookup_canon, lookup_canon._fcrd), coord=a._fcrd.levelup())
 
+  # todo everything else
+  #return ParseError(error='Not implemented', coord=a._fcrd.levelup())
+  return True
 
 class VariableAnalysis(object):
+  """ Step 1, on realm import, validate realm domains and canonicalize expressions
+      Step 2, starting from Main domain resolve expressions usages, inline constants, 
+  """
   def __init__(self, context):
     self.context = context
     # self.scope_stack = ScopeStack(self._new_global_scope())
-    self.realms = {}
-    self.realm_stack = []
+    self.realms = {'<compiler>': self._new_realm_scope()}
+    self.realm_stack = ['<compiler>']
 
     self.context.interceptor.register(self.context.on_compilation_done,
         self._trace)
@@ -227,9 +258,11 @@ class VariableAnalysis(object):
               argcheckresult = self.check_expression(arg.expression, scope, scope)
               if not argcheckresult:
                 return argcheckresult
-              # todo check expression of argument is a subdomain of the variable's domain
-              #result = self.check_expression()
-              pass
+              # check expression of argument is a subdomain of the variable's domain
+              canoncheckresult = expr_canon(arg.expression, scope, variables[arg.id])
+              if not canoncheckresult:
+                return canoncheckresult
+            continue
           else:
             # an argument must correspond to a variable
             return ParseError(
@@ -334,6 +367,7 @@ class VariableAnalysis(object):
   def done_realm(self, realm_import_result, nocontext):
     try:
       if realm_import_result:
+        # todo don't re validate already loaded realms
         realm = getattr(realm_import_result.value, RealmLoader.LOADER_IMPORTED_ATTR, None)
         # checking domains in realm
         result = self.check_domain_declaration(realm, self.get_current_realm_scope())
