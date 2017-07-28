@@ -1,6 +1,6 @@
 # fer.grammer reference
 
-`fer.grammer` is a standalone library inspired by Haskell's parsec library of combinatory parsers. It provides an LL(*) parser as well as a compiler capable of generating parsers from a grammar definition syntax. It has been written for the sole purpose of automatically providing rich contextual error messages.
+`fer.grammer` is a library inspired by Haskell's parsec library of combinatory parsers. It provides an LL(*) parser as well as a compiler capable of generating parsers from a grammar definition syntax. It has been written for the sole purpose of automatically providing rich contextual error messages.
 
 ## grammar definitions
 
