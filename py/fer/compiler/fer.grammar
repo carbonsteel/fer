@@ -84,7 +84,7 @@
 . expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
 . expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart )
 . expression-literal-float ( expression-literal-integer-decimal@ipart dot pseudo-number+@dpart )
-. expression-literal-string-content [^'] \ [\\\\]
+. expression-literal-string-content [^'] \ [\\]
 . expression-literal-string ( single-quote expression-literal-string-content*@@ single-quote )
 . expression-argument (
     variable-prefix id@ w tilde expression@

@@ -157,29 +157,29 @@ class GrammarParserCompiler(object):
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"
     elif ofinstance(definition.value, GrammarLiteralDefinition):
-      literal = definition.value.literal.encode().decode('unicode_escape')
-      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(%s), %d, %d))" % (
-        repr(KEY_IMMEDIATE), definition.id, repr(literal), len(literal), len(literal)
+      literal = repr(definition.value.literal.encode().decode('unicode_escape'))
+      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(StringPredicate(r%s), %d, %d))" % (
+        repr(KEY_IMMEDIATE), definition.id, (literal), len(literal)-2, len(literal)-2
       )
       is_immediate = True
     elif ofinstance(definition.value, GrammarClassDefinition):
-      ccls = definition.value.ccls.encode().decode('unicode_escape')
+      ccls = repr(definition.value.ccls.encode().decode('unicode_escape'))
       try:
-        re.compile(ccls)
+        re.compile(ccls[1:-1])
       except re.error as e:
         raise ValueError('Invalid class in definition {}'.format(ccls)) from e
       if definition.value.cclse is None:
-        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), imin, imax))" % (
-          repr(KEY_IMMEDIATE), definition.id, repr(ccls)
+        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(r%s), imin, imax))" % (
+          repr(KEY_IMMEDIATE), definition.id, (ccls)
         )
       else:
-        cclse = definition.value.cclse.encode().decode('unicode_escape')
+        cclse = repr(definition.value.cclse.encode().decode('unicode_escape'))
         try:
-          re.compile(cclse)
+          re.compile(cclse[1:-1])
         except re.error as e:
           raise ValueError('Invalid class escape in definition {}'.format(cclse)) from e
-        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(FixedEscapedClassPredicate(%s, %s), imin, imax))" % (
-          repr(KEY_IMMEDIATE), definition.id, repr(ccls), repr(cclse)
+        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(FixedEscapedClassPredicate(r%s, r%s), imin, imax))" % (
+          repr(KEY_IMMEDIATE), definition.id, (ccls), (cclse)
         )
       is_immediate = True
     elif ofinstance(definition.value, GrammarAlternativeDefinition):
