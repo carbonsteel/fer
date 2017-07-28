@@ -5,6 +5,7 @@
 
 . ws [ \n]
 . pseudo-letter [a-zA-Z_']
+. pseudo-number [0-9]
 . dot '..'
 . domain-literal-full 'domain'
 . domain-literal-min 'd'
@@ -34,6 +35,7 @@
 . left-to-right-arrow '->'
 . single-quote ''''
 . double-quote '"'
+. hyphen '-'
 
 . domain { domain-literal-full domain-literal-min }
 . import { import-literal-full import-literal-min }
@@ -75,11 +77,13 @@
 . inner-domain-declaration (w vertical-line w domain-declaration@@)
 
 . expression ( 
-    w expression-alt@alt
+    w expression-alt@value
   )
-. expression-alt { expression-literal expression-domain } # 
+. expression-alt { expression-literal expression-domain }
 . expression-domain (ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup)
-. expression-literal { expression-literal-string }
+. expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
+. expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart )
+. expression-literal-float ( expression-literal-integer-decimal@ipart dot pseudo-number+@dpart )
 . expression-literal-string-content [^'] \ [\\\\]
 . expression-literal-string ( single-quote expression-literal-string-content*@@ single-quote )
 . expression-argument (

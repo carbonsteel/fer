@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-28 17:19:40.498987
+# Updated on 2017-07-28 17:50:13.109289
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -12,6 +12,7 @@ class Realm(object):
     pformat_class(['_fcrd', 'domains', 'imports'], self, state)
 Ws = str
 PseudoLetter = str
+PseudoNumber = str
 Dot = str
 DomainLiteralFull = str
 DomainLiteralMin = str
@@ -41,6 +42,7 @@ LineCommentContent = str
 LeftToRightArrow = str
 SingleQuote = str
 DoubleQuote = str
+Hyphen = str
 Domain = idem
 Import = idem
 Ww = str
@@ -91,11 +93,11 @@ class DomainDefinition(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'domains', 'transforms', 'variables'], self, state)
 class Expression(object):
-  def __init__(self, alt, _fcrd):
-    self.alt = alt
+  def __init__(self, value, _fcrd):
+    self.value = value
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'alt'], self, state)
+    pformat_class(['_fcrd', 'value'], self, state)
 ExpressionAlt = idem
 class ExpressionDomain(object):
   def __init__(self, domainof, id, arguments, lookup, _fcrd):
@@ -107,6 +109,20 @@ class ExpressionDomain(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'arguments', 'domainof', 'id', 'lookup'], self, state)
 ExpressionLiteral = idem
+class ExpressionLiteralIntegerDecimal(object):
+  def __init__(self, minus, ipart, _fcrd):
+    self.minus = minus
+    self.ipart = ipart
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'ipart', 'minus'], self, state)
+class ExpressionLiteralFloat(object):
+  def __init__(self, ipart, dpart, _fcrd):
+    self.ipart = ipart
+    self.dpart = dpart
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'dpart', 'ipart'], self, state)
 ExpressionLiteralStringContent = str
 class ExpressionArgument(object):
   def __init__(self, id, expression, _fcrd):
@@ -202,6 +218,15 @@ class _ParserImpl(object):
       error='expected pseudo-letter',
       parsers=[
         ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), imin, imax))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_pseudo_number(self, imin=1, imax=1):
+    value = self._reader.parse_type(
+      result_type=PseudoNumber,
+      error='expected pseudo-number',
+      parsers=[
+        ('_fimm', 'expected pseudo-number', lambda: self._reader.consume_string(SimpleClassPredicate('0-9'), imin, imax))
       ],
       result_immediate='_fimm')
     return value
@@ -466,6 +491,15 @@ class _ParserImpl(object):
       ],
       result_immediate='_fimm')
     return value
+  def _parse_hyphen(self):
+    value = self._reader.parse_type(
+      result_type=Hyphen,
+      error='expected hyphen',
+      parsers=[
+        ('_fimm', 'expected hyphen', lambda: self._reader.consume_string(StringPredicate('-'), 1, 1))
+      ],
+      result_immediate='_fimm')
+    return value
   def _parse_domain(self):
     value = self._reader.parse_type(
       result_type=Domain,
@@ -677,7 +711,7 @@ class _ParserImpl(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in expression', self._parse_w),
-        ('alt', 'expected expression-alt in expression', self._parse_expression_alt),
+        ('value', 'expected expression-alt in expression', self._parse_expression_alt),
       ])
     return value
   def _parse_expression_alt(self):
@@ -706,9 +740,30 @@ class _ParserImpl(object):
       result_type=ExpressionLiteral,
       error='expected expression-literal',
       parsers=[
-        ('_fimm', 'expected expression-literal, any of expression-literal-string', lambda: self._reader.parse_any([self._parse_expression_literal_string]))
+        ('_fimm', 'expected expression-literal, any of expression-literal-string, expression-literal-float, expression-literal-integer-decimal', lambda: self._reader.parse_any([self._parse_expression_literal_string,self._parse_expression_literal_float,self._parse_expression_literal_integer_decimal]))
       ],
       result_immediate='_fimm')
+    return value
+  def _parse_expression_literal_integer_decimal(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionLiteralIntegerDecimal,
+      error='expected expression-literal-integer-decimal',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('minus', 'expected hyphen in expression-literal-integer-decimal', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
+        ('ipart', 'expected pseudo-number in expression-literal-integer-decimal', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
+      ])
+    return value
+  def _parse_expression_literal_float(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionLiteralFloat,
+      error='expected expression-literal-float',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('ipart', 'expected expression-literal-integer-decimal in expression-literal-float', self._parse_expression_literal_integer_decimal),
+        ('', 'expected dot in expression-literal-float', self._parse_dot),
+        ('dpart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
+      ])
     return value
   def _parse_expression_literal_string_content(self, imin=1, imax=1):
     value = self._reader.parse_type(

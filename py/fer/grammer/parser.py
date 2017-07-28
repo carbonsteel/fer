@@ -100,15 +100,14 @@ class ParseValue(ParseResultBase):
   def __bool__(self):
     return True
   def __str__(self):
-    return "{}@{} got : ".format(self.uid, self.coord)
+    return "+ {}@{} got : ".format(self.uid, self.coord)
   def __pformat__(self, state):
     #log.trace('ParseValue {} {} __pformat__ called', id(self), self.uid)
-    state.add("", indent=1)
     state.add(str(self), indent=1, newline=True)
     pformat(self.value, state)
-    state.add("", indent=-2)
     for c in self.causes:
       pformat(c, state)
+    state.add("", indent=-1)
     #log.trace('ParseValue {} {} __pformat__ done', id(self), self.uid)
 
 class ParseError(ParseResultBase):
@@ -119,7 +118,7 @@ class ParseError(ParseResultBase):
   def __bool__(self):
     return False
   def __str__(self):
-    return "{}@{} : {}".format(self.uid, self.coord, self.error)
+    return "- {}@{} : {}".format(self.uid, self.coord, self.error)
   def __pformat__(self, state):
     #log.trace('ParseError {} {} __pformat__ called', id(self), self.uid)
     state.add(str(self), indent=1, newline=True)
