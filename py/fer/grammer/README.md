@@ -1,4 +1,8 @@
-# fer.grammer grammar reference
+# fer.grammer reference
+
+`fer.grammer` is a standalone library inspired by Haskell's parsec library of combinatory parsers. It provides an LL(*) parser as well as a compiler capable of generating parsers from a grammar definition syntax. It has been written for the sole purpose of automatically providing rich contextual error messages.
+
+## grammar definitions
 
 Note: The actual grammar is hard coded in python (see grammar.py).
 
@@ -66,3 +70,8 @@ token <expr> := /[ \n]*/ <expr>
    definition's parser and second an optional context passed by the 
    registering code. Callbacks must return a ParseResult.
    * `<definition-hook> := token(/:/) <identifier>`
+
+
+# References
+
+http://web.archive.org/web/20170728155101/https://softwareengineering.stackexchange.com/questions/338665/when-to-use-a-parser-combinator-when-to-use-a-parser-generator
