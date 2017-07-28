@@ -16,8 +16,10 @@ class TestConsumeString(unittest.TestCase):
     sio = io.StringIO(string)
     reader = parser.ParseReader(sio, name)
     result = reader.consume_string(parser.StringPredicate(string), string_len, string_len)
-    self.assertEqual(result.parse_kind, 'value')
-    self.assertEqual(result.value, string)
+    try:
+      self.assertEqual(result.value, string)
+    except AttributeError:
+      raise AssertionError('Result must be a ParseValue')
 
   def test_string_predicate_not_equal(self):
     string = "my simple string"
@@ -27,9 +29,11 @@ class TestConsumeString(unittest.TestCase):
     sio = io.StringIO(string2)
     reader = parser.ParseReader(sio, name)
     result = reader.consume_string(parser.StringPredicate(string), string_len, string_len)
-    self.assertEqual(result.parse_kind, 'error')
-    self.assertEqual(result.error, "expected bytestring `my simple string'")
-    self.assertEqual(result.causes[0].error, 'unexpected eof')
+    try:
+      self.assertEqual(result.error, "expected bytestring {}".format(repr(string)))
+      self.assertEqual(result.causes[0].error, "unexpected bytes {}".format(repr(string2)))
+    except AttributeError:
+      raise AssertionError('Result must be a ParseError')
 
   def test_string_predicate_early_eof(self):
     string = "my simple string"
@@ -39,6 +43,8 @@ class TestConsumeString(unittest.TestCase):
     sio = io.StringIO(string2)
     reader = parser.ParseReader(sio, name)
     result = reader.consume_string(parser.StringPredicate(string), string_len, string_len)
-    self.assertEqual(result.parse_kind, 'error')
-    self.assertEqual(result.error, "expected bytestring `{}'".format(string))
-    self.assertEqual(result.causes[0].error, 'unexpected eof')
+    try:
+      self.assertEqual(result.error, "expected bytestring {}".format(repr(string)))
+      self.assertEqual(result.causes[0].error, 'unexpected eof')
+    except AttributeError:
+      raise AssertionError('Result must be a ParseError')
