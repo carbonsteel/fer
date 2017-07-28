@@ -104,7 +104,10 @@ class GrammarParserCompiler(object):
     PARSER_FORMAT = "(%s, 'expected %s', self.%s)"
     is_immediate = False
     W = self.get_writer()
-    W += "  def %s(self):" % id_to_parse(definition.id)
+    if ofinstance(definition.value, GrammarClassDefinition):
+      W += "  def %s(self, imin=1, imax=1):" % id_to_parse(definition.id)
+    else:
+      W += "  def %s(self):" % id_to_parse(definition.id)
     W += "    value = self._reader.parse_type("
     W += "      result_type=%s," % id_to_def(definition.id)
     W += "      error='expected %s'," % definition.id
@@ -141,14 +144,8 @@ class GrammarParserCompiler(object):
         if e["quantifier"][0] == e["quantifier"][1] == 1:
           inner_parse = "self." + id_to_parse(e["identifier"])
         elif type(self.known_definitions[e["identifier"]]) == GrammarClassDefinition:
-          # inlines the consume call for class definitions to get an "str" instead of a list of char
-          ccls = self.known_definitions[e["identifier"]].ccls.encode().decode('unicode_escape')
-          try:
-            re.compile(ccls)
-          except re.error as e:
-            raise ValueError('Invalid class in definition {}'.format(ccls)) from e
-          inner_parse = "lambda: self._reader.consume_string(SimpleClassPredicate(%s), %d, %d)" % (
-            repr(ccls), e["quantifier"][0], e["quantifier"][1]
+          inner_parse = "lambda: self.%s(%d, %d)" % (
+            id_to_parse(e["identifier"]), e["quantifier"][0], e["quantifier"][1]
           )
         else:
           inner_parse = "lambda: self._reader.parse_many_wp(self.%s, %d, %d)" % (
@@ -171,9 +168,19 @@ class GrammarParserCompiler(object):
         re.compile(ccls)
       except re.error as e:
         raise ValueError('Invalid class in definition {}'.format(ccls)) from e
-      W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), 1, 1))" % (
-        repr(KEY_IMMEDIATE), definition.id, repr(ccls)
-      )
+      if definition.value.cclse is None:
+        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(SimpleClassPredicate(%s), imin, imax))" % (
+          repr(KEY_IMMEDIATE), definition.id, repr(ccls)
+        )
+      else:
+        cclse = definition.value.cclse.encode().decode('unicode_escape')
+        try:
+          re.compile(cclse)
+        except re.error as e:
+          raise ValueError('Invalid class escape in definition {}'.format(cclse)) from e
+        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(EscapedClassPredicate(%s, %s), imin, imax))" % (
+          repr(KEY_IMMEDIATE), definition.id, repr(ccls), repr(cclse)
+        )
       is_immediate = True
     elif ofinstance(definition.value, GrammarAlternativeDefinition):
       alts = ["self." + id_to_parse(alt) for alt in definition.value.alternative]
