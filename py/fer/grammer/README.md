@@ -26,9 +26,13 @@ token <expr> := /[ \n]*/ <expr>
    * `<definition-value> := <class> | <literal> | <composite> | <alternative>`
 
 1. Classes use python's re module for character classes.
+   1. Embeded closing square brackets and dots must be repetition-escaped (ie: `']]'` == `"]"`, `'..'` == `"."`)
+   1. Python escape sequences are accepted.
    * `<class> := token(/\[/) {any valid python re character class} /\]/`
 
 1. Literals are, plain single-quoted strings.
+   1. Embeded single quotes and dots must be repetition-escaped (ie: `''''` == `"'"`, `'..'` == `"."`)
+   1. Python escape sequences are accepted.
    * `<literal> := token(/'/) /.+'/`
 
 1. Composites use expressions inspired of regular expression to combine other

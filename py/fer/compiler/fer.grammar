@@ -32,6 +32,8 @@
 . line-feed '\n'
 . line-comment-content [^\n]
 . left-to-right-arrow '->'
+. single-quote ''''
+. double-quote '"'
 
 . domain { domain-literal-full domain-literal-min }
 . import { import-literal-full import-literal-min }
@@ -73,8 +75,13 @@
 . inner-domain-declaration (w vertical-line w domain-declaration@@)
 
 . expression ( 
-    w ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup
+    w expression-alt@alt
   )
+. expression-alt { expression-literal expression-domain } # 
+. expression-domain (ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup)
+. expression-literal { expression-literal-string }
+. expression-literal-string-content [^'] \ [\\\\]
+. expression-literal-string ( single-quote expression-literal-string-content*@@ single-quote )
 . expression-argument (
     variable-prefix id@ w tilde expression@
   )

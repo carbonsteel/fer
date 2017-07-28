@@ -178,7 +178,7 @@ class GrammarParserCompiler(object):
           re.compile(cclse)
         except re.error as e:
           raise ValueError('Invalid class escape in definition {}'.format(cclse)) from e
-        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(EscapedClassPredicate(%s, %s), imin, imax))" % (
+        W += "        (%s, 'expected %s', lambda: self._reader.consume_string(FixedEscapedClassPredicate(%s, %s), imin, imax))" % (
           repr(KEY_IMMEDIATE), definition.id, repr(ccls), repr(cclse)
         )
       is_immediate = True

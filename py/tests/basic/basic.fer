@@ -29,7 +29,7 @@ d Zoologist {
 }
 
 d Main {
-  >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
+  >$ 'my string' # NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
 
 

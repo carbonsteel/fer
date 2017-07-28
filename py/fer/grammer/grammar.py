@@ -4,10 +4,11 @@ from .common import *
 from .parser import *
 
 class GrammarClassDefinition(object):
-  def __init__(self, ccls):
+  def __init__(self, ccls, cclse):
     self.ccls = ccls
+    self.cclse = cclse
   def __pformat__(self, state):
-    pformat_class(['ccls'], self, state)
+    pformat_class(['ccls', 'cclse'], self, state)
 
 class GrammarLiteralDefinition(object):
   def __init__(self, literal):
@@ -56,7 +57,22 @@ class GrammarParser(object):
   def parse_method_identifier(self, method=None):
     return self._parse_identifier(method, self.METHOD_IDENTIFIER_CLASS)
 
-  
+  def parse_class_escape(self):
+    return self._reader.parse_type(
+      result_type=str,
+      error="expected class",
+      result_immediate="_",
+      parsers=[
+        ("", "expected class escape specifier",
+          lambda: self._reader.consume_token(StringPredicate("\\"), 1, 1)),
+        ("", "expected class escape prefix",
+          lambda: self._reader.consume_token(StringPredicate("["), 1, 1)),
+        ("_", "expected class escape value",
+          lambda: self._reader.consume_string(EscapedClassPredicate("^\]\.", "\]\."), 1)),
+        ("", "expected class escape postfix",
+          lambda: self._reader.consume_token(StringPredicate("]"), 1, 1)),
+    ])
+
   def parse_class(self):
     return self._reader.parse_type(
       result_type=GrammarClassDefinition,
@@ -68,6 +84,8 @@ class GrammarParser(object):
           lambda: self._reader.consume_string(EscapedClassPredicate("^\]\.", "\]\."), 1)),
         ("", "expected class postfix",
           lambda: self._reader.consume_token(StringPredicate("]"), 1, 1)),
+        ("cclse", "expected class escape",
+          lambda: self._reader.parse_many_wp(self.parse_class_escape, 0, 1)),
     ])
   
   def parse_literal(self):

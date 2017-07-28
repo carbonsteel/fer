@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-28 11:30:04.124459
+# Updated on 2017-07-28 17:19:40.498987
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -39,6 +39,8 @@ Octothorp = str
 LineFeed = str
 LineCommentContent = str
 LeftToRightArrow = str
+SingleQuote = str
+DoubleQuote = str
 Domain = idem
 Import = idem
 Ww = str
@@ -89,6 +91,13 @@ class DomainDefinition(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'domains', 'transforms', 'variables'], self, state)
 class Expression(object):
+  def __init__(self, alt, _fcrd):
+    self.alt = alt
+    self._fcrd = _fcrd
+  def __pformat__(self, state):
+    pformat_class(['_fcrd', 'alt'], self, state)
+ExpressionAlt = idem
+class ExpressionDomain(object):
   def __init__(self, domainof, id, arguments, lookup, _fcrd):
     self.domainof = domainof
     self.id = id
@@ -97,6 +106,8 @@ class Expression(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'arguments', 'domainof', 'id', 'lookup'], self, state)
+ExpressionLiteral = idem
+ExpressionLiteralStringContent = str
 class ExpressionArgument(object):
   def __init__(self, id, expression, _fcrd):
     self.id = id
@@ -147,6 +158,7 @@ ImportDomainAs = Id
 RealmDomainDeclaration = DomainDeclaration
 DomainDeclarationId = _id
 InnerDomainDeclaration = DomainDeclaration
+ExpressionLiteralString = str
 ExpressionArguments = list
 ExpressionLookup = Expression
 Codomain = Expression
@@ -175,21 +187,21 @@ class _ParserImpl(object):
         ('', 'expected eof', self._reader.consume_eof),
       ])
     return value
-  def _parse_ws(self):
+  def _parse_ws(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=Ws,
       error='expected ws',
       parsers=[
-        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 1, 1))
+        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), imin, imax))
       ],
       result_immediate='_fimm')
     return value
-  def _parse_pseudo_letter(self):
+  def _parse_pseudo_letter(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=PseudoLetter,
       error='expected pseudo-letter',
       parsers=[
-        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), 1, 1))
+        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), imin, imax))
       ],
       result_immediate='_fimm')
     return value
@@ -418,12 +430,12 @@ class _ParserImpl(object):
       ],
       result_immediate='_fimm')
     return value
-  def _parse_line_comment_content(self):
+  def _parse_line_comment_content(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=LineCommentContent,
       error='expected line-comment-content',
       parsers=[
-        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 1, 1))
+        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), imin, imax))
       ],
       result_immediate='_fimm')
     return value
@@ -433,6 +445,24 @@ class _ParserImpl(object):
       error='expected left-to-right-arrow',
       parsers=[
         ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(StringPredicate('->'), 2, 2))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_single_quote(self):
+    value = self._reader.parse_type(
+      result_type=SingleQuote,
+      error='expected single-quote',
+      parsers=[
+        ('_fimm', 'expected single-quote', lambda: self._reader.consume_string(StringPredicate("'"), 1, 1))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_double_quote(self):
+    value = self._reader.parse_type(
+      result_type=DoubleQuote,
+      error='expected double-quote',
+      parsers=[
+        ('_fimm', 'expected double-quote', lambda: self._reader.consume_string(StringPredicate('"'), 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -459,7 +489,7 @@ class _ParserImpl(object):
       result_type=Ww,
       error='expected ww',
       parsers=[
-        ('', 'expected ws in ww', lambda: self._reader.consume_string(SimpleClassPredicate(' \n'), 0, 9223372036854775807)),
+        ('', 'expected ws in ww', lambda: self._parse_ws(0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self._parse_line_comment, 0, 1)),
       ])
     return value
@@ -477,7 +507,7 @@ class _ParserImpl(object):
       error='expected line-comment',
       parsers=[
         ('', 'expected octothorp in line-comment', self._parse_octothorp),
-        ('', 'expected line-comment-content in line-comment', lambda: self._reader.consume_string(SimpleClassPredicate('^\n'), 0, 9223372036854775807)),
+        ('', 'expected line-comment-content in line-comment', lambda: self._parse_line_comment_content(0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self._parse_line_feed, 0, 1)),
       ])
     return value
@@ -486,7 +516,7 @@ class _ParserImpl(object):
       result_type=_id,
       error='expected _id',
       parsers=[
-        ('_fimm', 'expected pseudo-letter in _id', lambda: self._reader.consume_string(SimpleClassPredicate("a-zA-Z_'"), 1, 9223372036854775807)),
+        ('_fimm', 'expected pseudo-letter in _id', lambda: self._parse_pseudo_letter(1, 9223372036854775807)),
       ],
       result_immediate='_fimm')
     return value
@@ -647,11 +677,58 @@ class _ParserImpl(object):
       parsers=[
         ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in expression', self._parse_w),
-        ('domainof', 'expected ampersand in expression', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
-        ('id', 'expected id in expression', self._parse_id),
-        ('arguments', 'expected expression-arguments in expression', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
-        ('lookup', 'expected expression-lookup in expression', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
+        ('alt', 'expected expression-alt in expression', self._parse_expression_alt),
       ])
+    return value
+  def _parse_expression_alt(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionAlt,
+      error='expected expression-alt',
+      parsers=[
+        ('_fimm', 'expected expression-alt, any of expression-literal, expression-domain', lambda: self._reader.parse_any([self._parse_expression_literal,self._parse_expression_domain]))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_expression_domain(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionDomain,
+      error='expected expression-domain',
+      parsers=[
+        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
+        ('domainof', 'expected ampersand in expression-domain', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
+        ('id', 'expected id in expression-domain', self._parse_id),
+        ('arguments', 'expected expression-arguments in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
+        ('lookup', 'expected expression-lookup in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
+      ])
+    return value
+  def _parse_expression_literal(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionLiteral,
+      error='expected expression-literal',
+      parsers=[
+        ('_fimm', 'expected expression-literal, any of expression-literal-string', lambda: self._reader.parse_any([self._parse_expression_literal_string]))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_expression_literal_string_content(self, imin=1, imax=1):
+    value = self._reader.parse_type(
+      result_type=ExpressionLiteralStringContent,
+      error='expected expression-literal-string-content',
+      parsers=[
+        ('_fimm', 'expected expression-literal-string-content', lambda: self._reader.consume_string(FixedEscapedClassPredicate("^'", '\\\\'), imin, imax))
+      ],
+      result_immediate='_fimm')
+    return value
+  def _parse_expression_literal_string(self):
+    value = self._reader.parse_type(
+      result_type=ExpressionLiteralString,
+      error='expected expression-literal-string',
+      parsers=[
+        ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
+        ('_fimm', 'expected expression-literal-string-content in expression-literal-string', lambda: self._parse_expression_literal_string_content(0, 9223372036854775807)),
+        ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
+      ],
+      result_immediate='_fimm')
     return value
   def _parse_expression_argument(self):
     value = self._reader.parse_type(
