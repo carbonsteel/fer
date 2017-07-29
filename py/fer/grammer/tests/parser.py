@@ -57,7 +57,7 @@ class TestConsumeString(unittest.TestCase):
     name = "nameless"
     sio = io.StringIO(string + "  ") # added buffer before eof, otherwise peeking wont work.
     reader = parser.ParseReader(sio, name)
-    result = reader.consume_string(parser.FixedEscapedClassPredicate("^'", "\\\\"), string_len, string_len)
+    result = reader.consume_string(parser.FixedEscapedClassPredicate.factory("^'", "\\\\"), string_len, string_len)
     try:
       self.assertEqual(result.value, string.replace('\\', ''))
     except AttributeError:

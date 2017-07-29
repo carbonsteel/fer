@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-28 18:07:04.993655
+# Updated on 2017-07-28 21:59:52.328101
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -46,6 +46,7 @@ Hyphen = str
 Domain = idem
 Import = idem
 Ww = str
+W_old = str
 W = str
 LineComment = str
 VariablePrefix = str
@@ -203,300 +204,333 @@ class _ParserImpl(object):
         ('', 'expected eof', self._reader.consume_eof),
       ])
     return value
+  _ws_predicate = SimpleClassPredicate.factory(r' \n')
   def _parse_ws(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=Ws,
       error='expected ws',
       parsers=[
-        ('_fimm', 'expected ws', lambda: self._reader.consume_string(SimpleClassPredicate(r' \n'), imin, imax))
+        ('_fimm', 'expected ws', lambda: self._reader.consume_string(self._ws_predicate, imin, imax))
       ],
       result_immediate='_fimm')
     return value
+  _pseudo_letter_predicate = SimpleClassPredicate.factory(r"a-zA-Z_'")
   def _parse_pseudo_letter(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=PseudoLetter,
       error='expected pseudo-letter',
       parsers=[
-        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(SimpleClassPredicate(r"a-zA-Z_'"), imin, imax))
+        ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(self._pseudo_letter_predicate, imin, imax))
       ],
       result_immediate='_fimm')
     return value
+  _pseudo_number_predicate = SimpleClassPredicate.factory(r'0-9')
   def _parse_pseudo_number(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=PseudoNumber,
       error='expected pseudo-number',
       parsers=[
-        ('_fimm', 'expected pseudo-number', lambda: self._reader.consume_string(SimpleClassPredicate(r'0-9'), imin, imax))
+        ('_fimm', 'expected pseudo-number', lambda: self._reader.consume_string(self._pseudo_number_predicate, imin, imax))
       ],
       result_immediate='_fimm')
     return value
+  _dot_predicate = StringPredicate(r'.')
   def _parse_dot(self):
     value = self._reader.parse_type(
       result_type=Dot,
       error='expected dot',
       parsers=[
-        ('_fimm', 'expected dot', lambda: self._reader.consume_string(StringPredicate(r'.'), 1, 1))
+        ('_fimm', 'expected dot', lambda: self._reader.consume_string(self._dot_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _domain_literal_full_predicate = StringPredicate(r'domain')
   def _parse_domain_literal_full(self):
     value = self._reader.parse_type(
       result_type=DomainLiteralFull,
       error='expected domain-literal-full',
       parsers=[
-        ('_fimm', 'expected domain-literal-full', lambda: self._reader.consume_string(StringPredicate(r'domain'), 6, 6))
+        ('_fimm', 'expected domain-literal-full', lambda: self._reader.consume_string(self._domain_literal_full_predicate, 6, 6))
       ],
       result_immediate='_fimm')
     return value
+  _domain_literal_min_predicate = StringPredicate(r'd')
   def _parse_domain_literal_min(self):
     value = self._reader.parse_type(
       result_type=DomainLiteralMin,
       error='expected domain-literal-min',
       parsers=[
-        ('_fimm', 'expected domain-literal-min', lambda: self._reader.consume_string(StringPredicate(r'd'), 1, 1))
+        ('_fimm', 'expected domain-literal-min', lambda: self._reader.consume_string(self._domain_literal_min_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _from_predicate = StringPredicate(r'from')
   def _parse_from(self):
     value = self._reader.parse_type(
       result_type=From,
       error='expected from',
       parsers=[
-        ('_fimm', 'expected from', lambda: self._reader.consume_string(StringPredicate(r'from'), 4, 4))
+        ('_fimm', 'expected from', lambda: self._reader.consume_string(self._from_predicate, 4, 4))
       ],
       result_immediate='_fimm')
     return value
+  _import_literal_full_predicate = StringPredicate(r'import')
   def _parse_import_literal_full(self):
     value = self._reader.parse_type(
       result_type=ImportLiteralFull,
       error='expected import-literal-full',
       parsers=[
-        ('_fimm', 'expected import-literal-full', lambda: self._reader.consume_string(StringPredicate(r'import'), 6, 6))
+        ('_fimm', 'expected import-literal-full', lambda: self._reader.consume_string(self._import_literal_full_predicate, 6, 6))
       ],
       result_immediate='_fimm')
     return value
+  _import_literal_min_predicate = StringPredicate(r'i')
   def _parse_import_literal_min(self):
     value = self._reader.parse_type(
       result_type=ImportLiteralMin,
       error='expected import-literal-min',
       parsers=[
-        ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(StringPredicate(r'i'), 1, 1))
+        ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(self._import_literal_min_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _as_predicate = StringPredicate(r'as')
   def _parse_as(self):
     value = self._reader.parse_type(
       result_type=As,
       error='expected as',
       parsers=[
-        ('_fimm', 'expected as', lambda: self._reader.consume_string(StringPredicate(r'as'), 2, 2))
+        ('_fimm', 'expected as', lambda: self._reader.consume_string(self._as_predicate, 2, 2))
       ],
       result_immediate='_fimm')
     return value
+  _left_curly_bracket_predicate = StringPredicate(r'{')
   def _parse_left_curly_bracket(self):
     value = self._reader.parse_type(
       result_type=LeftCurlyBracket,
       error='expected left-curly-bracket',
       parsers=[
-        ('_fimm', 'expected left-curly-bracket', lambda: self._reader.consume_string(StringPredicate(r'{'), 1, 1))
+        ('_fimm', 'expected left-curly-bracket', lambda: self._reader.consume_string(self._left_curly_bracket_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _right_curly_bracket_predicate = StringPredicate(r'}')
   def _parse_right_curly_bracket(self):
     value = self._reader.parse_type(
       result_type=RightCurlyBracket,
       error='expected right-curly-bracket',
       parsers=[
-        ('_fimm', 'expected right-curly-bracket', lambda: self._reader.consume_string(StringPredicate(r'}'), 1, 1))
+        ('_fimm', 'expected right-curly-bracket', lambda: self._reader.consume_string(self._right_curly_bracket_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _left_square_bracket_predicate = StringPredicate(r'[')
   def _parse_left_square_bracket(self):
     value = self._reader.parse_type(
       result_type=LeftSquareBracket,
       error='expected left-square-bracket',
       parsers=[
-        ('_fimm', 'expected left-square-bracket', lambda: self._reader.consume_string(StringPredicate(r'['), 1, 1))
+        ('_fimm', 'expected left-square-bracket', lambda: self._reader.consume_string(self._left_square_bracket_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _right_square_bracket_predicate = StringPredicate(r']')
   def _parse_right_square_bracket(self):
     value = self._reader.parse_type(
       result_type=RightSquareBracket,
       error='expected right-square-bracket',
       parsers=[
-        ('_fimm', 'expected right-square-bracket', lambda: self._reader.consume_string(StringPredicate(r']'), 1, 1))
+        ('_fimm', 'expected right-square-bracket', lambda: self._reader.consume_string(self._right_square_bracket_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _vertical_line_predicate = StringPredicate(r'|')
   def _parse_vertical_line(self):
     value = self._reader.parse_type(
       result_type=VerticalLine,
       error='expected vertical-line',
       parsers=[
-        ('_fimm', 'expected vertical-line', lambda: self._reader.consume_string(StringPredicate(r'|'), 1, 1))
+        ('_fimm', 'expected vertical-line', lambda: self._reader.consume_string(self._vertical_line_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _colon_predicate = StringPredicate(r':')
   def _parse_colon(self):
     value = self._reader.parse_type(
       result_type=Colon,
       error='expected colon',
       parsers=[
-        ('_fimm', 'expected colon', lambda: self._reader.consume_string(StringPredicate(r':'), 1, 1))
+        ('_fimm', 'expected colon', lambda: self._reader.consume_string(self._colon_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _double_colon_predicate = StringPredicate(r'::')
   def _parse_double_colon(self):
     value = self._reader.parse_type(
       result_type=DoubleColon,
       error='expected double-colon',
       parsers=[
-        ('_fimm', 'expected double-colon', lambda: self._reader.consume_string(StringPredicate(r'::'), 2, 2))
+        ('_fimm', 'expected double-colon', lambda: self._reader.consume_string(self._double_colon_predicate, 2, 2))
       ],
       result_immediate='_fimm')
     return value
+  _greater_than_sign_predicate = StringPredicate(r'>')
   def _parse_greater_than_sign(self):
     value = self._reader.parse_type(
       result_type=GreaterThanSign,
       error='expected greater-than-sign',
       parsers=[
-        ('_fimm', 'expected greater-than-sign', lambda: self._reader.consume_string(StringPredicate(r'>'), 1, 1))
+        ('_fimm', 'expected greater-than-sign', lambda: self._reader.consume_string(self._greater_than_sign_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _equals_sign_predicate = StringPredicate(r'=')
   def _parse_equals_sign(self):
     value = self._reader.parse_type(
       result_type=EqualsSign,
       error='expected equals-sign',
       parsers=[
-        ('_fimm', 'expected equals-sign', lambda: self._reader.consume_string(StringPredicate(r'='), 1, 1))
+        ('_fimm', 'expected equals-sign', lambda: self._reader.consume_string(self._equals_sign_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _dollar_sign_predicate = StringPredicate(r'$')
   def _parse_dollar_sign(self):
     value = self._reader.parse_type(
       result_type=DollarSign,
       error='expected dollar-sign',
       parsers=[
-        ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(StringPredicate(r'$'), 1, 1))
+        ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(self._dollar_sign_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _ampersand_predicate = StringPredicate(r'&')
   def _parse_ampersand(self):
     value = self._reader.parse_type(
       result_type=Ampersand,
       error='expected ampersand',
       parsers=[
-        ('_fimm', 'expected ampersand', lambda: self._reader.consume_string(StringPredicate(r'&'), 1, 1))
+        ('_fimm', 'expected ampersand', lambda: self._reader.consume_string(self._ampersand_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _left_parenthesis_predicate = StringPredicate(r'(')
   def _parse_left_parenthesis(self):
     value = self._reader.parse_type(
       result_type=LeftParenthesis,
       error='expected left-parenthesis',
       parsers=[
-        ('_fimm', 'expected left-parenthesis', lambda: self._reader.consume_string(StringPredicate(r'('), 1, 1))
+        ('_fimm', 'expected left-parenthesis', lambda: self._reader.consume_string(self._left_parenthesis_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _right_parenthesis_predicate = StringPredicate(r')')
   def _parse_right_parenthesis(self):
     value = self._reader.parse_type(
       result_type=RightParenthesis,
       error='expected right-parenthesis',
       parsers=[
-        ('_fimm', 'expected right-parenthesis', lambda: self._reader.consume_string(StringPredicate(r')'), 1, 1))
+        ('_fimm', 'expected right-parenthesis', lambda: self._reader.consume_string(self._right_parenthesis_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _tilde_predicate = StringPredicate(r'~')
   def _parse_tilde(self):
     value = self._reader.parse_type(
       result_type=Tilde,
       error='expected tilde',
       parsers=[
-        ('_fimm', 'expected tilde', lambda: self._reader.consume_string(StringPredicate(r'~'), 1, 1))
+        ('_fimm', 'expected tilde', lambda: self._reader.consume_string(self._tilde_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _solidus_predicate = StringPredicate(r'/')
   def _parse_solidus(self):
     value = self._reader.parse_type(
       result_type=Solidus,
       error='expected solidus',
       parsers=[
-        ('_fimm', 'expected solidus', lambda: self._reader.consume_string(StringPredicate(r'/'), 1, 1))
+        ('_fimm', 'expected solidus', lambda: self._reader.consume_string(self._solidus_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _percent_sign_predicate = StringPredicate(r'%')
   def _parse_percent_sign(self):
     value = self._reader.parse_type(
       result_type=PercentSign,
       error='expected percent-sign',
       parsers=[
-        ('_fimm', 'expected percent-sign', lambda: self._reader.consume_string(StringPredicate(r'%'), 1, 1))
+        ('_fimm', 'expected percent-sign', lambda: self._reader.consume_string(self._percent_sign_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _octothorp_predicate = StringPredicate(r'#')
   def _parse_octothorp(self):
     value = self._reader.parse_type(
       result_type=Octothorp,
       error='expected octothorp',
       parsers=[
-        ('_fimm', 'expected octothorp', lambda: self._reader.consume_string(StringPredicate(r'#'), 1, 1))
+        ('_fimm', 'expected octothorp', lambda: self._reader.consume_string(self._octothorp_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _line_feed_predicate = StringPredicate(r'\n')
   def _parse_line_feed(self):
     value = self._reader.parse_type(
       result_type=LineFeed,
       error='expected line-feed',
       parsers=[
-        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(StringPredicate(r'\n'), 2, 2))
+        ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(self._line_feed_predicate, 2, 2))
       ],
       result_immediate='_fimm')
     return value
+  _line_comment_content_predicate = SimpleClassPredicate.factory(r'^\n')
   def _parse_line_comment_content(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=LineCommentContent,
       error='expected line-comment-content',
       parsers=[
-        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(SimpleClassPredicate(r'^\n'), imin, imax))
+        ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(self._line_comment_content_predicate, imin, imax))
       ],
       result_immediate='_fimm')
     return value
+  _left_to_right_arrow_predicate = StringPredicate(r'->')
   def _parse_left_to_right_arrow(self):
     value = self._reader.parse_type(
       result_type=LeftToRightArrow,
       error='expected left-to-right-arrow',
       parsers=[
-        ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(StringPredicate(r'->'), 2, 2))
+        ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(self._left_to_right_arrow_predicate, 2, 2))
       ],
       result_immediate='_fimm')
     return value
+  _single_quote_predicate = StringPredicate(r"'")
   def _parse_single_quote(self):
     value = self._reader.parse_type(
       result_type=SingleQuote,
       error='expected single-quote',
       parsers=[
-        ('_fimm', 'expected single-quote', lambda: self._reader.consume_string(StringPredicate(r"'"), 1, 1))
+        ('_fimm', 'expected single-quote', lambda: self._reader.consume_string(self._single_quote_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _double_quote_predicate = StringPredicate(r'"')
   def _parse_double_quote(self):
     value = self._reader.parse_type(
       result_type=DoubleQuote,
       error='expected double-quote',
       parsers=[
-        ('_fimm', 'expected double-quote', lambda: self._reader.consume_string(StringPredicate(r'"'), 1, 1))
+        ('_fimm', 'expected double-quote', lambda: self._reader.consume_string(self._double_quote_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
+  _hyphen_predicate = StringPredicate(r'-')
   def _parse_hyphen(self):
     value = self._reader.parse_type(
       result_type=Hyphen,
       error='expected hyphen',
       parsers=[
-        ('_fimm', 'expected hyphen', lambda: self._reader.consume_string(StringPredicate(r'-'), 1, 1))
+        ('_fimm', 'expected hyphen', lambda: self._reader.consume_string(self._hyphen_predicate, 1, 1))
       ],
       result_immediate='_fimm')
     return value
@@ -527,12 +561,20 @@ class _ParserImpl(object):
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self._parse_line_comment, 0, 1)),
       ])
     return value
+  def _parse_w_old(self):
+    value = self._reader.parse_type(
+      result_type=W_old,
+      error='expected w_old',
+      parsers=[
+        ('', 'expected ww in w_old', lambda: self._reader.parse_many_wp(self._parse_ww, 0, 9223372036854775807)),
+      ])
+    return value
   def _parse_w(self):
     value = self._reader.parse_type(
       result_type=W,
       error='expected w',
       parsers=[
-        ('', 'expected ww in w', lambda: self._reader.parse_many_wp(self._parse_ww, 0, 9223372036854775807)),
+        ('', 'expected <whitespace>', lambda: self._reader.consume_string(WhitespacePredicate(), 0, 9223372036854775807))
       ])
     return value
   def _parse_line_comment(self):
@@ -765,12 +807,13 @@ class _ParserImpl(object):
         ('dpart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
       ])
     return value
+  _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r"^'", r'\\')
   def _parse_expression_literal_string_content(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=ExpressionLiteralStringContent,
       error='expected expression-literal-string-content',
       parsers=[
-        ('_fimm', 'expected expression-literal-string-content', lambda: self._reader.consume_string(FixedEscapedClassPredicate(r"^'", r'\\'), imin, imax))
+        ('_fimm', 'expected expression-literal-string-content', lambda: self._reader.consume_string(self._expression_literal_string_content_predicate, imin, imax))
       ],
       result_immediate='_fimm')
     return value

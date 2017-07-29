@@ -370,7 +370,7 @@ class VariableAnalysis(object):
         # checking domains in realm
         result = self.check_domain_declaration(realm, self.get_current_realm_scope())
         if not result:
-          result.put(realm_import_result)
+          result.causes.append(realm_import_result)
           return result
         # checking imported domain from realm
         for imp in realm_import_result.value.domains:

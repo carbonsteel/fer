@@ -65,7 +65,7 @@ class RealmLoader(object):
       setattr(realm_import, self.LOADER_FULLPATH_ATTR, fullpath)
       realm_import_result = self.context.interceptor.trigger(self.context.on_before_parse_realm, realm_import_result)
       import_result = self.parse_realm(realm_import_result.value, fullpath)
-      import_result.put(realm_import_result)
+      import_result.causes.append(realm_import_result)
       if not import_result:
         return import_result
       setattr(realm_import_result.value, self.LOADER_IMPORTED_ATTR, import_result.value)

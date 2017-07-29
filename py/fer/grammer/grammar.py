@@ -51,7 +51,7 @@ class GrammarParser(object):
   def _parse_identifier(self, method, identifier_class):
     if method is None:
       method = self._reader.consume_token
-    return method(SimpleClassPredicate(identifier_class), minimum_consumed=1)
+    return method(SimpleClassPredicate.factory(identifier_class), minimum_consumed=1)
   def parse_identifier(self, method=None):
     return self._parse_identifier(method, self.IDENTIFIER_CLASS)
   def parse_method_identifier(self, method=None):
@@ -118,7 +118,7 @@ class GrammarParser(object):
       error="expected quantifier",
       parsers=[
         ("_", "expected quantifier symbol",
-          lambda: self._reader.consume_string(SimpleClassPredicate("\+\*\?"), 0, 1)),
+          lambda: self._reader.consume_string(SimpleClassPredicate.factory("\+\*\?"), 0, 1)),
     ])
 
   def parse_anchor(self):
@@ -181,7 +181,8 @@ class GrammarParser(object):
       self.parse_class,
       self.parse_literal,
       self.parse_composite,
-      self.parse_alternative
+      self.parse_alternative,
+      lambda: self._reader.consume_token(StringPredicate("__whitespace__"), 14, 14)
     ])
 
   def parse_definition_hook(self):
@@ -223,6 +224,6 @@ class GrammarParser(object):
       result_immediate='_',
       parsers=[
         ('_', 'expected definition in grammar', lambda: self._reader.parse_many(self.parse_definition_prefix, self.parse_definition, 1)),
-        ('', 'expected whitespace', self._reader.consume_ws),
+        ('', 'expected whitespace before eof', lambda: self._reader.consume_string(WhitespacePredicate(), 0, 9223372036854775807)),
         ('', 'expected eof', self._reader.consume_eof),
       ])

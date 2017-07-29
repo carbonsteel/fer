@@ -41,7 +41,8 @@
 . import { import-literal-full import-literal-min }
 
 . ww (ws* line-comment?)
-. w (ww*)
+. w_old (ww*)
+. w __whitespace__
 . line-comment (octothorp line-comment-content* line-feed?)
 
 . _id (pseudo-letter+@@)

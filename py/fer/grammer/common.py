@@ -28,6 +28,8 @@ def id_to_def(id):
 
 def id_to_parse(id):
   return "_parse_"+kebab_to_snake(id)
+def id_to_predicate(id):
+  return "_"+kebab_to_snake(id)+"_predicate"
 
 def civilize_parse_error(result):
   """ return a formatted string containing the (guessed) most relevant
