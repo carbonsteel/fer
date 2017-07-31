@@ -29,7 +29,7 @@ d Zoologist {
 }
 
 d Main {
-  >$ 'my string\'asda@ "'
+  >$ 'my str\i\ng\\\'asda@ "'
   >$ 12341
   >$ -12222.0
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))

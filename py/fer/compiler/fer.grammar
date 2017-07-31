@@ -85,7 +85,7 @@
 . expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
 . expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart )
 . expression-literal-float ( expression-literal-integer-decimal@ipart dot pseudo-number+@dpart )
-. expression-literal-string-content [^'] \ [\\]
+. expression-literal-string-content [^'\\] \ [\\]
 . expression-literal-string ( single-quote expression-literal-string-content*@@ single-quote )
 . expression-argument (
     variable-prefix id@ w tilde expression@
@@ -106,7 +106,7 @@
 . variable-bound (_id@id variable-domain?@ variable-constraints?@)
 . variable-constant (_id@id w tilde expression@)
 
-. transform-compare (variable-prefix id@ w equals-sign id@)
+. transform-compare (variable-prefix id@variable w equals-sign id@domain)
 . transform-definition (
     w greater-than-sign transform-compare*@compares
     w dollar-sign expression-argument*@locals expression@

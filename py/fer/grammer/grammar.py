@@ -46,12 +46,12 @@ class GrammarParser(object):
   def __init__(self, reader):
     self._reader = reader
 
-  IDENTIFIER_CLASS = "a-zA-Z-_"
-  METHOD_IDENTIFIER_CLASS = "a-zA-Z_"
+  IDENTIFIER_CLASS = SimpleClassPredicate.factory("a-zA-Z-_")
+  METHOD_IDENTIFIER_CLASS = SimpleClassPredicate.factory("a-zA-Z_")
   def _parse_identifier(self, method, identifier_class):
     if method is None:
       method = self._reader.consume_token
-    return method(SimpleClassPredicate.factory(identifier_class), minimum_consumed=1)
+    return method(identifier_class, minimum_consumed=1)
   def parse_identifier(self, method=None):
     return self._parse_identifier(method, self.IDENTIFIER_CLASS)
   def parse_method_identifier(self, method=None):
@@ -111,6 +111,7 @@ class GrammarParser(object):
     if value == "?":
       return (0, 1)
 
+  _quantifier_predicate = SimpleClassPredicate.factory("\+\*\?")
   def parse_quantifier(self):
     return self._reader.parse_type(
       result_type=self.quantifier_tuple,
@@ -118,7 +119,7 @@ class GrammarParser(object):
       error="expected quantifier",
       parsers=[
         ("_", "expected quantifier symbol",
-          lambda: self._reader.consume_string(SimpleClassPredicate.factory("\+\*\?"), 0, 1)),
+          lambda: self._reader.consume_string(self._quantifier_predicate, 0, 1)),
     ])
 
   def parse_anchor(self):

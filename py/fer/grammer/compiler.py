@@ -63,6 +63,8 @@ class GrammarParserCompiler(object):
         continue
       elif d["anchor"] == "": # there was one anchor -> the name is the id
         name = id_to_var(d["identifier"])
+        if name in members:
+          raise ValueError("%s is used in %s but conflicts with another field of the same name" % (d["identifier"], definition.id))
         members[name] = {}
       elif d["anchor"] == "@": # two anchors -> the value is bound to the parent
         name = id_to_def(d["identifier"])
@@ -75,6 +77,8 @@ class GrammarParserCompiler(object):
           raise ValueError("%s is used in %s but is not defined yet" % (d["identifier"], definition.id))
       else:
         name = d["anchor"]
+        if name in members:
+          raise ValueError("%s is used in %s but conflicts with another field of the same name" % (d["anchor"], definition.id))
         members[name] = {}
     W = self.get_writer()
     if len(members) > 0:
@@ -119,25 +123,30 @@ class GrammarParserCompiler(object):
       W += "  def %s(self):" % id_to_parse(definition.id)
     else:
       W += "  def %s(self):" % id_to_parse(definition.id)
-    W += "    value = self._reader.parse_type("
-    W += "      result_type=%s," % id_to_def(definition.id)
-    W += "      error='expected %s'," % definition.id
-    W += "      parsers=["
+    needs_coord = False
     if ofinstance(definition.value, GrammarCompositeDefinition):
-      composite = definition.value
       # coord record must be executed first so has to get the starting point
       # of whatever is being parsed. It must also not be added when there is
       # no anchor or an immediate
       qty_anchors = 0
       has_imm = False
-      for e in composite.expression:
+      for e in definition.value.expression:
         if e["anchor"] is not None:
           qty_anchors += 1
         if e["anchor"] == "@":
           has_imm = True
-          break
-      if not(has_imm or qty_anchors == 0):
-        W += "        (%s, 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord()))," % repr(KEY_FER_COORD)
+      needs_coord = not(has_imm or qty_anchors == 0)
+    if needs_coord:
+      W += "    coord = self._reader.get_coord()"
+    W += "    value = self._reader.parse_type("
+    if needs_coord:
+      W += "      result_type=lambda **kwargs: {}({}=coord, **kwargs),".format(id_to_def(definition.id), KEY_FER_COORD)
+    else:
+      W += "      result_type=%s," % id_to_def(definition.id)
+    W += "      error='expected %s'," % definition.id
+    W += "      parsers=["
+    if ofinstance(definition.value, GrammarCompositeDefinition):
+      composite = definition.value
       for e in composite.expression:
         if e["identifier"] not in self.known_definitions:
           raise ValueError("%s is used but is not defined" % e["identifier"])
@@ -203,11 +212,10 @@ class GrammarParserCompiler(object):
       W += "        ('', 'expected <whitespace>', lambda: self._reader.consume_string(WhitespacePredicate(), 0, {}))".format(sys.maxsize)
     else:
       raise ValueError("this should never happen (unless a new Grammar**Definition is added and not updated here)")
+    W += "      ]"
     if is_immediate:
-      W += "      ],"
-      W += "      result_immediate=%s)" % repr(KEY_IMMEDIATE)
-    else:
-      W += "      ])"
+      W += "      ,result_immediate=%s" % repr(KEY_IMMEDIATE)
+    W += "      )"
     if definition.hook is not None:
       W += "    value = self.interceptor.trigger(self.%s, value)" % (definition.hook,)
     W += "    return value"

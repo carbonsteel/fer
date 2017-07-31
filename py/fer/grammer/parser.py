@@ -175,20 +175,27 @@ class ParseReader(object):
   def parse_nothing(self, value=None):
     return ParseValue(value=value, coord=self._current_coord)
   
-  def parse_type(self, result_type, error, parsers, result_immediate=None):
+  def parse_type(self, result_type, error, parsers, result_immediate=None, recovery=False):
     type_args = {}
     begin_coord = self._current_coord
     parser_errors = ParseError(error=error, coord=begin_coord)
-    for id, error, parser in parsers:
+    for i in range(0, len(parsers)):
+      id, error, parser = parsers[i]
       #log.debug("parse_type trying %s %s:%s"%(str(self._current_coord),repr(id),repr(error)))
       parser_result = parser()
       parser_errors.causes.append(parser_result)
       if not parser_result:
         parser_errors.coord = self._current_coord
         parser_result.error += " (%s)" % (error,)
+        # if not recovery:
+        #   recovery_result = self.lookahead(lambda: self.parse_type(result_type=result_type, error=error, parsers=parsers[i+1:i+2], result_immediate=result_immediate, recovery=True))
+        #   if recovery_result:
+        #     parser_errors.coord = self._current_coord.levelup()
         return parser_errors
       if id:
         type_args[id] = parser_result.value
+    if recovery:
+      return True # no need for a parsevalue here
     value = None
     if result_immediate is None:
       value = result_type(**type_args)
@@ -519,17 +526,16 @@ class FixedEscapedClassPredicate(object):
         re.compile("[{}]".format(cclse)))
   
   def __call__(self, peek):
-    consume = False
+    consume = True
     prune = False
-    if self.ree.match(peek[0]):
-      self.next_escaped = True
-      prune = True
-      consume = True
+    if self.ree.match(peek[0]) and not self.next_escaped:
+      prune = self.next_escaped = not self.re.match(peek[1])
     elif self.re.match(peek[0]):
-      consume = True
+      pass
     elif self.next_escaped:
       self.next_escaped = False
-      consume = True
+    else:
+      consume = False
     return ConsumePredicateResult(consume=consume, prune=prune)
   def what(self):
     return self._what

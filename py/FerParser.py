@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-28 21:59:52.328101
+# Updated on 2017-07-31 12:15:27.730108
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -155,11 +155,12 @@ class VariableConstant(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'expression', 'id'], self, state)
 class TransformCompare(object):
-  def __init__(self, id, _fcrd):
-    self.id = id
+  def __init__(self, variable, domain, _fcrd):
+    self.variable = variable
+    self.domain = domain
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'id'], self, state)
+    pformat_class(['_fcrd', 'domain', 'variable'], self, state)
 class TransformDefinition(object):
   def __init__(self, compares, locals, expression, _fcrd):
     self.compares = compares
@@ -193,16 +194,17 @@ class _ParserImpl(object):
   def __call__(self):
     return self._parse_realm()
   def _parse_realm(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=Realm,
+      result_type=lambda **kwargs: Realm(_fcrd=coord, **kwargs),
       error='expected realm',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('imports', 'expected realm-domain-import in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_import, 0, 9223372036854775807)),
         ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 0, 9223372036854775807)),
         ('', 'expected w in realm', self._parse_w),
         ('', 'expected eof', self._reader.consume_eof),
-      ])
+      ]
+      )
     return value
   _ws_predicate = SimpleClassPredicate.factory(r' \n')
   def _parse_ws(self, imin=1, imax=1):
@@ -211,8 +213,9 @@ class _ParserImpl(object):
       error='expected ws',
       parsers=[
         ('_fimm', 'expected ws', lambda: self._reader.consume_string(self._ws_predicate, imin, imax))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _pseudo_letter_predicate = SimpleClassPredicate.factory(r"a-zA-Z_'")
   def _parse_pseudo_letter(self, imin=1, imax=1):
@@ -221,8 +224,9 @@ class _ParserImpl(object):
       error='expected pseudo-letter',
       parsers=[
         ('_fimm', 'expected pseudo-letter', lambda: self._reader.consume_string(self._pseudo_letter_predicate, imin, imax))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _pseudo_number_predicate = SimpleClassPredicate.factory(r'0-9')
   def _parse_pseudo_number(self, imin=1, imax=1):
@@ -231,8 +235,9 @@ class _ParserImpl(object):
       error='expected pseudo-number',
       parsers=[
         ('_fimm', 'expected pseudo-number', lambda: self._reader.consume_string(self._pseudo_number_predicate, imin, imax))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _dot_predicate = StringPredicate(r'.')
   def _parse_dot(self):
@@ -241,8 +246,9 @@ class _ParserImpl(object):
       error='expected dot',
       parsers=[
         ('_fimm', 'expected dot', lambda: self._reader.consume_string(self._dot_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _domain_literal_full_predicate = StringPredicate(r'domain')
   def _parse_domain_literal_full(self):
@@ -251,8 +257,9 @@ class _ParserImpl(object):
       error='expected domain-literal-full',
       parsers=[
         ('_fimm', 'expected domain-literal-full', lambda: self._reader.consume_string(self._domain_literal_full_predicate, 6, 6))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _domain_literal_min_predicate = StringPredicate(r'd')
   def _parse_domain_literal_min(self):
@@ -261,8 +268,9 @@ class _ParserImpl(object):
       error='expected domain-literal-min',
       parsers=[
         ('_fimm', 'expected domain-literal-min', lambda: self._reader.consume_string(self._domain_literal_min_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _from_predicate = StringPredicate(r'from')
   def _parse_from(self):
@@ -271,8 +279,9 @@ class _ParserImpl(object):
       error='expected from',
       parsers=[
         ('_fimm', 'expected from', lambda: self._reader.consume_string(self._from_predicate, 4, 4))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _import_literal_full_predicate = StringPredicate(r'import')
   def _parse_import_literal_full(self):
@@ -281,8 +290,9 @@ class _ParserImpl(object):
       error='expected import-literal-full',
       parsers=[
         ('_fimm', 'expected import-literal-full', lambda: self._reader.consume_string(self._import_literal_full_predicate, 6, 6))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _import_literal_min_predicate = StringPredicate(r'i')
   def _parse_import_literal_min(self):
@@ -291,8 +301,9 @@ class _ParserImpl(object):
       error='expected import-literal-min',
       parsers=[
         ('_fimm', 'expected import-literal-min', lambda: self._reader.consume_string(self._import_literal_min_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _as_predicate = StringPredicate(r'as')
   def _parse_as(self):
@@ -301,8 +312,9 @@ class _ParserImpl(object):
       error='expected as',
       parsers=[
         ('_fimm', 'expected as', lambda: self._reader.consume_string(self._as_predicate, 2, 2))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _left_curly_bracket_predicate = StringPredicate(r'{')
   def _parse_left_curly_bracket(self):
@@ -311,8 +323,9 @@ class _ParserImpl(object):
       error='expected left-curly-bracket',
       parsers=[
         ('_fimm', 'expected left-curly-bracket', lambda: self._reader.consume_string(self._left_curly_bracket_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _right_curly_bracket_predicate = StringPredicate(r'}')
   def _parse_right_curly_bracket(self):
@@ -321,8 +334,9 @@ class _ParserImpl(object):
       error='expected right-curly-bracket',
       parsers=[
         ('_fimm', 'expected right-curly-bracket', lambda: self._reader.consume_string(self._right_curly_bracket_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _left_square_bracket_predicate = StringPredicate(r'[')
   def _parse_left_square_bracket(self):
@@ -331,8 +345,9 @@ class _ParserImpl(object):
       error='expected left-square-bracket',
       parsers=[
         ('_fimm', 'expected left-square-bracket', lambda: self._reader.consume_string(self._left_square_bracket_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _right_square_bracket_predicate = StringPredicate(r']')
   def _parse_right_square_bracket(self):
@@ -341,8 +356,9 @@ class _ParserImpl(object):
       error='expected right-square-bracket',
       parsers=[
         ('_fimm', 'expected right-square-bracket', lambda: self._reader.consume_string(self._right_square_bracket_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _vertical_line_predicate = StringPredicate(r'|')
   def _parse_vertical_line(self):
@@ -351,8 +367,9 @@ class _ParserImpl(object):
       error='expected vertical-line',
       parsers=[
         ('_fimm', 'expected vertical-line', lambda: self._reader.consume_string(self._vertical_line_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _colon_predicate = StringPredicate(r':')
   def _parse_colon(self):
@@ -361,8 +378,9 @@ class _ParserImpl(object):
       error='expected colon',
       parsers=[
         ('_fimm', 'expected colon', lambda: self._reader.consume_string(self._colon_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _double_colon_predicate = StringPredicate(r'::')
   def _parse_double_colon(self):
@@ -371,8 +389,9 @@ class _ParserImpl(object):
       error='expected double-colon',
       parsers=[
         ('_fimm', 'expected double-colon', lambda: self._reader.consume_string(self._double_colon_predicate, 2, 2))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _greater_than_sign_predicate = StringPredicate(r'>')
   def _parse_greater_than_sign(self):
@@ -381,8 +400,9 @@ class _ParserImpl(object):
       error='expected greater-than-sign',
       parsers=[
         ('_fimm', 'expected greater-than-sign', lambda: self._reader.consume_string(self._greater_than_sign_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _equals_sign_predicate = StringPredicate(r'=')
   def _parse_equals_sign(self):
@@ -391,8 +411,9 @@ class _ParserImpl(object):
       error='expected equals-sign',
       parsers=[
         ('_fimm', 'expected equals-sign', lambda: self._reader.consume_string(self._equals_sign_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _dollar_sign_predicate = StringPredicate(r'$')
   def _parse_dollar_sign(self):
@@ -401,8 +422,9 @@ class _ParserImpl(object):
       error='expected dollar-sign',
       parsers=[
         ('_fimm', 'expected dollar-sign', lambda: self._reader.consume_string(self._dollar_sign_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _ampersand_predicate = StringPredicate(r'&')
   def _parse_ampersand(self):
@@ -411,8 +433,9 @@ class _ParserImpl(object):
       error='expected ampersand',
       parsers=[
         ('_fimm', 'expected ampersand', lambda: self._reader.consume_string(self._ampersand_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _left_parenthesis_predicate = StringPredicate(r'(')
   def _parse_left_parenthesis(self):
@@ -421,8 +444,9 @@ class _ParserImpl(object):
       error='expected left-parenthesis',
       parsers=[
         ('_fimm', 'expected left-parenthesis', lambda: self._reader.consume_string(self._left_parenthesis_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _right_parenthesis_predicate = StringPredicate(r')')
   def _parse_right_parenthesis(self):
@@ -431,8 +455,9 @@ class _ParserImpl(object):
       error='expected right-parenthesis',
       parsers=[
         ('_fimm', 'expected right-parenthesis', lambda: self._reader.consume_string(self._right_parenthesis_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _tilde_predicate = StringPredicate(r'~')
   def _parse_tilde(self):
@@ -441,8 +466,9 @@ class _ParserImpl(object):
       error='expected tilde',
       parsers=[
         ('_fimm', 'expected tilde', lambda: self._reader.consume_string(self._tilde_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _solidus_predicate = StringPredicate(r'/')
   def _parse_solidus(self):
@@ -451,8 +477,9 @@ class _ParserImpl(object):
       error='expected solidus',
       parsers=[
         ('_fimm', 'expected solidus', lambda: self._reader.consume_string(self._solidus_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _percent_sign_predicate = StringPredicate(r'%')
   def _parse_percent_sign(self):
@@ -461,8 +488,9 @@ class _ParserImpl(object):
       error='expected percent-sign',
       parsers=[
         ('_fimm', 'expected percent-sign', lambda: self._reader.consume_string(self._percent_sign_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _octothorp_predicate = StringPredicate(r'#')
   def _parse_octothorp(self):
@@ -471,8 +499,9 @@ class _ParserImpl(object):
       error='expected octothorp',
       parsers=[
         ('_fimm', 'expected octothorp', lambda: self._reader.consume_string(self._octothorp_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _line_feed_predicate = StringPredicate(r'\n')
   def _parse_line_feed(self):
@@ -481,8 +510,9 @@ class _ParserImpl(object):
       error='expected line-feed',
       parsers=[
         ('_fimm', 'expected line-feed', lambda: self._reader.consume_string(self._line_feed_predicate, 2, 2))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _line_comment_content_predicate = SimpleClassPredicate.factory(r'^\n')
   def _parse_line_comment_content(self, imin=1, imax=1):
@@ -491,8 +521,9 @@ class _ParserImpl(object):
       error='expected line-comment-content',
       parsers=[
         ('_fimm', 'expected line-comment-content', lambda: self._reader.consume_string(self._line_comment_content_predicate, imin, imax))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _left_to_right_arrow_predicate = StringPredicate(r'->')
   def _parse_left_to_right_arrow(self):
@@ -501,8 +532,9 @@ class _ParserImpl(object):
       error='expected left-to-right-arrow',
       parsers=[
         ('_fimm', 'expected left-to-right-arrow', lambda: self._reader.consume_string(self._left_to_right_arrow_predicate, 2, 2))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _single_quote_predicate = StringPredicate(r"'")
   def _parse_single_quote(self):
@@ -511,8 +543,9 @@ class _ParserImpl(object):
       error='expected single-quote',
       parsers=[
         ('_fimm', 'expected single-quote', lambda: self._reader.consume_string(self._single_quote_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _double_quote_predicate = StringPredicate(r'"')
   def _parse_double_quote(self):
@@ -521,8 +554,9 @@ class _ParserImpl(object):
       error='expected double-quote',
       parsers=[
         ('_fimm', 'expected double-quote', lambda: self._reader.consume_string(self._double_quote_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   _hyphen_predicate = StringPredicate(r'-')
   def _parse_hyphen(self):
@@ -531,8 +565,9 @@ class _ParserImpl(object):
       error='expected hyphen',
       parsers=[
         ('_fimm', 'expected hyphen', lambda: self._reader.consume_string(self._hyphen_predicate, 1, 1))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_domain(self):
     value = self._reader.parse_type(
@@ -540,8 +575,9 @@ class _ParserImpl(object):
       error='expected domain',
       parsers=[
         ('_fimm', 'expected domain, any of domain-literal-full, domain-literal-min', lambda: self._reader.parse_any([self._parse_domain_literal_full,self._parse_domain_literal_min]))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_import(self):
     value = self._reader.parse_type(
@@ -549,8 +585,9 @@ class _ParserImpl(object):
       error='expected import',
       parsers=[
         ('_fimm', 'expected import, any of import-literal-full, import-literal-min', lambda: self._reader.parse_any([self._parse_import_literal_full,self._parse_import_literal_min]))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_ww(self):
     value = self._reader.parse_type(
@@ -559,7 +596,8 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected ws in ww', lambda: self._parse_ws(0, 9223372036854775807)),
         ('', 'expected line-comment in ww', lambda: self._reader.parse_many_wp(self._parse_line_comment, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse_w_old(self):
     value = self._reader.parse_type(
@@ -567,7 +605,8 @@ class _ParserImpl(object):
       error='expected w_old',
       parsers=[
         ('', 'expected ww in w_old', lambda: self._reader.parse_many_wp(self._parse_ww, 0, 9223372036854775807)),
-      ])
+      ]
+      )
     return value
   def _parse_w(self):
     value = self._reader.parse_type(
@@ -575,7 +614,8 @@ class _ParserImpl(object):
       error='expected w',
       parsers=[
         ('', 'expected <whitespace>', lambda: self._reader.consume_string(WhitespacePredicate(), 0, 9223372036854775807))
-      ])
+      ]
+      )
     return value
   def _parse_line_comment(self):
     value = self._reader.parse_type(
@@ -585,7 +625,8 @@ class _ParserImpl(object):
         ('', 'expected octothorp in line-comment', self._parse_octothorp),
         ('', 'expected line-comment-content in line-comment', lambda: self._parse_line_comment_content(0, 9223372036854775807)),
         ('', 'expected line-feed in line-comment', lambda: self._reader.parse_many_wp(self._parse_line_feed, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse__id(self):
     value = self._reader.parse_type(
@@ -593,8 +634,9 @@ class _ParserImpl(object):
       error='expected _id',
       parsers=[
         ('_fimm', 'expected pseudo-letter in _id', lambda: self._parse_pseudo_letter(1, 9223372036854775807)),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_id(self):
     value = self._reader.parse_type(
@@ -603,8 +645,9 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in id', self._parse_w),
         ('_fimm', 'expected _id in id', self._parse__id),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_prefix(self):
     value = self._reader.parse_type(
@@ -613,36 +656,39 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in variable-prefix', self._parse_w),
         ('', 'expected dot in variable-prefix', self._parse_dot),
-      ])
+      ]
+      )
     return value
   def _parse_realm_path(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=RealmPath,
+      result_type=lambda **kwargs: RealmPath(_fcrd=coord, **kwargs),
       error='expected realm-path',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in realm-path', self._parse_w),
         ('local', 'expected dot in realm-path', lambda: self._reader.parse_many_wp(self._parse_dot, 0, 1)),
         ('path', 'expected realm-path-branch in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 1, 9223372036854775807)),
-      ])
+      ]
+      )
     value = self.interceptor.trigger(self.on_realm_path, value)
     return value
   def _parse_realm_path_branch(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=RealmPathBranch,
+      result_type=lambda **kwargs: RealmPathBranch(_fcrd=coord, **kwargs),
       error='expected realm-path-branch',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected solidus in realm-path-branch', self._parse_solidus),
         ('realm', 'expected id in realm-path-branch', self._parse_id),
-      ])
+      ]
+      )
     return value
   def _parse_realm_domain_import(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=RealmDomainImport,
+      result_type=lambda **kwargs: RealmDomainImport(_fcrd=coord, **kwargs),
       error='expected realm-domain-import',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected from in realm-domain-import', self._parse_from),
         ('realm', 'expected realm-path in realm-domain-import', self._parse_realm_path),
@@ -651,19 +697,21 @@ class _ParserImpl(object):
         ('domains', 'expected import-domain-w in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain_w, 1, 9223372036854775807)),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected right-curly-bracket in realm-domain-import', self._parse_right_curly_bracket),
-      ])
+      ]
+      )
     value = self.interceptor.trigger(self.on_realm_domain_import, value)
     return value
   def _parse_import_domain(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=ImportDomain,
+      result_type=lambda **kwargs: ImportDomain(_fcrd=coord, **kwargs),
       error='expected import-domain',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected import in import-domain', self._parse_import),
         ('domain', 'expected id in import-domain', self._parse_id),
         ('as_domain', 'expected import-domain-as in import-domain', lambda: self._reader.parse_many_wp(self._parse_import_domain_as, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse_import_domain_w(self):
     value = self._reader.parse_type(
@@ -672,8 +720,9 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in import-domain-w', self._parse_w),
         ('_fimm', 'expected import-domain in import-domain-w', self._parse_import_domain),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_import_domain_as(self):
     value = self._reader.parse_type(
@@ -683,19 +732,21 @@ class _ParserImpl(object):
         ('', 'expected w in import-domain-as', self._parse_w),
         ('', 'expected as in import-domain-as', self._parse_as),
         ('_fimm', 'expected id in import-domain-as', self._parse_id),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_domain_declaration(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=DomainDeclaration,
+      result_type=lambda **kwargs: DomainDeclaration(_fcrd=coord, **kwargs),
       error='expected domain-declaration',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected domain-declaration-id in domain-declaration', self._parse_domain_declaration_id),
         ('codomain', 'expected codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_codomain, 0, 1)),
         ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse_realm_domain_declaration(self):
     value = self._reader.parse_type(
@@ -706,8 +757,9 @@ class _ParserImpl(object):
         ('', 'expected domain in realm-domain-declaration', self._parse_domain),
         ('', 'expected w in realm-domain-declaration', self._parse_w),
         ('_fimm', 'expected domain-declaration in realm-domain-declaration', self._parse_domain_declaration),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_domain_declaration_id(self):
     value = self._reader.parse_type(
@@ -715,16 +767,17 @@ class _ParserImpl(object):
       error='expected domain-declaration-id',
       parsers=[
         ('_fimm', 'expected _id in domain-declaration-id', self._parse__id),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     value = self.interceptor.trigger(self.on_domain_declaration_id, value)
     return value
   def _parse_domain_definition(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=DomainDefinition,
+      result_type=lambda **kwargs: DomainDefinition(_fcrd=coord, **kwargs),
       error='expected domain-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self._parse_left_curly_bracket),
         ('variables', 'expected variable-declaration in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_declaration, 0, 9223372036854775807)),
@@ -732,7 +785,8 @@ class _ParserImpl(object):
         ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self._parse_transform_definition, 0, 9223372036854775807)),
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected right-curly-bracket in domain-definition', self._parse_right_curly_bracket),
-      ])
+      ]
+      )
     return value
   def _parse_inner_domain_declaration(self):
     value = self._reader.parse_type(
@@ -743,18 +797,20 @@ class _ParserImpl(object):
         ('', 'expected vertical-line in inner-domain-declaration', self._parse_vertical_line),
         ('', 'expected w in inner-domain-declaration', self._parse_w),
         ('_fimm', 'expected domain-declaration in inner-domain-declaration', self._parse_domain_declaration),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=Expression,
+      result_type=lambda **kwargs: Expression(_fcrd=coord, **kwargs),
       error='expected expression',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in expression', self._parse_w),
         ('value', 'expected expression-alt in expression', self._parse_expression_alt),
-      ])
+      ]
+      )
     return value
   def _parse_expression_alt(self):
     value = self._reader.parse_type(
@@ -762,20 +818,22 @@ class _ParserImpl(object):
       error='expected expression-alt',
       parsers=[
         ('_fimm', 'expected expression-alt, any of expression-literal, expression-domain', lambda: self._reader.parse_any([self._parse_expression_literal,self._parse_expression_domain]))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression_domain(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=ExpressionDomain,
+      result_type=lambda **kwargs: ExpressionDomain(_fcrd=coord, **kwargs),
       error='expected expression-domain',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('domainof', 'expected ampersand in expression-domain', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
         ('id', 'expected id in expression-domain', self._parse_id),
         ('arguments', 'expected expression-arguments in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
         ('lookup', 'expected expression-lookup in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse_expression_literal(self):
     value = self._reader.parse_type(
@@ -783,39 +841,43 @@ class _ParserImpl(object):
       error='expected expression-literal',
       parsers=[
         ('_fimm', 'expected expression-literal, any of expression-literal-string, expression-literal-float, expression-literal-integer-decimal', lambda: self._reader.parse_any([self._parse_expression_literal_string,self._parse_expression_literal_float,self._parse_expression_literal_integer_decimal]))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression_literal_integer_decimal(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=ExpressionLiteralIntegerDecimal,
+      result_type=lambda **kwargs: ExpressionLiteralIntegerDecimal(_fcrd=coord, **kwargs),
       error='expected expression-literal-integer-decimal',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('minus', 'expected hyphen in expression-literal-integer-decimal', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
         ('ipart', 'expected pseudo-number in expression-literal-integer-decimal', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
-      ])
+      ]
+      )
     return value
   def _parse_expression_literal_float(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=ExpressionLiteralFloat,
+      result_type=lambda **kwargs: ExpressionLiteralFloat(_fcrd=coord, **kwargs),
       error='expected expression-literal-float',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('ipart', 'expected expression-literal-integer-decimal in expression-literal-float', self._parse_expression_literal_integer_decimal),
         ('', 'expected dot in expression-literal-float', self._parse_dot),
         ('dpart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
-      ])
+      ]
+      )
     return value
-  _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r"^'", r'\\')
+  _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r"^'\\", r'\\')
   def _parse_expression_literal_string_content(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=ExpressionLiteralStringContent,
       error='expected expression-literal-string-content',
       parsers=[
         ('_fimm', 'expected expression-literal-string-content', lambda: self._reader.consume_string(self._expression_literal_string_content_predicate, imin, imax))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression_literal_string(self):
     value = self._reader.parse_type(
@@ -825,21 +887,23 @@ class _ParserImpl(object):
         ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
         ('_fimm', 'expected expression-literal-string-content in expression-literal-string', lambda: self._parse_expression_literal_string_content(0, 9223372036854775807)),
         ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression_argument(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=ExpressionArgument,
+      result_type=lambda **kwargs: ExpressionArgument(_fcrd=coord, **kwargs),
       error='expected expression-argument',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected variable-prefix in expression-argument', self._parse_variable_prefix),
         ('id', 'expected id in expression-argument', self._parse_id),
         ('', 'expected w in expression-argument', self._parse_w),
         ('', 'expected tilde in expression-argument', self._parse_tilde),
         ('expression', 'expected expression in expression-argument', self._parse_expression),
-      ])
+      ]
+      )
     return value
   def _parse_expression_arguments(self):
     value = self._reader.parse_type(
@@ -851,8 +915,9 @@ class _ParserImpl(object):
         ('_fimm', 'expected expression-argument in expression-arguments', lambda: self._reader.parse_many_wp(self._parse_expression_argument, 0, 9223372036854775807)),
         ('', 'expected w in expression-arguments', self._parse_w),
         ('', 'expected right-parenthesis in expression-arguments', self._parse_right_parenthesis),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_expression_lookup(self):
     value = self._reader.parse_type(
@@ -862,8 +927,9 @@ class _ParserImpl(object):
         ('', 'expected w in expression-lookup', self._parse_w),
         ('', 'expected solidus in expression-lookup', self._parse_solidus),
         ('_fimm', 'expected expression in expression-lookup', self._parse_expression),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_codomain(self):
     value = self._reader.parse_type(
@@ -874,8 +940,9 @@ class _ParserImpl(object):
         ('', 'expected left-to-right-arrow in codomain', self._parse_left_to_right_arrow),
         ('', 'expected w in codomain', self._parse_w),
         ('_fimm', 'expected expression in codomain', self._parse_expression),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_definition(self):
     value = self._reader.parse_type(
@@ -883,8 +950,9 @@ class _ParserImpl(object):
       error='expected variable-definition',
       parsers=[
         ('_fimm', 'expected variable-definition, any of variable-constant, variable-bound', lambda: self._reader.parse_any([self._parse_variable_constant,self._parse_variable_bound]))
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_declaration(self):
     value = self._reader.parse_type(
@@ -894,8 +962,9 @@ class _ParserImpl(object):
         ('', 'expected variable-prefix in variable-declaration', self._parse_variable_prefix),
         ('', 'expected w in variable-declaration', self._parse_w),
         ('_fimm', 'expected variable-definition in variable-declaration', self._parse_variable_definition),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_constraints_argument(self):
     value = self._reader.parse_type(
@@ -904,22 +973,24 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected variable-prefix in variable-constraints-argument', self._parse_variable_prefix),
         ('_fimm', 'expected expression in variable-constraints-argument', self._parse_expression),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_constraints(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=VariableConstraints,
+      result_type=lambda **kwargs: VariableConstraints(_fcrd=coord, **kwargs),
       error='expected variable-constraints',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in variable-constraints', self._parse_w),
         ('', 'expected double-colon in variable-constraints', self._parse_double_colon),
         ('', 'expected w in variable-constraints', self._parse_w),
         ('', 'expected left-square-bracket in variable-constraints', self._parse_left_square_bracket),
         ('constraints', 'expected variable-constraints-argument in variable-constraints', lambda: self._reader.parse_many_wp(self._parse_variable_constraints_argument, 1, 9223372036854775807)),
         ('', 'expected right-square-bracket in variable-constraints', self._parse_right_square_bracket),
-      ])
+      ]
+      )
     return value
   def _parse_variable_domain(self):
     value = self._reader.parse_type(
@@ -929,51 +1000,55 @@ class _ParserImpl(object):
         ('', 'expected w in variable-domain', self._parse_w),
         ('', 'expected colon in variable-domain', self._parse_colon),
         ('_fimm', 'expected expression in variable-domain', self._parse_expression),
-      ],
-      result_immediate='_fimm')
+      ]
+      ,result_immediate='_fimm'
+      )
     return value
   def _parse_variable_bound(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=VariableBound,
+      result_type=lambda **kwargs: VariableBound(_fcrd=coord, **kwargs),
       error='expected variable-bound',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected _id in variable-bound', self._parse__id),
         ('variable_domain', 'expected variable-domain in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_domain, 0, 1)),
         ('variable_constraints', 'expected variable-constraints in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_constraints, 0, 1)),
-      ])
+      ]
+      )
     return value
   def _parse_variable_constant(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=VariableConstant,
+      result_type=lambda **kwargs: VariableConstant(_fcrd=coord, **kwargs),
       error='expected variable-constant',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('id', 'expected _id in variable-constant', self._parse__id),
         ('', 'expected w in variable-constant', self._parse_w),
         ('', 'expected tilde in variable-constant', self._parse_tilde),
         ('expression', 'expected expression in variable-constant', self._parse_expression),
-      ])
+      ]
+      )
     return value
   def _parse_transform_compare(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=TransformCompare,
+      result_type=lambda **kwargs: TransformCompare(_fcrd=coord, **kwargs),
       error='expected transform-compare',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected variable-prefix in transform-compare', self._parse_variable_prefix),
-        ('id', 'expected id in transform-compare', self._parse_id),
+        ('variable', 'expected id in transform-compare', self._parse_id),
         ('', 'expected w in transform-compare', self._parse_w),
         ('', 'expected equals-sign in transform-compare', self._parse_equals_sign),
-        ('id', 'expected id in transform-compare', self._parse_id),
-      ])
+        ('domain', 'expected id in transform-compare', self._parse_id),
+      ]
+      )
     return value
   def _parse_transform_definition(self):
+    coord = self._reader.get_coord()
     value = self._reader.parse_type(
-      result_type=TransformDefinition,
+      result_type=lambda **kwargs: TransformDefinition(_fcrd=coord, **kwargs),
       error='expected transform-definition',
       parsers=[
-        ('_fcrd', 'built-in coord record', lambda: ParseValue(value=self._reader.get_coord(), coord=self._reader.get_coord())),
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected greater-than-sign in transform-definition', self._parse_greater_than_sign),
         ('compares', 'expected transform-compare in transform-definition', lambda: self._reader.parse_many_wp(self._parse_transform_compare, 0, 9223372036854775807)),
@@ -981,6 +1056,7 @@ class _ParserImpl(object):
         ('', 'expected dollar-sign in transform-definition', self._parse_dollar_sign),
         ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self._parse_expression_argument, 0, 9223372036854775807)),
         ('expression', 'expected expression in transform-definition', self._parse_expression),
-      ])
+      ]
+      )
     return value
 Parser = _ParserImpl
