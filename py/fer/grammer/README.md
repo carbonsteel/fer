@@ -37,13 +37,13 @@ token <expr> := /[ \n]*/ <expr>
 
 1. Composites use expressions inspired of regular expression to combine other
    grammar definitions with optional multiplicities and anchors with which the
-   parser will define python classes in which to store parsed values. Generated
-   python classes will use the camel-translated name of the definition (ie:
-   `my-def` -> `MyDef`)
+   compiler will define python classes in which to store parsed values.
+   Generated python classes will use the camel-translated name of the 
+   definition (ie: `my-def` -> `MyDef`)
    * `<composite> := token(/\(/) <composite-expression>+ token(/\)/)`
 
 1. A composite expression refers by name to another grammar definition that 
-   must be parsed as part of the composite. 
+   must be parsed in left-to-right order as part of the composite. 
    1. Directly following the name, regex-like quantifiers (plus, star, 
    question-mark) may be applied which will, respectively, require at least 
    one occurence, any number of occurences, and at most one occurence of the 
@@ -64,8 +64,8 @@ token <expr> := /[ \n]*/ <expr>
    reserved to store coordinates at which the instance was found.
    * `<expression-anchor> := /@/ (/@/ | <identifier>)?`
 
-1. An alternative is a left-to-right list of definition which the parser will 
-   try to parse in the same order. The first definition to succeed is returned.
+1. An alternative is a left-to-right list of definitions which the parser will 
+   try to parse and return the first one to succeed.
    * `<alternative> := token(/{/) <identifier>+ token(/}/)`
 
 1. A definition hook will be compiled as an event in the parser's 

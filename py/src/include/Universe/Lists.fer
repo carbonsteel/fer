@@ -17,7 +17,6 @@ domain List {
     . next : List( . Element ~ Element)
     . value : Element 
   }
-  >$ Empty
 }
 
 d ListMath {
@@ -35,7 +34,7 @@ d ListMath {
 d ListUtil {
   . Element
   . List ~ List(.Element~Element)
-  . eq ~ Eq(.Element~Element)/equals
+  . eq ~ Eq(.Element~Element)
   | find -> Maybe(.Value~Element) {
     . l : List
     . e : Element
@@ -51,6 +50,6 @@ d ListUtil {
       > .m=Nothing $ find(.l~k .e~f)
     }
     > .l = Empty $ Nothing
-    >$ iter(.m~pred(.b~eq(.a~e .b~l/value) .v~e) .l~l .e~e)
+    >$ iter(.m~pred(.b~eq/equals(.a~e .b~l/value) .v~e) .l~l .e~e)
   }
 }

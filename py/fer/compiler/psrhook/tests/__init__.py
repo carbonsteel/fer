@@ -1,8 +1,8 @@
 from fer.ferutil import load_tests_simple
-from . import test_parser
+from . import test_varcheck
 
 test_cases = (
-  test_parser.TestConsumeString,
+  test_varcheck.Tests,
 )
 
 def load_tests(loader, tests, pattern):

@@ -109,7 +109,7 @@
 . transform-compare (variable-prefix id@variable w equals-sign id@domain)
 . transform-definition (
     w greater-than-sign transform-compare*@compares
-    w dollar-sign expression-argument*@locals expression@
+    w dollar-sign expression-arguments?@locals expression@
   )
 
 # asd 

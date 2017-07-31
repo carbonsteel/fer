@@ -30,6 +30,14 @@ def compile_parser(grammar_file, parser_module_name, parser_name):
         log.info("Wrote parser file")
   return (r.stats, result)
 
+def expected_id(field_name, definition_name):
+  if (not field_name
+      or field_name == definition_name
+      or field_name == KEY_IMMEDIATE):
+    return definition_name
+  else:
+    return "{} (as {})".format(definition_name, field_name)
+
 class GrammarParserCompiler(object):
   def __init__(self, stream, parse_result, parser_name):
     if not parse_result:
@@ -172,7 +180,7 @@ class GrammarParserCompiler(object):
             id_to_parse(e["identifier"]), e["quantifier"][0], e["quantifier"][1]
           )
         W += "        (%s, 'expected %s in %s', %s)," % (
-          repr(anchor), e["identifier"], definition.id, inner_parse
+          repr(anchor), expected_id(anchor,e["identifier"]), definition.id, inner_parse
         )
       if is_root:
         W += "        ('', 'expected eof', self._reader.consume_eof),"

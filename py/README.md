@@ -1,11 +1,11 @@
-# Prerequisistes
-pip3.6 install logbook
-
 # carbonsteel/fer/py
 Python implementation
 
+# Prerequisistes
+pip3.6 install logbook
+
 ## fer/compiler
-Fer compiler
+Fer language compiler
 
 ## fer/ferutil
 Common classes

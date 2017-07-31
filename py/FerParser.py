@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-31 12:51:14.872667
+# Updated on 2017-07-31 17:57:06.304432
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -202,8 +202,8 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: Realm(_fcrd=coord, **kwargs),
       error='expected realm',
       parsers=[
-        ('imports', 'expected realm-domain-import in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_import, 0, 9223372036854775807)),
-        ('domains', 'expected realm-domain-declaration in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 0, 9223372036854775807)),
+        ('imports', 'expected realm-domain-import (as imports) in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_import, 0, 9223372036854775807)),
+        ('domains', 'expected realm-domain-declaration (as domains) in realm', lambda: self._reader.parse_many_wp(self._parse_realm_domain_declaration, 0, 9223372036854775807)),
         ('', 'expected w in realm', self._parse_w),
         ('', 'expected eof', self._reader.consume_eof),
       ]
@@ -669,8 +669,8 @@ class _ParserImpl(object):
       error='expected realm-path',
       parsers=[
         ('', 'expected w in realm-path', self._parse_w),
-        ('local', 'expected dot in realm-path', lambda: self._reader.parse_many_wp(self._parse_dot, 0, 1)),
-        ('path', 'expected realm-path-branch in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 1, 9223372036854775807)),
+        ('local', 'expected dot (as local) in realm-path', lambda: self._reader.parse_many_wp(self._parse_dot, 0, 1)),
+        ('path', 'expected realm-path-branch (as path) in realm-path', lambda: self._reader.parse_many_wp(self._parse_realm_path_branch, 1, 9223372036854775807)),
       ]
       )
     value = self.interceptor.trigger(self.on_realm_path, value)
@@ -682,7 +682,7 @@ class _ParserImpl(object):
       error='expected realm-path-branch',
       parsers=[
         ('', 'expected solidus in realm-path-branch', self._parse_solidus),
-        ('realm', 'expected id in realm-path-branch', self._parse_id),
+        ('realm', 'expected id (as realm) in realm-path-branch', self._parse_id),
       ]
       )
     return value
@@ -694,10 +694,10 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected from in realm-domain-import', self._parse_from),
-        ('realm', 'expected realm-path in realm-domain-import', self._parse_realm_path),
+        ('realm', 'expected realm-path (as realm) in realm-domain-import', self._parse_realm_path),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected left-curly-bracket in realm-domain-import', self._parse_left_curly_bracket),
-        ('domains', 'expected import-domain-w in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain_w, 1, 9223372036854775807)),
+        ('domains', 'expected import-domain-w (as domains) in realm-domain-import', lambda: self._reader.parse_many_wp(self._parse_import_domain_w, 1, 9223372036854775807)),
         ('', 'expected w in realm-domain-import', self._parse_w),
         ('', 'expected right-curly-bracket in realm-domain-import', self._parse_right_curly_bracket),
       ]
@@ -711,8 +711,8 @@ class _ParserImpl(object):
       error='expected import-domain',
       parsers=[
         ('', 'expected import in import-domain', self._parse_import),
-        ('domain', 'expected id in import-domain', self._parse_id),
-        ('as_domain', 'expected import-domain-as in import-domain', lambda: self._reader.parse_many_wp(self._parse_import_domain_as, 0, 1)),
+        ('domain', 'expected id (as domain) in import-domain', self._parse_id),
+        ('as_domain', 'expected import-domain-as (as as_domain) in import-domain', lambda: self._reader.parse_many_wp(self._parse_import_domain_as, 0, 1)),
       ]
       )
     return value
@@ -745,9 +745,9 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: DomainDeclaration(_fcrd=coord, **kwargs),
       error='expected domain-declaration',
       parsers=[
-        ('id', 'expected domain-declaration-id in domain-declaration', self._parse_domain_declaration_id),
+        ('id', 'expected domain-declaration-id (as id) in domain-declaration', self._parse_domain_declaration_id),
         ('codomain', 'expected codomain in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_codomain, 0, 1)),
-        ('domain', 'expected domain-definition in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
+        ('domain', 'expected domain-definition (as domain) in domain-declaration', lambda: self._reader.parse_many_wp(self._parse_domain_definition, 0, 1)),
       ]
       )
     return value
@@ -783,9 +783,9 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected left-curly-bracket in domain-definition', self._parse_left_curly_bracket),
-        ('variables', 'expected variable-declaration in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_declaration, 0, 9223372036854775807)),
-        ('domains', 'expected inner-domain-declaration in domain-definition', lambda: self._reader.parse_many_wp(self._parse_inner_domain_declaration, 0, 9223372036854775807)),
-        ('transforms', 'expected transform-definition in domain-definition', lambda: self._reader.parse_many_wp(self._parse_transform_definition, 0, 9223372036854775807)),
+        ('variables', 'expected variable-declaration (as variables) in domain-definition', lambda: self._reader.parse_many_wp(self._parse_variable_declaration, 0, 9223372036854775807)),
+        ('domains', 'expected inner-domain-declaration (as domains) in domain-definition', lambda: self._reader.parse_many_wp(self._parse_inner_domain_declaration, 0, 9223372036854775807)),
+        ('transforms', 'expected transform-definition (as transforms) in domain-definition', lambda: self._reader.parse_many_wp(self._parse_transform_definition, 0, 9223372036854775807)),
         ('', 'expected w in domain-definition', self._parse_w),
         ('', 'expected right-curly-bracket in domain-definition', self._parse_right_curly_bracket),
       ]
@@ -811,7 +811,7 @@ class _ParserImpl(object):
       error='expected expression',
       parsers=[
         ('', 'expected w in expression', self._parse_w),
-        ('value', 'expected expression-alt in expression', self._parse_expression_alt),
+        ('value', 'expected expression-alt (as value) in expression', self._parse_expression_alt),
       ]
       )
     return value
@@ -831,10 +831,10 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: ExpressionDomain(_fcrd=coord, **kwargs),
       error='expected expression-domain',
       parsers=[
-        ('domainof', 'expected ampersand in expression-domain', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
+        ('domainof', 'expected ampersand (as domainof) in expression-domain', lambda: self._reader.parse_many_wp(self._parse_ampersand, 0, 1)),
         ('id', 'expected id in expression-domain', self._parse_id),
-        ('arguments', 'expected expression-arguments in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
-        ('lookup', 'expected expression-lookup in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
+        ('arguments', 'expected expression-arguments (as arguments) in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
+        ('lookup', 'expected expression-lookup (as lookup) in expression-domain', lambda: self._reader.parse_many_wp(self._parse_expression_lookup, 0, 1)),
       ]
       )
     return value
@@ -854,8 +854,8 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: ExpressionLiteralIntegerDecimal(_fcrd=coord, **kwargs),
       error='expected expression-literal-integer-decimal',
       parsers=[
-        ('minus', 'expected hyphen in expression-literal-integer-decimal', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
-        ('ipart', 'expected pseudo-number in expression-literal-integer-decimal', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
+        ('minus', 'expected hyphen (as minus) in expression-literal-integer-decimal', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
+        ('ipart', 'expected pseudo-number (as ipart) in expression-literal-integer-decimal', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
       ]
       )
     value = self.interceptor.trigger(self.on_integer_decimal, value)
@@ -866,10 +866,10 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: ExpressionLiteralFloat(_fcrd=coord, **kwargs),
       error='expected expression-literal-float',
       parsers=[
-        ('minus', 'expected hyphen in expression-literal-float', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
-        ('ipart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
+        ('minus', 'expected hyphen (as minus) in expression-literal-float', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
+        ('ipart', 'expected pseudo-number (as ipart) in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
         ('', 'expected dot in expression-literal-float', self._parse_dot),
-        ('dpart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
+        ('dpart', 'expected pseudo-number (as dpart) in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
       ]
       )
     value = self.interceptor.trigger(self.on_float, value)
@@ -993,7 +993,7 @@ class _ParserImpl(object):
         ('', 'expected double-colon in variable-constraints', self._parse_double_colon),
         ('', 'expected w in variable-constraints', self._parse_w),
         ('', 'expected left-square-bracket in variable-constraints', self._parse_left_square_bracket),
-        ('constraints', 'expected variable-constraints-argument in variable-constraints', lambda: self._reader.parse_many_wp(self._parse_variable_constraints_argument, 1, 9223372036854775807)),
+        ('constraints', 'expected variable-constraints-argument (as constraints) in variable-constraints', lambda: self._reader.parse_many_wp(self._parse_variable_constraints_argument, 1, 9223372036854775807)),
         ('', 'expected right-square-bracket in variable-constraints', self._parse_right_square_bracket),
       ]
       )
@@ -1016,9 +1016,9 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: VariableBound(_fcrd=coord, **kwargs),
       error='expected variable-bound',
       parsers=[
-        ('id', 'expected _id in variable-bound', self._parse__id),
-        ('variable_domain', 'expected variable-domain in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_domain, 0, 1)),
-        ('variable_constraints', 'expected variable-constraints in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_constraints, 0, 1)),
+        ('id', 'expected _id (as id) in variable-bound', self._parse__id),
+        ('variable_domain', 'expected variable-domain (as variable_domain) in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_domain, 0, 1)),
+        ('variable_constraints', 'expected variable-constraints (as variable_constraints) in variable-bound', lambda: self._reader.parse_many_wp(self._parse_variable_constraints, 0, 1)),
       ]
       )
     return value
@@ -1028,7 +1028,7 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: VariableConstant(_fcrd=coord, **kwargs),
       error='expected variable-constant',
       parsers=[
-        ('id', 'expected _id in variable-constant', self._parse__id),
+        ('id', 'expected _id (as id) in variable-constant', self._parse__id),
         ('', 'expected w in variable-constant', self._parse_w),
         ('', 'expected tilde in variable-constant', self._parse_tilde),
         ('expression', 'expected expression in variable-constant', self._parse_expression),
@@ -1042,10 +1042,10 @@ class _ParserImpl(object):
       error='expected transform-compare',
       parsers=[
         ('', 'expected variable-prefix in transform-compare', self._parse_variable_prefix),
-        ('variable', 'expected id in transform-compare', self._parse_id),
+        ('variable', 'expected id (as variable) in transform-compare', self._parse_id),
         ('', 'expected w in transform-compare', self._parse_w),
         ('', 'expected equals-sign in transform-compare', self._parse_equals_sign),
-        ('domain', 'expected id in transform-compare', self._parse_id),
+        ('domain', 'expected id (as domain) in transform-compare', self._parse_id),
       ]
       )
     return value
@@ -1057,10 +1057,10 @@ class _ParserImpl(object):
       parsers=[
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected greater-than-sign in transform-definition', self._parse_greater_than_sign),
-        ('compares', 'expected transform-compare in transform-definition', lambda: self._reader.parse_many_wp(self._parse_transform_compare, 0, 9223372036854775807)),
+        ('compares', 'expected transform-compare (as compares) in transform-definition', lambda: self._reader.parse_many_wp(self._parse_transform_compare, 0, 9223372036854775807)),
         ('', 'expected w in transform-definition', self._parse_w),
         ('', 'expected dollar-sign in transform-definition', self._parse_dollar_sign),
-        ('locals', 'expected expression-argument in transform-definition', lambda: self._reader.parse_many_wp(self._parse_expression_argument, 0, 9223372036854775807)),
+        ('locals', 'expected expression-arguments (as locals) in transform-definition', lambda: self._reader.parse_many_wp(self._parse_expression_arguments, 0, 1)),
         ('expression', 'expected expression in transform-definition', self._parse_expression),
       ]
       )

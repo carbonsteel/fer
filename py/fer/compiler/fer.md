@@ -1,4 +1,4 @@
-# fer language
+# fer language (draft)
 
 # Realms
 
@@ -50,9 +50,9 @@ domain D {
 }
 ```
 
-In these invocations 1:`D(.x~Animal/Zebra)/E` and 2:`D(.x~Animal/Elephant)/E` subdomains `E` are not equivalent. Within `E` in the context of 1, `x` will be `Animal/Zebra` (Zebra of Animal) and in the context of 2, `x` will be `Animal/Elephant` (Elephant of Animal).
+In these invocations 1:`D(.x~Animal/Zebra)/E` and 2:`D(.x~Animal/Elephant)/E` subdomains `E` are not equivalent. For `E` in the context of 1, `x` will be `Animal/Zebra` (Zebra of Animal) and in the context of 2, `x` will be `Animal/Elephant` (Elephant of Animal).
 
-Note that `.` (dot) is a prefix used to name expressions.
+Note that `.` (dot) is a prefix assiated with named expressions.
 
 Also note that in an expression, `/` (slash) is used like a path delimiter, for instance `Animal/Elephant` is reaching for `Elephant` inside `Animal`.
 
@@ -148,7 +148,7 @@ NaturalMath = 1
 NaturalBits=1
 One = 0
 Next = 1
-sum(a, b) {
+sum(a, b):
   i = (a << NaturalBits) + b
   return [
     # address of case 1,
@@ -156,10 +156,38 @@ sum(a, b) {
     # address of case 3,
     # address of case 4
   ][i]()
-}
 
 ```
 
 # Optimization goals
 ## Natural to integer
 (see the whiteboard snapshot)
+
+It may be possible to reduce domains to efficient equivalent
+representations on the target hardware by analysing the meta properties of
+domains and converting each domain component to an intermediate operation
+that can then be converted to machine level instructions.
+
+For the domain Natural:
+```
+domain Natural {
+  | One
+  | Next { .n~Natural }
+}
+```
+
+The domain complexity (better definition?) function is O<sub>D</sub>(r)=s where `r` is the r^th recursive instance of `D` and `s` represents the maximum quantity of states D may contain at r^th recursive depth.
+   * O<sub>One</sub>(r)=0
+   * O<sub>Next</sub>(r)=1+O<sub>Natural</sub>(r-1)
+   * O<sub>Natural</sub>(r)=O<sub>One</sub>(r)+O<sub>Next</sub>(r)
+   * ..
+   * O<sub>Natural</sub>(r)=r
+
+For List:
+   * O<sub>Empty</sub>(r)=0
+   * O<sub>Next</sub>(r)=2+O<sub>List</sub>(r-1)
+   * O<sub>List</sub>(r)=1+O<sub>Empty</sub>(r)+O<sub>Next</sub>(r)
+   * ..
+   * O<sub>List</sub>(r)=3r
+
+The degree of the O will dictate the data structure required at compile time. <2 is int, 2 is array, >2 tree/graph.

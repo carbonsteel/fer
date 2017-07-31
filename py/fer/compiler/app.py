@@ -60,7 +60,7 @@ def main():
 
     loader = psrhook.loader.RealmLoader(context)
     literals = psrhook.literals.Literals(context)
-    #varcheck = psrhook.varcheck.VariableAnalysis(context)
+    varcheck = psrhook.varcheck.VariableAnalysis(context)
 
     # bootstrap by firing a realm import
     asked_realm = parser.ParseValue(
