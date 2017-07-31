@@ -4,11 +4,12 @@ from /Prelude {
 }
 
 domain Animal {
-  | getLegCount -> Natural {  }
+  | getLegCount -> Natural {}
 }
 
 d Monopod {
-  | getLegCount -> Natural {
+  | getLegCount -> Naturaly {
+    . Naturaly ~ Natural
     >$ &One
   }
 }

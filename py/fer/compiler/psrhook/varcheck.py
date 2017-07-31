@@ -371,12 +371,16 @@ class VariableAnalysis(object):
                 scope_domain._fcrd),
             coord=domain_declaration._fcrd.levelup())
       else:
-        # todo check codomain exists (need expressions)
         # remember domain exists
         domain_scope = DomainScope(scope)
         scope.domains[domain_declaration.id] = domain_scope
         domain_definition = domain_declaration.domain
         if domain_definition is None:
+          if domain_declaration.codomain is not None:
+            return ParseError(
+                error="Declaration '{}' specifies a codomain without defining a domain".format(
+                    domain_declaration.id),
+                coord=domain_declaration._fcrd.levelup())
           # domain OK
           continue
         else:
@@ -384,6 +388,11 @@ class VariableAnalysis(object):
           result = self.check_domain_variables(domain_definition, domain_scope)
           if not result:
             return result
+          # check codomain
+          if domain_declaration.codomain is not None:
+            result = self.check_variable_domain(domain_declaration.codomain, domain_scope, domain_scope)
+            if not result:
+              return result
           # recurse, check sub domains
           result = self.check_domain_declaration(domain_definition, domain_scope)
           if not result:
