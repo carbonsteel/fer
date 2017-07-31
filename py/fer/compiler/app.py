@@ -59,6 +59,7 @@ def main():
     context.on_compilation_done = i.register_trigger()
 
     loader = psrhook.loader.RealmLoader(context)
+    literals = psrhook.literals.Literals(context)
     #varcheck = psrhook.varcheck.VariableAnalysis(context)
 
     # bootstrap by firing a realm import

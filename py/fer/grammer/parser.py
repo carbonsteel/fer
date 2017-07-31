@@ -349,15 +349,19 @@ class ParseReader(object):
     read_tell = None
     peek_tell = None
     eof_error = None
+    peek_len = predicate.peek_distance - predicate.read_distance
     while True:
       if consumed_count >= maximum_consumed:
         break
       # emulated peek for streams without readinto()
       read_tell = self._stream.tell()
       read = self._stream.read(predicate.read_distance)
-      peek_tell = self._stream.tell()
-      peek = self._stream.read(predicate.peek_distance - predicate.read_distance)
-      peek = read + peek
+      if peek_len != 0:
+        peek_tell = self._stream.tell()
+        peek = self._stream.read(peek_len)
+        peek = read + peek
+      else:
+        peek = read
       self.stats["total_peeks"] += 1
       #log.trace("Peeked `{}'", peek)
       # failed to peek as far as requested
@@ -377,7 +381,8 @@ class ParseReader(object):
         self.stats["total_prunes"] += 1
         consumed_count += predicate.read_distance
         consumed.append(read)
-        self._stream.seek(peek_tell)
+        if peek_len != 0:
+          self._stream.seek(peek_tell)
         continue
       if predicate_result.consume:
         self.stats["total_consumes"] += 1
@@ -385,7 +390,8 @@ class ParseReader(object):
         if predicate.enabled_results.prune:
           consumed.append(read)
         string.append(read)
-        self._stream.seek(peek_tell)
+        if peek_len != 0:
+          self._stream.seek(peek_tell)
       else:
         self._stream.seek(read_tell)
         break

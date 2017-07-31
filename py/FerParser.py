@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-31 12:15:27.730108
+# Updated on 2017-07-31 12:51:14.872667
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -118,12 +118,13 @@ class ExpressionLiteralIntegerDecimal(object):
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'ipart', 'minus'], self, state)
 class ExpressionLiteralFloat(object):
-  def __init__(self, ipart, dpart, _fcrd):
+  def __init__(self, minus, ipart, dpart, _fcrd):
+    self.minus = minus
     self.ipart = ipart
     self.dpart = dpart
     self._fcrd = _fcrd
   def __pformat__(self, state):
-    pformat_class(['_fcrd', 'dpart', 'ipart'], self, state)
+    pformat_class(['_fcrd', 'dpart', 'ipart', 'minus'], self, state)
 ExpressionLiteralStringContent = str
 class ExpressionArgument(object):
   def __init__(self, id, expression, _fcrd):
@@ -188,6 +189,8 @@ class _ParserImpl(object):
   on_realm_path = 0
   on_realm_domain_import = 1
   on_domain_declaration_id = 2
+  on_integer_decimal = 3
+  on_float = 4
   def __init__(self, reader, interceptor):
     self._reader = reader
     self.interceptor = interceptor
@@ -855,6 +858,7 @@ class _ParserImpl(object):
         ('ipart', 'expected pseudo-number in expression-literal-integer-decimal', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
       ]
       )
+    value = self.interceptor.trigger(self.on_integer_decimal, value)
     return value
   def _parse_expression_literal_float(self):
     coord = self._reader.get_coord()
@@ -862,11 +866,13 @@ class _ParserImpl(object):
       result_type=lambda **kwargs: ExpressionLiteralFloat(_fcrd=coord, **kwargs),
       error='expected expression-literal-float',
       parsers=[
-        ('ipart', 'expected expression-literal-integer-decimal in expression-literal-float', self._parse_expression_literal_integer_decimal),
+        ('minus', 'expected hyphen in expression-literal-float', lambda: self._reader.parse_many_wp(self._parse_hyphen, 0, 1)),
+        ('ipart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
         ('', 'expected dot in expression-literal-float', self._parse_dot),
         ('dpart', 'expected pseudo-number in expression-literal-float', lambda: self._parse_pseudo_number(1, 9223372036854775807)),
       ]
       )
+    value = self.interceptor.trigger(self.on_float, value)
     return value
   _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r"^'\\", r'\\')
   def _parse_expression_literal_string_content(self, imin=1, imax=1):

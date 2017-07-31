@@ -83,8 +83,8 @@
 . expression-alt { expression-literal expression-domain }
 . expression-domain (ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup)
 . expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
-. expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart )
-. expression-literal-float ( expression-literal-integer-decimal@ipart dot pseudo-number+@dpart )
+. expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart ) : on_integer_decimal
+. expression-literal-float ( hyphen?@minus pseudo-number+@ipart dot pseudo-number+@dpart ) : on_float
 . expression-literal-string-content [^'\\] \ [\\]
 . expression-literal-string ( single-quote expression-literal-string-content*@@ single-quote )
 . expression-argument (
