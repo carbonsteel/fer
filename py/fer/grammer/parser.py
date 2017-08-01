@@ -157,6 +157,9 @@ class ParseReader(object):
     self._current_coord = ParseCoord(column=1, line=1, file=stream_name)
     self._stream = ParseStreamValidator()(stream)
     self.stats = {
+      "meta": {
+        "name": stream_name
+      },
       "total_peeks":0,
       "total_consumes": 0,
       "total_backtracks": 0,
@@ -175,7 +178,7 @@ class ParseReader(object):
   def parse_nothing(self, value=None):
     return ParseValue(value=value, coord=self._current_coord)
   
-  def parse_type(self, result_type, error, parsers, result_immediate=None, recovery=False):
+  def parse_type(self, result_type, error, parsers, result_immediate=None):
     type_args = {}
     begin_coord = self._current_coord
     parser_errors = ParseError(error=error, coord=begin_coord)
@@ -187,15 +190,9 @@ class ParseReader(object):
       if not parser_result:
         parser_errors.coord = self._current_coord
         parser_result.error += " (%s)" % (error,)
-        # if not recovery:
-        #   recovery_result = self.lookahead(lambda: self.parse_type(result_type=result_type, error=error, parsers=parsers[i+1:i+2], result_immediate=result_immediate, recovery=True))
-        #   if recovery_result:
-        #     parser_errors.coord = self._current_coord.levelup()
         return parser_errors
       if id:
         type_args[id] = parser_result.value
-    if recovery:
-      return True # no need for a parsevalue here
     value = None
     if result_immediate is None:
       value = result_type(**type_args)

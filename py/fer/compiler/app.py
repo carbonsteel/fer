@@ -9,6 +9,8 @@ from . import psrhook, common
 
 log = logger.get_logger()
 
+import datetime
+
 def _tmpdir_init(tmpdir):
   tmpsubdir = "fer.{}".format(id_generator())
   tmpdir = os.path.abspath(os.path.join(tmpdir, tmpsubdir))

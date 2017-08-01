@@ -1,6 +1,7 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-07-31 17:57:06.304432
+# Updated on 2017-08-01 12:33:01.293430
+import datetime
 from fer.grammer import *
 # Classes
 class Realm(object):
@@ -197,6 +198,7 @@ class _ParserImpl(object):
   def __call__(self):
     return self._parse_realm()
   def _parse_realm(self):
+    begin_time = datetime.datetime.now()
     coord = self._reader.get_coord()
     value = self._reader.parse_type(
       result_type=lambda **kwargs: Realm(_fcrd=coord, **kwargs),
@@ -208,6 +210,8 @@ class _ParserImpl(object):
         ('', 'expected eof', self._reader.consume_eof),
       ]
       )
+    end_time = datetime.datetime.now()
+    self._reader.stats['meta']['time'] = str(end_time-begin_time)
     return value
   _ws_predicate = SimpleClassPredicate.factory(r' \n')
   def _parse_ws(self, imin=1, imax=1):

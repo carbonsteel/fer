@@ -144,6 +144,8 @@ class GrammarParserCompiler(object):
         if e["anchor"] == "@":
           has_imm = True
       needs_coord = not(has_imm or qty_anchors == 0)
+    if is_root:
+      W += "    begin_time = datetime.datetime.now()"
     if needs_coord:
       W += "    coord = self._reader.get_coord()"
     W += "    value = self._reader.parse_type("
@@ -226,6 +228,9 @@ class GrammarParserCompiler(object):
     W += "      )"
     if definition.hook is not None:
       W += "    value = self.interceptor.trigger(self.%s, value)" % (definition.hook,)
+    if is_root:
+      W += "    end_time = datetime.datetime.now()"
+      W += "    self._reader.stats['meta']['time'] = str(end_time-begin_time)"
     W += "    return value"
 
   def __call__(self):
@@ -233,6 +238,7 @@ class GrammarParserCompiler(object):
     W += "# AUTOMATICLY GENERATED FILE."
     W += "# ALL CHANGES TO THIS FILE WILL BE DISCARDED."
     W += "# Updated on " + str(datetime.datetime.now())
+    W += "import datetime"
     W += "from fer.grammer import *"
     W += "# Classes"
     synonyms = []
