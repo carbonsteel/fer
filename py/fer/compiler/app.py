@@ -1,5 +1,4 @@
 import io
-import _pickle
 import os
 import sys
 
