@@ -40,6 +40,8 @@
 . domain { domain-literal-full domain-literal-min }
 . import { import-literal-full import-literal-min }
 
+#. bleepbloop ( domain-literal-min{2,3}@@ domain-literal-min{7} domain-literal-min{7,})
+
 . ww (ws* line-comment?)
 . w_old (ww*)
 . w __whitespace__

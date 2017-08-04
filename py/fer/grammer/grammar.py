@@ -42,10 +42,18 @@ class ExpressionQuantifier(object):
   def __pformat__(self, state):
     pformat_class(['expression'], self, state)
 
+class ExpressionQuantifierSpec(object):
+  def __init__(self, min, max):
+    self.min = min
+    self.max = max
+  def __pformat__(self, state):
+    pformat_class(['min', 'max'], self, state)
+
 class GrammarParser(object):
   def __init__(self, reader):
     self._reader = reader
 
+  INTEGER_CLASS = SimpleClassPredicate.factory("0-9")
   IDENTIFIER_CLASS = SimpleClassPredicate.factory("a-zA-Z-_")
   METHOD_IDENTIFIER_CLASS = SimpleClassPredicate.factory("a-zA-Z_")
   def _parse_identifier(self, method, identifier_class):
@@ -102,6 +110,13 @@ class GrammarParser(object):
     ])
 
   def quantifier_tuple(self, value):
+    if isinstance(value, ExpressionQuantifierSpec):
+      if value.max is None:
+        return (int(value.min), int(value.min))
+      if len(value.max) < 1:
+        return (int(value.min), sys.maxsize)
+      else:
+        return (int(value.min), int(value.max))
     if len(value) == 0:
       return (1, 1)
     if value == "+":
@@ -118,8 +133,38 @@ class GrammarParser(object):
       result_immediate="_",
       error="expected quantifier",
       parsers=[
-        ("_", "expected quantifier symbol",
-          lambda: self._reader.consume_string(self._quantifier_predicate, 0, 1)),
+        ("_", "expected quantifier symbol or spec",
+          lambda: self._reader.parse_any([
+            self.parse_quantifier_spec,
+            lambda: self._reader.consume_string(self._quantifier_predicate, 0, 1),
+          ]))
+    ])
+
+  def parse_quantifier_spec(self):
+    return self._reader.parse_type(
+      result_type=ExpressionQuantifierSpec,
+      error="expected quantifier spec",
+      parsers=[
+        ("", "expected quantifier spec prefix",
+          lambda: self._reader.consume_string(StringPredicate("{"), 1, 1)),
+        ("min", "expected quantifier spec",
+          lambda: self._reader.consume_string(self.INTEGER_CLASS, 1)),
+        ("max", "expected quantifier spec",
+          lambda: self._reader.parse_many_wp(self.parse_quantifier_spec_max, 0, 1)),
+        ("", "expected quantifier spec prefix",
+          lambda: self._reader.consume_string(StringPredicate("}"), 1, 1)),
+    ])
+
+  def parse_quantifier_spec_max(self):
+    return self._reader.parse_type(
+      result_type=str,
+      result_immediate="_",
+      error="expected quantifier spec",
+      parsers=[
+        ("", "expected quantifier spec max prefix",
+          lambda: self._reader.consume_string(StringPredicate(","), 1, 1)),
+        ("_", "expected quantifier spec max",
+          lambda: self._reader.consume_string(self.INTEGER_CLASS, 0)),
     ])
 
   def parse_anchor(self):

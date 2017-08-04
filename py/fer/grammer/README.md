@@ -45,11 +45,12 @@ token <expr> := /[ \n]*/ <expr>
 1. A composite expression refers by name to another grammar definition that 
    must be parsed in left-to-right order as part of the composite. 
    1. Directly following the name, regex-like quantifiers (plus, star, 
-   question-mark) may be applied which will, respectively, require at least 
-   one occurence, any number of occurences, and at most one occurence of the 
-   preceding definition. 
+   question-mark, brackets) may be applied which will, respectively, require at
+   least one occurence, any number of occurences, at most one occurence of 
+   the preceding definition. Brackets {n}, {n,}, {n,m} requires exactly n, at
+   least n and at least n and up to m occurences.
    1. Directly following the quantifiers, anchors may be applied.
-   * `<composite-expression> := <identifier> /[\+\*\?]/? <expression-anchor>?`
+   * `<composite-expression> := <identifier> /({\d+(,|,\d+)}|[\+\*\?]?)/ <expression-anchor>?`
 
 1. Anchors will map parsed values to fields in python objects corresponding to 
    the complete composite definition. 
@@ -69,7 +70,7 @@ token <expr> := /[ \n]*/ <expr>
    * `<alternative> := token(/{/) <identifier>+ token(/}/)`
 
 1. A definition hook will be compiled as an event in the parser's 
-   python code which will be fired after the definition's parser as returned. 
+   python code which will be fired after the definition's parser has returned. 
    1. Hook callbacks are given two parameters, first the value returned by the 
    definition's parser and second an optional context passed by the 
    registering code. Callbacks must return a ParseResult.

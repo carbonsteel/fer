@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-08-01 14:25:08.704973
+# Updated on 2017-08-04 17:21:08.746683
 import datetime
 from fer.grammer import *
 # Classes
@@ -171,6 +171,7 @@ class TransformDefinition(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'compares', 'expression', 'locals'], self, state)
+Bleepbloop = list
 _id = str
 Id = _id
 ImportDomainW = ImportDomain
@@ -592,6 +593,18 @@ class _ParserImpl(object):
       error='expected import',
       parsers=[
         ('_fimm', 'expected import, any of import-literal-full, import-literal-min', lambda: self._reader.parse_any([self._parse_import_literal_full,self._parse_import_literal_min]))
+      ]
+      ,result_immediate='_fimm'
+      )
+    return value
+  def _parse_bleepbloop(self):
+    value = self._reader.parse_type(
+      result_type=Bleepbloop,
+      error='expected bleepbloop',
+      parsers=[
+        ('_fimm', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 2, 3)),
+        ('', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 7, 7)),
+        ('', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 7, 9223372036854775807)),
       ]
       ,result_immediate='_fimm'
       )
