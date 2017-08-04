@@ -49,6 +49,9 @@ token <expr> := /[ \n]*/ <expr>
    least one occurence, any number of occurences, at most one occurence of 
    the preceding definition. Brackets {n}, {n,}, {n,m} requires exactly n, at
    least n and at least n and up to m occurences.
+      1. All quantifiers are exact, they will stop at the first failure. 
+      The definition will succeed if the quantifiers are fullfilled or fail
+      otherwise. The behavior is therefore always lazy, and never greedy.
    1. Directly following the quantifiers, anchors may be applied.
    * `<composite-expression> := <identifier> /({\d+(,|,\d+)}|[\+\*\?]?)/ <expression-anchor>?`
 
