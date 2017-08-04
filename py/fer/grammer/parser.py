@@ -412,7 +412,7 @@ class ParseReader(object):
     else:
       #log.trace("unexpected bytes `{}'", peek)
       error.causes.append(ParseError(
-          error="unexpected bytes {}".format(repr(peek)),
+          error="unexpected terminal {}".format(repr(peek)),
           coord=current_coord))
       self._stream.seek(read_tell)
       return error
@@ -424,7 +424,7 @@ class StringPredicate(object):
   def __init__(self, string):
     self.string = string
     self.read_distance = self.peek_distance = len(self.string)
-    self._what = "expected bytestring {}".format(repr(self.string))
+    self._what = "expected string {}".format(repr(self.string))
   def __call__(self, peek):
     return ConsumePredicateResult(consume=peek == self.string, prune=False)
   def __str__(self):
