@@ -30,8 +30,8 @@ d Zoologist {
 }
 
 d Main {
-  >$ 'my str\i\ng\\\'asda@ "'
-  >$ 12341
+  >$ "my str\i\ng\\\'asda@ \""
+  >$ 123a41
   >$ -12222.0
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
