@@ -1,6 +1,6 @@
 # AUTOMATICLY GENERATED FILE.
 # ALL CHANGES TO THIS FILE WILL BE DISCARDED.
-# Updated on 2017-08-04 17:21:08.746683
+# Updated on 2017-08-04 18:37:15.410538
 import datetime
 from fer.grammer import *
 # Classes
@@ -171,7 +171,6 @@ class TransformDefinition(object):
     self._fcrd = _fcrd
   def __pformat__(self, state):
     pformat_class(['_fcrd', 'compares', 'expression', 'locals'], self, state)
-Bleepbloop = list
 _id = str
 Id = _id
 ImportDomainW = ImportDomain
@@ -597,18 +596,6 @@ class _ParserImpl(object):
       ,result_immediate='_fimm'
       )
     return value
-  def _parse_bleepbloop(self):
-    value = self._reader.parse_type(
-      result_type=Bleepbloop,
-      error='expected bleepbloop',
-      parsers=[
-        ('_fimm', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 2, 3)),
-        ('', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 7, 7)),
-        ('', 'expected domain-literal-min in bleepbloop', lambda: self._reader.parse_many_wp(self._parse_domain_literal_min, 7, 9223372036854775807)),
-      ]
-      ,result_immediate='_fimm'
-      )
-    return value
   def _parse_ww(self):
     value = self._reader.parse_type(
       result_type=Ww,
@@ -891,7 +878,7 @@ class _ParserImpl(object):
       )
     value = self.interceptor.trigger(self.on_float, value)
     return value
-  _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r"^'\\", r'\\')
+  _expression_literal_string_content_predicate = FixedEscapedClassPredicate.factory(r'^"\\', r'\\')
   def _parse_expression_literal_string_content(self, imin=1, imax=1):
     value = self._reader.parse_type(
       result_type=ExpressionLiteralStringContent,
@@ -907,9 +894,9 @@ class _ParserImpl(object):
       result_type=ExpressionLiteralString,
       error='expected expression-literal-string',
       parsers=[
-        ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
+        ('', 'expected double-quote in expression-literal-string', self._parse_double_quote),
         ('_fimm', 'expected expression-literal-string-content in expression-literal-string', lambda: self._parse_expression_literal_string_content(0, 9223372036854775807)),
-        ('', 'expected single-quote in expression-literal-string', self._parse_single_quote),
+        ('', 'expected double-quote in expression-literal-string', self._parse_double_quote),
       ]
       ,result_immediate='_fimm'
       )
