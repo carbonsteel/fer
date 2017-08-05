@@ -8,7 +8,26 @@ import sys
 from fer.ferutil import *
 log = logger.get_logger()
 
-class ParseCoord(object):
+class ParseCoordDistance(Comparable):
+  NIL = None
+  def __init__(self, lines, columns, levels):
+    self.lines = lines
+    self.columns = columns
+    self.levels = levels
+  def __lt__(self, other):
+    if self.levels < other.levels:
+      return True
+    if self.levels == other.levels:
+      if self.lines < other.lines:
+        return True
+      if self.lines == other.lines:
+        return self.columns < other.columns
+    return False
+  def __str__(self):
+    return "ParseCoordDistance(levels={}, columns={}, lines={})".format(self.levels, self.columns, self.lines)
+ParseCoordDistance.NIL = ParseCoordDistance(levels=0, columns=0, lines=0)
+
+class ParseCoord(Comparable):
   def __init__(self, file, line, column, level=1):
     self.file = file
     self.line = line
@@ -16,6 +35,8 @@ class ParseCoord(object):
     self.level = level
   def __str__(self):
     return "{}:{}:{}^{}".format(spformat_path(self.file), self.line, self.column, self.level)
+  def localstr(self):
+    return "{}:{}".format(self.line, self.column)
   def __lt__(self, other):
     if self.level < other.level:
       return True
@@ -26,16 +47,11 @@ class ParseCoord(object):
         return self.column < other.column
     return False
 
-  def __eq__(self, other):
-    return not self<other and not other<self
-  def __ne__(self, other):
-    return self<other or other<self
-  def __gt__(self, other):
-    return other<self
-  def __ge__(self, other):
-    return not self<other
-  def __le__(self, other):
-    return not other<self
+  def __sub__(self, other):
+    return ParseCoordDistance(lines=self.line - other.line,
+        columns=self.column - other.column,
+        levels=self.level - other.level)
+
   def __pformat__(self, state):
     state.add(str(self))
   def copy(self):
@@ -62,6 +78,8 @@ class ParseResultBase(object):
     raise NotImplementedError()
   def __pformat__(self, state):
     raise NotImplementedError()
+  def size(self):
+    raise NotImplementedError()
   def get_first_deepest_cause(self):
     res = collections.OrderedDict()
     self._get_first_deepest_cause(res)
@@ -69,24 +87,29 @@ class ParseResultBase(object):
   def _get_first_deepest_cause(self, files):
     for c in self.causes:
       if (c.coord.file not in files
-          or c.coord > files[c.coord.file].coord):
+          or (c.coord > files[c.coord.file].coord
+              #and c.size() > ParseCoordDistance.NIL
+              #and c.size() <= files[c.coord.file].size()
+              )):
         files[c.coord.file] = c
+      log.trace("c {} {}", c.coord, c.size())
+      log.trace("f {} {}", files[c.coord.file].coord, files[c.coord.file].size())
       c._get_first_deepest_cause(files)
   def get_last_deepest_cause(self):
     res = collections.OrderedDict()
-    max_level = self._get_last_deepest_cause(0, res)
+    max_level = self._get_last_deepest_cause(res)
     return res, max_level
-  def _get_last_deepest_cause(self, depth, files):
+  def _get_last_deepest_cause(self, files):
     max_level = 0
     for c in self.causes:
       if (c.coord.file not in files
-          or (c.coord > files[c.coord.file][0].coord
-            or (c.coord == files[c.coord.file][0].coord
-                and depth > files[c.coord.file][1]))):
-        files[c.coord.file] = (c, depth)
+          or (c.coord > files[c.coord.file].coord
+            or (c.coord == files[c.coord.file].coord
+                and c.uid > files[c.coord.file].uid))):
+        files[c.coord.file] = c
         if c.coord.level > max_level:
           max_level = c.coord.level
-      level = c._get_last_deepest_cause(depth+1, files)
+      level = c._get_last_deepest_cause(files)
       if level > max_level:
         max_level = level
     return max_level
@@ -108,16 +131,25 @@ class ParseValue(ParseResultBase):
       pformat(c, state)
     state.add("", indent=-1)
     #log.trace('ParseValue {} {} __pformat__ done', id(self), self.uid)
+  def size(self):
+    return ParseCoordDistance.NIL
 
 class ParseError(ParseResultBase):
-  def __init__(self, error, coord, causes=None):
+  def __init__(self, error, coord, causes=None, starting_at=None):
     super().__init__(coord, causes)
     #log.trace('ParseError {} {} __init__ called from \n{}', id(self), self.uid, "".join(traceback.format_stack()[:-1]))
     self.error = error
+    if starting_at is None:
+      self.starting_at = coord
+    else:
+      self.starting_at = starting_at
   def __bool__(self):
     return False
   def __str__(self):
-    return "- {}@{} : {}".format(self.uid, self.coord, self.error)
+    if self.coord == self.starting_at:
+      return "- {}@{} : {}".format(self.uid, self.coord, self.error)
+    else:
+      return "- {}@{} : {} starting at {}".format(self.uid, self.coord, self.error, self.starting_at.localstr())
   def __pformat__(self, state):
     #log.trace('ParseError {} {} __pformat__ called', id(self), self.uid)
     state.add(str(self), indent=1, newline=True)
@@ -125,6 +157,8 @@ class ParseError(ParseResultBase):
       pformat(c, state)
     state.add("", indent=-1)
     #log.trace('ParseError {} {} __pformat__ done', id(self), self.uid)
+  def size(self):
+    return self.coord - self.starting_at
 
 class ParseStreamValidatorError(Exception):
   pass
@@ -181,7 +215,7 @@ class ParseReader(object):
   def parse_type(self, result_type, error, parsers, result_immediate=None):
     type_args = {}
     begin_coord = self._current_coord
-    parser_errors = ParseError(error=error, coord=begin_coord)
+    parser_errors = ParseError(error=error, coord=begin_coord, starting_at=begin_coord)
     for i in range(0, len(parsers)):
       id, error, parser = parsers[i]
       #log.debug("parse_type trying %s %s:%s"%(str(self._current_coord),repr(id),repr(error)))
@@ -189,7 +223,7 @@ class ParseReader(object):
       parser_errors.causes.append(parser_result)
       if not parser_result:
         parser_errors.coord = self._current_coord
-        parser_result.error += " (%s)" % (error,)
+        parser_result.error += " ({})".format(error)
         return parser_errors
       if id:
         type_args[id] = parser_result.value
@@ -210,11 +244,12 @@ class ParseReader(object):
         causes=[parser_errors])
 
   def parse_any(self, parsers):
-    errors = ParseError(error="expected any", coord=self._current_coord)
+    errors = ParseError(error="expected any", coord=self._current_coord, starting_at=self._current_coord)
     for parser in parsers:
       parser_result = self.lookahead(parser)
       if not parser_result:
         errors.causes.append(parser_result)
+        errors.coord = self._current_coord
         continue
       else:
         parser_result.causes.append(errors)
@@ -270,7 +305,7 @@ class ParseReader(object):
     results = []
     begin_coord = self._current_coord
     parser_errors = ParseError(error="inner parser errors in many(min=%d, max=%d)" % (minimum_parsed, maximum_parsed),
-        coord=begin_coord)
+        coord=begin_coord, starting_at=begin_coord)
     previous_coord = begin_coord
     count = 0
     while True:
@@ -281,6 +316,7 @@ class ParseReader(object):
             causes=[parser_errors])
       parser_result = self.lookahead(parser)
       parser_errors.causes.append(parser_result)
+      parser_errors.coord = self._current_coord
       if (not parser_result) or (self._current_coord == previous_coord):
         # bad parse or nothing was successfully parsed
         if count >= minimum_parsed:
@@ -291,7 +327,8 @@ class ParseReader(object):
           return ParseError(
               error="expected at least %d instances, found only %d in many" % (minimum_parsed, count),
               coord=self._current_coord,
-              causes=[parser_errors])
+              causes=[parser_errors],
+              starting_at=begin_coord)
       results.append(parser_result.value)
       count += 1
       previous_coord = self._current_coord
@@ -337,7 +374,7 @@ class ParseReader(object):
     string = []
     begin_coord = self._current_coord
     current_coord = begin_coord.copy()
-    error = ParseError(error=predicate.what(), coord=begin_coord)
+    error = ParseError(error=predicate.what(), coord=begin_coord, starting_at=begin_coord)
     predicate_result = None
     consumed_count = 0
     consumed = []
@@ -364,7 +401,7 @@ class ParseReader(object):
       # failed to peek as far as requested
       if len(peek) < predicate.peek_distance:
         #log.trace("Early eof")
-        eof_error = ParseError(error="unexpected eof after {}".format(repr(peek)), coord=begin_coord)
+        eof_error = ParseError(error="unexpected eof after {}".format(repr(peek)), coord=begin_coord, starting_at=begin_coord)
         error.causes.append(eof_error)
         self._stream.seek(read_tell)
         break
@@ -405,15 +442,16 @@ class ParseReader(object):
     self._current_coord = current_coord
     if eof_error is not None:
       eof_error.coord = current_coord
+    error.coord = current_coord
     if consumed_count >= minimum_consumed:
       #log.trace("ok, count ({}) >= min ({})", consumed_count, minimum_consumed)
       self.stats["total_consumed"] += consumed_count
       return ParseValue(value=''.join(string), coord=begin_coord, causes=[error])
     else:
-      #log.trace("unexpected bytes `{}'", peek)
+      #log.trace("unexpected terminal `{}'", peek)
       error.causes.append(ParseError(
           error="unexpected terminal {}".format(repr(peek)),
-          coord=current_coord))
+          coord=current_coord, starting_at=begin_coord))
       self._stream.seek(read_tell)
       return error
 
@@ -463,7 +501,7 @@ class SimpleClassPredicate(object):
   read_distance = 1
   def __init__(self, cclsre):
     self.re = cclsre
-    self._what = "expected byte matching {}".format(repr(self.re.pattern))
+    self._what = "expected terminal matching {}".format(repr(self.re.pattern))
 
   @staticmethod
   def factory(ccls):
@@ -505,7 +543,7 @@ class EscapedClassPredicate(object):
       prune = True
     return ConsumePredicateResult(consume=consume, prune=prune)
   def what(self):
-    wh = "expected byte matching {}".format(repr(self.re.pattern))
+    wh = "expected terminal matching {}".format(repr(self.re.pattern))
     return wh
   def __str__(self):
     return 'EscapedClassPredicate(ccls={}, cclse={}, read_distance={}, peek_distance={})'.format(
@@ -520,7 +558,7 @@ class FixedEscapedClassPredicate(object):
     self.re = cclsre
     self.ree = cclsere
     self.next_escaped = False
-    self._what = "expected {}-escaped byte matching {}".format(repr(self.ree.pattern), repr(self.re.pattern))
+    self._what = "expected {}-escaped terminal matching {}".format(repr(self.ree.pattern), repr(self.re.pattern))
 
   @staticmethod
   def factory(ccls, cclse):

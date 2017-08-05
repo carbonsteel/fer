@@ -2,6 +2,7 @@ from fer.ferutil import load_tests_simple
 from . import test_parser
 
 test_cases = (
+  test_parser.TestParseCoord,
   test_parser.TestConsumeString,
 )
 

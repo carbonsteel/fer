@@ -54,10 +54,10 @@ def civilize_parse_error(result):
   # error which will indicate what caused the failure (for the last file only)
   lcauses, max_level = _fcause.get_last_deepest_cause()
   for lfile, lcause in lcauses.items():
-    if (lcause[0] 
-        or lcause[0].coord.level < max_level 
-        or lcause[0].coord.file != _fcause.coord.file):
+    if (lcause 
+        or lcause.coord.level < max_level 
+        or lcause.coord.file != _fcause.coord.file):
       continue
-    log.trace("- lcause: " + str(lcause[0]))
-    what += "\n- " + str(lcause[0])
+    log.trace("- lcause: " + str(lcause))
+    what += "\n- " + str(lcause)
   return what

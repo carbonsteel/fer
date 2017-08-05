@@ -31,7 +31,7 @@ d Zoologist {
 
 d Main {
   >$ "my str\i\ng\\\'asda@ \""
-  >$ 12341
+  >$ 1234a1
   >$ -12222.0
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
