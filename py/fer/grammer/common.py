@@ -40,7 +40,10 @@ def civilize_parse_error(result):
   log.trace("Extracting causes")
   # get the first farthest (first highest line,column) error
   # which will indicate what was being parsed (per file)
-  fcauses = top_result.get_first_deepest_cause()
+  fcauses, hcauses = top_result.get_first_deepest_cause()
+
+  for hfile, hc in hcauses.items():
+    log.trace("hcause: " + str(hc))
 
   _fcause = None
   for file, fcause in fcauses.items():
@@ -53,11 +56,19 @@ def civilize_parse_error(result):
   # get the farthest (last highest line,column) and highest level (high parser depth)
   # error which will indicate what caused the failure (for the last file only)
   lcauses, max_level = _fcause.get_last_deepest_cause()
+
   for lfile, lcause in lcauses.items():
     if (lcause 
         or lcause.coord.level < max_level 
         or lcause.coord.file != _fcause.coord.file):
       continue
+    if lfile in hcauses:
+      hcause = hcauses[lfile]
+      pcause = _fcause.get_shallowest_cause_of_coords(hcause.coord, hcause.starting_at)
+      log.trace("$ pcause: " + str(pcause))
+      what += "\n$ " + str(pcause)
+      log.trace("* hcause: " + str(hcause))
+      what += "\n* " + str(hcause)
     log.trace("- lcause: " + str(lcause))
     what += "\n- " + str(lcause)
   return what

@@ -16,6 +16,19 @@ class TestParseCoord(unittest.TestCase):
     b = parser.ParseCoord(file="file_b4", line=1, column=1, level=2)
     self.assertTrue(a < b)
 
+  def test_equal(self):
+    a = parser.ParseCoord(file="file_a", line=1, column=1, level=1)
+    b = parser.ParseCoord(file="file_b1", line=1, column=1, level=1)
+    self.assertTrue(a == b)
+    b = parser.ParseCoord(file="file_a", line=3, column=1, level=1)
+    self.assertTrue(a != b)
+    b = parser.ParseCoord(file="file_a", line=1, column=3, level=1)
+    self.assertTrue(a != b)
+    b = parser.ParseCoord(file="file_a", line=1, column=1, level=3)
+    self.assertTrue(a != b)
+    b = parser.ParseCoord(file="file_a", line=1, column=1, level=1)
+    self.assertTrue(a == b)
+
   def test_diff(self):
     a = parser.ParseCoord(file="file_a", line=10, column=5, level=1)
     b = parser.ParseCoord(file="file_b1", line=3, column=1, level=1)

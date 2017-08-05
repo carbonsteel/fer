@@ -80,21 +80,38 @@ class ParseResultBase(object):
     raise NotImplementedError()
   def size(self):
     raise NotImplementedError()
+  def get_shallowest_cause_of_coords(self, coord, starting_at):
+    for c in self.causes:
+      log.trace("{} ({}) {} ({})", c.coord, coord.localstr(), getattr(c, 'starting_at', None), starting_at.localstr())
+      if not c and c.coord == coord and c.starting_at == starting_at:
+        return c
+      else:
+        res = c.get_shallowest_cause_of_coords(coord, starting_at)
+        if res is not None:
+          return res
+    return None
   def get_first_deepest_cause(self):
     res = collections.OrderedDict()
-    self._get_first_deepest_cause(res)
-    return res
-  def _get_first_deepest_cause(self, files):
+    hyper = collections.OrderedDict()
+    self._get_first_deepest_cause(res, hyper)
+    return res, hyper
+  def _get_first_deepest_cause(self, files, hyper):
     for c in self.causes:
-      if (c.coord.file not in files
-          or (c.coord > files[c.coord.file].coord
-              #and c.size() > ParseCoordDistance.NIL
-              #and c.size() <= files[c.coord.file].size()
-              )):
+      if c.coord.file not in files:
         files[c.coord.file] = c
-      log.trace("c {} {}", c.coord, c.size())
-      log.trace("f {} {}", files[c.coord.file].coord, files[c.coord.file].size())
-      c._get_first_deepest_cause(files)
+        hyper[c.coord.file] = c
+      elif ((c.coord > files[c.coord.file].coord and c.size() > files[c.coord.file].size())
+          or (c.coord == files[c.coord.file].coord
+              and c.size() <= files[c.coord.file].size()
+              and c.size() > ParseCoordDistance.NIL
+              )):
+        if c.uid < files[c.coord.file].uid:
+          files[c.coord.file] = c
+        else:
+          hyper[c.coord.file] = c
+      # log.trace("c {} {}", c.coord, c.size())
+      # log.trace("f {} {}", files[c.coord.file].coord, files[c.coord.file].size())
+      c._get_first_deepest_cause(files, hyper)
   def get_last_deepest_cause(self):
     res = collections.OrderedDict()
     max_level = self._get_last_deepest_cause(res)
@@ -221,8 +238,8 @@ class ParseReader(object):
       #log.debug("parse_type trying %s %s:%s"%(str(self._current_coord),repr(id),repr(error)))
       parser_result = parser()
       parser_errors.causes.append(parser_result)
+      parser_errors.coord = self._current_coord
       if not parser_result:
-        parser_errors.coord = self._current_coord
         parser_result.error += " ({})".format(error)
         return parser_errors
       if id:
