@@ -107,7 +107,8 @@ class ParseResultBase(object):
         longest, non-zero, parse result (measured by the distance between the 
         error and the starting point of the result).
 
-        Hyper causes are the causes calculated in the same way except that they 
+        Hyper causes correspond to parse attempts. They are calculated the same 
+        way as first causes except that they 
         are the latests causes. This may be the same cause as the first cause
         in some cases but always different than the 'last deepest cause' which 
         will always have a zero-length parse result.
