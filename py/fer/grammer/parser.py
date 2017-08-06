@@ -81,8 +81,17 @@ class ParseResultBase(object):
   def size(self):
     raise NotImplementedError()
   def get_shallowest_cause_of_coords(self, coord, starting_at):
+    """ Very generic function but is meant to:
+        Find the probable cause.
+
+        The probable cause is found in the 'first deepest cause' cause tree
+        and shares the same start and end coordinates as the related hyper 
+        cause. It indicates the parsing attempt most probably relevant to the 
+        user. It will always be the closest - but high level enough - 
+        'parse_type' type error that will be relevant to the user.
+    """
     for c in self.causes:
-      log.trace("{} ({}) {} ({})", c.coord, coord.localstr(), getattr(c, 'starting_at', None), starting_at.localstr())
+      # log.trace("{} ({}) {} ({})", c.coord, coord.localstr(), getattr(c, 'starting_at', None), starting_at.localstr())
       if not c and c.coord == coord and c.starting_at == starting_at:
         return c
       else:
@@ -91,6 +100,18 @@ class ParseResultBase(object):
           return res
     return None
   def get_first_deepest_cause(self):
+    """ Retrieves first and hyper causes for each file in the current cause tree.
+
+        First causes are parents to all relevant errors. They are identified by
+        identifying the earliest cause with the deepest coordinates and the 
+        longest, non-zero, parse result (measured by the distance between the 
+        error and the starting point of the result).
+
+        Hyper causes are the causes calculated in the same way except that they 
+        are the latests causes. This may be the same cause as the first cause
+        in some cases but always different than the 'last deepest cause' which 
+        will always have a zero-length parse result.
+    """
     res = collections.OrderedDict()
     hyper = collections.OrderedDict()
     self._get_first_deepest_cause(res, hyper)

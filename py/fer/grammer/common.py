@@ -65,10 +65,11 @@ def civilize_parse_error(result):
     if lfile in hcauses:
       hcause = hcauses[lfile]
       pcause = _fcause.get_shallowest_cause_of_coords(hcause.coord, hcause.starting_at)
-      log.trace("$ pcause: " + str(pcause))
-      what += "\n$ " + str(pcause)
-      log.trace("* hcause: " + str(hcause))
-      what += "\n* " + str(hcause)
+      log.trace("- pcause: " + str(pcause))
+      what += "\np " + str(pcause)
+      log.trace("- hcause: " + str(hcause))
+      if hcause != _fcause:
+        what += "\nh " + str(hcause)
     log.trace("- lcause: " + str(lcause))
-    what += "\n- " + str(lcause)
+    what += "\nl " + str(lcause)
   return what
