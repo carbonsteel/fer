@@ -33,7 +33,7 @@ d Main {
   >$ "my str\i\ng\\\'asda@ \""
   >$ 12341
   >$ -12222.0
-  >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
+  >$ NaturalMath/sum(.a~Next(.b~Oneee) .b~Next(.n~One))
 }
 
 
