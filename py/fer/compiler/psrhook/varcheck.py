@@ -127,9 +127,27 @@ def expr_subdomain_of(a, b):
         a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Boolean), True
         a = Maybe(.v~Boolean)/Nothing, b = Maybe(.v~Natural), False
   """
+  # base case, previous lookup of b reach the end, so OK
   if b is None:
     return True
-  pass
+  # not handling literals yet
+  if not(isinstance(a, self.context.parser_module.ExpressionDomain) 
+      and isinstance(b, self.context.parser_module.ExpressionDomain)):
+    return False
+  # domains of the level cannot be subdomain of one another
+  if a.lookup is None:
+    return False
+  # if the names match, we're on the right track
+  if a.id == b.id:
+    if len(a.arguments) != len(b.arguments):
+      # Something freaky happened -- or is could it be from another realm?
+      return False
+    # check if arguments are the same
+    for aarg, barg in zip(a.arguments, b.arguments):
+      if not expr_equals(aarg, barg):
+        return False
+    return expr_subdomain_of(a.lookup, b.lookup)
+  return False
 
 def expr_canon(a_, scope, lookup_expr):
   """ return the canonical expression of expression a
@@ -266,10 +284,10 @@ class VariableAnalysis(object):
               argcheckresult = self.check_argument_value(arg.expression, scope, scope)
               if not argcheckresult:
                 return argcheckresult
-              # todo (type checking) check expression of argument is a subdomain of the variable's domain
-              # canoncheckresult = expr_canon(arg.expression, scope, variables[arg.id])
-              # if not canoncheckresult:
-              #   return canoncheckresult
+              # (type checking) check expression of argument is a subdomain of the variable's domain
+              canoncheckresult = expr_canon(arg.expression, scope, variables[arg.id].variable_domain)
+              if not canoncheckresult:
+                return canoncheckresult
             continue
           else:
             # an argument must correspond to a variable
@@ -317,9 +335,9 @@ class VariableAnalysis(object):
             if expr.lookup.value.id not in scope_domain.domains:
               return ParseError(
                   error="Expression lookup '{}' is not a subdomain of '{}'".format(
-                    expr.lookup.id, expr.id),
+                    expr.lookup.value.id, expr.id),
                   coord=expr._fcrd.levelup())
-            return self.check_variable_domain(expr.lookup, scope, scope_domain)
+            return self.check_variable_domain(expr.lookup.value, scope, scope_domain)
       else:
         # variable is defined
         # todo (type checking) check if its lookup is a subdomain of its value
@@ -348,7 +366,7 @@ class VariableAnalysis(object):
         if var.variable_constraints is not None:
           pass
         # variable OK
-        continue
+        pass
       elif ofinstance(var, self.context.parser_module.VariableConstant):
         result = self.check_variable_domain(var.expression, scope, scope)
         if not result:
@@ -407,12 +425,12 @@ class VariableAnalysis(object):
         if self.get_current_realm_path() in self.checked_realms:
           return realm_import_result
         realm = getattr(realm_import_result.value, RealmLoader.LOADER_IMPORTED_ATTR, None)
-        # checking domains in realm
+        # check domains in realm
         result = self.check_domain_declaration(realm, self.get_current_realm_scope())
         if not result:
           result.causes.append(realm_import_result)
           return result
-        # checking imported domains from realm
+        # check imported domains from realm
         for imp in realm_import_result.value.domains:
           if imp.domain not in self.get_current_realm_scope().domains:
             return ParseError(

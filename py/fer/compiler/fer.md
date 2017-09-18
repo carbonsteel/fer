@@ -141,11 +141,13 @@ domain NaturalMath {
   }
 ```
 
+Pseudo-code below
+
 ```
 Natural = 0
 NaturalMath = 1
 
-NaturalBits=1
+NaturalBits = 1
 One = 0
 Next = 1
 sum(a, b):
@@ -161,7 +163,7 @@ sum(a, b):
 
 # Optimization goals
 ## Natural to integer
-(see the whiteboard snapshot)
+***(see the whiteboard snapshot)***
 
 It may be possible to reduce domains to efficient equivalent
 representations on the target hardware by analysing the meta properties of
@@ -176,18 +178,3 @@ domain Natural {
 }
 ```
 
-The domain complexity (better definition?) function is O<sub>D</sub>(r)=s where `r` is the r^th recursive instance of `D` and `s` represents the maximum quantity of states D may contain at r^th recursive depth.
-   * O<sub>One</sub>(r)=0
-   * O<sub>Next</sub>(r)=1+O<sub>Natural</sub>(r-1)
-   * O<sub>Natural</sub>(r)=O<sub>One</sub>(r)+O<sub>Next</sub>(r)
-   * ..
-   * O<sub>Natural</sub>(r)=r
-
-For List:
-   * O<sub>Empty</sub>(r)=0
-   * O<sub>Next</sub>(r)=2+O<sub>List</sub>(r-1)
-   * O<sub>List</sub>(r)=1+O<sub>Empty</sub>(r)+O<sub>Next</sub>(r)
-   * ..
-   * O<sub>List</sub>(r)=3r
-
-The degree of the O will dictate the data structure required at compile time. <2 is int, 2 is array, >2 tree/graph.

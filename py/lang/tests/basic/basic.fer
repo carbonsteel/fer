@@ -10,7 +10,7 @@ domain Animal {
 d Monopod {
   | getLegCount -> Naturaly {
     . Naturaly ~ Natural
-    >$ &One
+    >$ One
   }
 }
 
@@ -31,7 +31,7 @@ d Zoologist {
 
 d Main {
   >$ "my str\i\ng\\\'asda@ \""
-  >$ 12s341
+  >$ 12341
   >$ -12222.0
   >$ NaturalMath/sum(.a~Next(.n~One) .b~Next(.n~One))
 }
