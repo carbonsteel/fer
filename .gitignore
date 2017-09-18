@@ -144,3 +144,4 @@ ENV/
 
 # mkdocs documentation
 /site
+py/FerParser.py
