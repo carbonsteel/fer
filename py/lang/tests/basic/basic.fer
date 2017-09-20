@@ -1,6 +1,7 @@
 from /Prelude {
   import Natural
   i NaturalMath
+  i List
 }
 
 domain Animal {
@@ -29,11 +30,35 @@ d Zoologist {
   }
 }
 
+d Fmap {
+  .a .b
+  | List' -> List(~b) {
+    .l : List(~a)
+    .f : d -> b {.x : a}
+    > .l = Empty $ Empty
+    > .l = Node $ Node(~Fmap!/List'(~l/next) 
+                       ~f(~l/value))
+  }
+}
+
 d Main {
+  # 1. that's a string literal
   >$ "my str\i\ng\\\'asda@ \""
+
+  # 2. that's an integer literal
   >$ 12341
+
+  # 3. that's a floating point number literal
   >$ -12222.0
+
+  # 4. named style arguments
   >$ NaturalMath/sum(.a~Next(.b~Oneee) .b~Next(.n~One))
+
+  # 5. ordered style arguments
+  # 6. bang! asks to infer arguments
+  >$ Fmap!/List(~List!/Node(~List!/Empty ~1)
+  # 7. that's lambda 
+                ~d -> Natural {.a >$ NaturalMath/sum(~a ~1)})
 }
 
 

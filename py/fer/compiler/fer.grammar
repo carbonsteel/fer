@@ -36,6 +36,7 @@
 . single-quote ''''
 . double-quote '"'
 . hyphen '-'
+. exclamation-mark '?'
 
 . domain { domain-literal-full domain-literal-min }
 . import { import-literal-full import-literal-min }
@@ -82,7 +83,8 @@
 . expression ( 
     w expression-alt@value
   )
-. expression-alt { expression-literal expression-domain }
+. expression-alt { expression-literal expression-domain expression-lambda }
+. expression-lambda (w domain codomain?@ domain-definition?@domain)
 . expression-domain (ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup)
 . expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
 . expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart ) : on_integer_decimal
@@ -92,7 +94,9 @@
 . expression-argument (
     variable-prefix id@ w tilde expression@
   )
-. expression-arguments (
+. expression-arguments { expression-arguments-implicit expression-arguments-named }
+. expression-arguments-implicit (exclamation-mark@@)
+. expression-arguments-named (
     w left-parenthesis
     expression-argument*@@
     w right-parenthesis
