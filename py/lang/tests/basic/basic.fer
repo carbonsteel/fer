@@ -34,7 +34,7 @@ d Fmap {
   .a .b
   | List' -> List(~b) {
     .l : List(~a)
-    .f : d -> b {.x : a}
+    .f : \\ -> b {.x : a}
     > .l = Empty $ Empty
     > .l = Node $ Node(~Fmap!/List'(~l/next) 
                        ~f(~l/value))
@@ -58,7 +58,7 @@ d Main {
   # 6. bang! asks to infer arguments
   >$ Fmap!/List(~List!/Node(~List!/Empty ~1)
   # 7. that's lambda 
-                ~d -> Natural {.a >$ NaturalMath/sum(~a ~1)})
+                ~\\ -> Natural {.a >$ NaturalMath/sum(~a ~1)})
 }
 
 

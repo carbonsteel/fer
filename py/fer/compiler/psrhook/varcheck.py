@@ -267,7 +267,20 @@ class VariableAnalysis(object):
       else:
         # the domain has variables, check if they match arguments
         args = {}
+        i = 0
+        _vars = None
+        if ofinstance(arguments, self.context.parser_module.ExpressionArgumentsOrdered):
+          _vars = list(variables.values())
         for arg in arguments:
+          if _vars is not None:
+            arg.id = _vars[i].id
+            i += 1
+
+          if arg.id in args:
+            return ParseError(
+                error="Argument '{}' defined more than once at {}".format(arg.id,
+                    arg._fcrd),
+                coord=expr._fcrd.levelup())
           args[arg.id] = arg
           if arg.id in variables:
             # the argument is a variable
@@ -299,15 +312,17 @@ class VariableAnalysis(object):
 
   def check_variable_domain(self, expr_, scope, lookup_scope):
     return self._check_expr_callbacks(expr_, scope, lookup_scope, 
+        lambda: True, # value may be a lambda (todo checks)
         lambda: ParseError(
             error="Bound may not be a literal",
             coord=expr_._fcrd.levelup()))
   def check_argument_value(self, expr_, scope, lookup_scope):
     return self._check_expr_callbacks(expr_, scope, lookup_scope, 
-        lambda: True # value may be a literal
+        lambda: True, # value may be a lambda (todo checks)
+        lambda: True # value may be a literal(todo checks) 
     )
 
-  def _check_expr_callbacks(self, expr_, scope, lookup_scope, on_literal):
+  def _check_expr_callbacks(self, expr_, scope, lookup_scope, on_lambda, on_literal):
     if ofinstance(expr_.value, self.context.parser_module.ExpressionDomain):
       expr = expr_.value
       # check if usage succeeds definition
@@ -342,6 +357,8 @@ class VariableAnalysis(object):
         # variable is defined
         # todo (type checking) check if its lookup is a subdomain of its value
         return True
+    elif ofinstance(expr_.value, self.context.parser_module.ExpressionLambda):
+      return on_lambda()
     else:
       return on_literal()
     # bound OK
