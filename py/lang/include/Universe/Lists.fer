@@ -1,7 +1,3 @@
-from /Universe/Naturals {
-  i Natural
-  i NaturalMath
-}
 from /Universe/Maybes {
   i Maybe
 }

@@ -95,7 +95,7 @@
 . expression-arguments { expression-arguments-implicit expression-arguments-named expression-arguments-ordered }
 . expression-arguments-implicit (exclamation-mark@@)
 . expression-argument-named (
-    variable-prefix id@ w tilde expression@
+    variable-prefix id@ expression-argument-inner@expression
   )
 . expression-arguments-named (
     w left-parenthesis
@@ -103,13 +103,18 @@
     w right-parenthesis
   )
 . expression-argument-ordered (
-    w tilde expression@
+    expression-argument-inner@expression
   )
 . expression-arguments-ordered (
     w left-parenthesis
     expression-argument-ordered*@@
     w right-parenthesis
   )
+. expression-argument-inner { expression-argument-implicit expression-argument-explicit }
+. expression-argument-implicit ( exclamation-mark@@ )
+. expression-argument-explicit ( w tilde expression@@ )
+
+
 . expression-lookup (w solidus expression@@)
 . codomain (w left-to-right-arrow w expression@@)
 

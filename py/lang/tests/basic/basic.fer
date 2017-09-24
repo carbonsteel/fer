@@ -41,6 +41,17 @@ d Fmap {
   }
 }
 
+d Vector {
+  .a 
+  .Length : Natural
+  | Empty { >$ Vector(.a~a .Length~Zero)/Empty }
+  | Node { 
+    .value : a
+    .next : Vector(.a~a .Length~\\ -> Natural {>.Length=Zero$ Zero >$ Length/n }) # Length/n sufficient?
+     >$ Vector(.a~a .Length~Next(.n~next/Length))/Node(.value~value)
+  }
+}
+
 d Main {
   # 1. that's a string literal
   >$ "my str\i\ng\\\'asda@ \""

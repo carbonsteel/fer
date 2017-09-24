@@ -191,6 +191,7 @@ def expr_canon(a_, scope, lookup_expr):
     return a_
   a = a_.value
   lookup_canon = expr_canon(lookup_expr, scope, None)
+  return True
   scope_a_domain = scope.domain(a.id)
   if scope_a_domain:
     # if the valid expression a refers to a domain in scope

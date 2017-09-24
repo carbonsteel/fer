@@ -1,18 +1,18 @@
 domain Natural {
-  | One
+  | Zero
   | Next { . n:Natural }
-  >$ One
+  >$ Zero
 }
 domain NaturalMath {
   | sum -> Natural {
     . a:Natural
     . b:Natural
 
-    > . a=One
-    $ Next( . n~b )
+    > . a=Zero
+    $ b
 
-    > . a=Next . b=One
-    $ Next( . n~a )
+    > . a=Next . b=Zero
+    $ a
 
     > . a=Next . b=Next
     $ Next( . n~Next( . n~sum(
@@ -24,10 +24,10 @@ domain NaturalMath {
     . n:Natural                            # n-th fibonnaci number to calculate
     | fiba -> Natural {
       . m:Natural
-      > .m=One $ One                       # step 3: if (n-1) is 1, then return 1
+      > .m=Zero $ Next(~Zero)              # step 3: if (n-1) is 0, then return 1
       >$ sum(.a~fib(.n~m/n) .b~fib(.n~m))  # step 4: always, return fib((n-1)-1) + fib(n-1)
     }
-    > .n=One $ One                         # step 1: if n is 1, then return 1
-    > .n=Next $ fiba(.n~n/n)               # step 2: if n > 1, then fiba(n-1)
+    > .n=Zero $ Next(~Zero)                # step 1: if n is 0, then return 1
+    > .n=Next $ fiba(.n~n/n)               # step 2: if n > 0, then fiba(n-1)
   }
 }
