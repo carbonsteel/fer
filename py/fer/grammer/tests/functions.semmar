@@ -1,0 +1,94 @@
+. root ()
+
+# Type
+# DefinitionT
+# ExpressionT
+# FunctionT
+# VarT
+
+# DefinitionT
+#  Composite All of Many - Cardinalized - Left to Right
+.id "what" ExpressionT ...
+
+# ExpressionT
+#  ParseExpressionE
+ParseExpressionE Quantifier Anchor
+#  FunctionE
+[id x ...]
+
+# ParseExpressionE
+#  DefinitionP
+id 
+#  LiteralP
+'bobobob'
+#  LiteralClassP
+/python re character class/
+#  AlternativeP
+(id ...)
+
+# Quantifier
+#  RangeMin : {n,} | n E N
+#  RangeMinMax : {n,m} | n,m E N
+#  Exact : {n} | =RangeMinMax n n
+#  Plus : + | =RangeMin 1
+#  Star : * | =RangeMin 0
+#  QMark : ? | =RangeMinMax 0 1
+
+# Anchor
+#  A  : c (x@) | =C "x"=x()
+#  AA : c (x@@) | =x()
+#  NA : c (x@y) | =C "y"=x()
+
+# FunctionT
+\id x ... -> Type
+
+# VarT
+$id %Boolean
+=> [and Boolean Boolean] -> Boolean
+=> [or Boolean Boolean] -> Boolean
+
+$id %Integer
+=> [add Integer Integer] -> Integer
+=> [sub Integer Integer] -> Integer
+
+$id %Array a
+=> [add (Array a) (Array a)] -> Array a
+=> [sub (Array a) (Array a)] -> Array a
+
+$id %Text
+=> [app Text Text] -> Text
+
+$id %Map k v
+=> [add (Map k v) (Map k v)] -> Map k v
+=> [app {k v} (Map k v)] -> Map k v
+
+$id %Set
+=> [add (Set a) (Set a)] -> Set a
+=> [app a (Set a)] -> Set a
+=> [in  a (Set a)] -> Boolean
+
+# where
+#n = m
+#add n m = add m n
+#sub n m = add m n
+
+
+----
+
+. w __whitespace__
+. pseudo-letter [a-zA-Z_']
+
+\token p -> w p@@
+.id "identifier" [token pseudo-letter+]@@
+
+\expr-def scope --> P 
+  | [not [empty scope]]
+  -> id@@ ';'
+  | [not [in scope $id]]
+
+
+\expr-ref scope -> id@@
+  | in scope id
+
+%scope:Map
+.expr ([expr-def scope] [expr-ref scope])*@@
