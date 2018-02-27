@@ -23,7 +23,7 @@ env.vars.register(EV_PSRNAME, "Parser")
 EV_PSRMODNAME = "PSRMODNAME" 
 env.vars.register(EV_PSRMODNAME, "FerParser")
 EV_PSRGRAMMAR = "PSRGRAMMAR"
-env.vars.register(EV_PSRGRAMMAR, os.path.join(os.path.dirname(__file__), "fer.grammar"))
+env.vars.register(EV_PSRGRAMMAR, os.path.join(os.path.dirname(__file__), "fer.1.0.0.grammar"))
 
 class CompilationProblem(Exception):
   def __init__(self, what, result=None):

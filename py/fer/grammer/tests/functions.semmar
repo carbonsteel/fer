@@ -81,14 +81,17 @@ $id %Set
 \token p -> w p@@
 .id "identifier" [token pseudo-letter+]@@
 
-\expr-def scope --> P 
-  | [not [empty scope]]
-  -> id@@ ';'
-  | [not [in scope $id]]
+# [] -> ExprParse (Check ExprFunc)
+
+\expr-def scope ->
+  [not (empty scope)]
+  id@@ ';'
+  [not (in scope $id)]
 
 
-\expr-ref scope -> id@@
-  | in scope id
+\expr-ref scope -> 
+  id@@
+  [in scope id]
 
 %scope:Map
-.expr ([expr-def scope] [expr-ref scope])*@@
+.expr ({expr-def scope} {expr-ref scope})*@@

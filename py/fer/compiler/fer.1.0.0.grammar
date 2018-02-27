@@ -1,0 +1,142 @@
+. realm (  # root is first definition
+    realm-domain-import*@imports
+    realm-domain-declaration*@domains
+    w) # allow whitespace after file content
+
+. ws [ \n]
+. pseudo-letter [a-zA-Z_']
+. pseudo-number [0-9]
+. dot '..'
+. domain-literal-full 'domain'
+. domain-literal-min 'd'
+. from 'from'
+. import-literal-full 'import'
+. import-literal-min 'i'
+. as 'as'
+. left-curly-bracket '{'
+. right-curly-bracket '}'
+. left-square-bracket '['
+. right-square-bracket ']'
+. vertical-line '|'
+. colon ':'
+. double-colon '::'
+. greater-than-sign '>'
+. equals-sign '='
+. dollar-sign '$'
+. ampersand '&'
+. left-parenthesis '('
+. right-parenthesis ')'
+. tilde '~'
+. solidus '/'
+. percent-sign '%' # alala
+. octothorp '#'
+. line-feed '\n'
+. line-comment-content [^\n]
+. left-to-right-arrow '->'
+. single-quote ''''
+. double-quote '"'
+. hyphen '-'
+. exclamation-mark '!'
+. lambda '\\'
+
+. domain { domain-literal-full domain-literal-min }
+. import { import-literal-full import-literal-min }
+
+. w __whitespace__
+
+. _id (pseudo-letter+@@)
+. id (w _id@@)
+. variable-prefix (w dot)
+. realm-path (w dot?@local realm-path-branch+@path) : on_realm_path
+. realm-path-branch ( solidus id@realm )
+
+# Import
+. realm-domain-import (
+    w from 
+    realm-path@realm
+    w left-curly-bracket
+    import-domain-w+@domains
+    w right-curly-bracket
+  ) : on_realm_domain_import
+. import-domain (import id@domain import-domain-as?@as_domain)
+. import-domain-w (w import-domain@@)
+. import-domain-as (w as id@@)
+
+# Domain
+. domain-declaration (domain-declaration-id@id codomain?@ domain-definition?@domain)
+. realm-domain-declaration (w domain w domain-declaration@@)
+. domain-declaration-id (_id@@) : on_domain_declaration_id
+. domain-definition (
+    w left-curly-bracket
+    variable-declaration*@variables
+    inner-domain-declaration*@domains
+    transform-definition*@transforms
+    w right-curly-bracket
+  )
+
+. inner-domain-declaration (w vertical-line w domain-declaration@@)
+
+# Expression
+. expression ( 
+    w expression-alt@value
+  )
+. expression-alt { expression-literal expression-lambda expression-call  }
+
+# Literal
+. expression-literal { expression-literal-string expression-literal-float expression-literal-integer-decimal }
+. expression-literal-integer-decimal ( hyphen?@minus pseudo-number+@ipart ) : on_integer_decimal
+. expression-literal-float ( hyphen?@minus pseudo-number+@ipart dot pseudo-number+@dpart ) : on_float
+. expression-literal-string-content [^"\\] \ [\\]
+. expression-literal-string ( double-quote expression-literal-string-content*@@ double-quote )
+
+# Lambda
+. expression-lambda (w lambda codomain?@ domain-definition@domain)
+. codomain (w left-to-right-arrow w expression@@)
+
+# Call
+. expression-call (ampersand?@domainof id@ expression-arguments?@arguments expression-lookup?@lookup)
+
+# Call arguments
+. expression-arguments { expression-arguments-implicit expression-arguments-named expression-arguments-ordered }
+. expression-arguments-implicit (exclamation-mark@@)
+
+# Named args
+. expression-argument-named (
+    variable-prefix id@ expression-argument-inner@expression
+  )
+. expression-arguments-named (
+    w left-parenthesis
+    expression-argument-named*@@
+    w right-parenthesis
+  )
+
+# Ordered args
+. expression-argument-ordered (
+    expression-argument-inner@expression
+  )
+. expression-arguments-ordered (
+    w left-parenthesis
+    expression-argument-ordered*@@
+    w right-parenthesis
+  )
+
+. expression-argument-inner { expression-argument-implicit expression-argument-explicit }
+. expression-argument-implicit ( exclamation-mark@@ )
+. expression-argument-explicit ( w tilde expression@@ )
+
+# Lookup
+. expression-lookup (w solidus expression@@)
+
+# Domain variables
+. variable-definition { variable-constant variable-bound }
+. variable-declaration (variable-prefix w variable-definition@@)
+
+. variable-constant (_id@id w tilde expression@)
+. variable-bound (_id@id w colon expression?@)
+
+# Transforms
+. transform-definition (
+    w greater-than-sign transform-compare*@compares
+    w dollar-sign expression-arguments?@locals expression@
+  )
+. transform-compare (variable-prefix id@variable w equals-sign id@domain)

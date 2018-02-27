@@ -131,8 +131,8 @@ def expr_subdomain_of(a, b):
   if b is None:
     return True
   # not handling literals yet
-  if not(isinstance(a, self.context.parser_module.ExpressionDomain) 
-      and isinstance(b, self.context.parser_module.ExpressionDomain)):
+  if not(isinstance(a, self.context.parser_module.ExpressionCall) 
+      and isinstance(b, self.context.parser_module.ExpressionCall)):
     return False
   # domains of the level cannot be subdomain of one another
   if a.lookup is None:
@@ -312,6 +312,7 @@ class VariableAnalysis(object):
     return True
 
   def check_variable_domain(self, expr_, scope, lookup_scope):
+    # [C11, C12] -> C13 
     return self._check_expr_callbacks(expr_, scope, lookup_scope, 
         lambda: True, # value may be a lambda (todo checks)
         lambda: ParseError(
@@ -324,7 +325,7 @@ class VariableAnalysis(object):
     )
 
   def _check_expr_callbacks(self, expr_, scope, lookup_scope, on_lambda, on_literal):
-    if ofinstance(expr_.value, self.context.parser_module.ExpressionDomain):
+    if ofinstance(expr_.value, self.context.parser_module.ExpressionCall):
       expr = expr_.value
       # check if usage succeeds definition
       # variables must come from the scope in which the expression resides
@@ -366,76 +367,87 @@ class VariableAnalysis(object):
     return True
 
   def check_domain_variables(self, domain, scope):
+    # [C5] -> C9 check all domain variables
     for var in domain.variables:
+      # C10 check variable id conflict
       scope_var = scope.variable(var.id)
       if scope_var:
+        # C10E1 at least two variables share the same identifier, error
         return ParseError(
             error="Variable '{}' already defined at {}".format(
                 var.id, scope_var._fcrd),
             coord=var._fcrd.levelup())
       else:
+        # variable id is so far unique, remember it
         scope.variables[var.id] = var
-      # boohoo polymorphism
+      
+      # boohoo polymorphism...
       if ofinstance(var, self.context.parser_module.VariableBound):
-        if var.variable_domain is not None:
-          result = self.check_variable_domain(var.variable_domain, scope, scope)
+        # var is a boundable variable 
+        if var.expression is not None:
+          # C11 check bound variable domain
+          result = self.check_variable_domain(var.expression, scope, scope)
           if not result:
             return result
-        if var.variable_constraints is not None:
-          pass
-        # variable OK
-        pass
+        else:
+          # var is unbounded, ok
+          continue
       elif ofinstance(var, self.context.parser_module.VariableConstant):
+        # var is a constant
+        # C12 check constant expression
         result = self.check_variable_domain(var.expression, scope, scope)
         if not result:
           return result
         # constant ok
-        pass
+        continue
 
     return True
 
-
   def check_domain_declaration(self, parent_declaration, scope):
-    # check definitions
+    # [C1] -> C3 check inner domains
     for domain_declaration in parent_declaration.domains:
       log.debug("Checking domain {}", domain_declaration.id)
       scope_domain = scope.domain(domain_declaration.id)
       if scope_domain:
+        # C3E1 At least two inner domains share the same id, error
         return ParseError(
             error="Declaration '{}' conflicting with another at {}".format(
                 domain_declaration.id,
                 scope_domain._fcrd),
             coord=domain_declaration._fcrd.levelup())
       else:
-        # remember domain exists
+        # The domain id is unique so far, remember domain exists
         domain_scope = DomainScope(scope)
         scope.domains[domain_declaration.id] = domain_scope
+        # C4 Check inner domain definition
         domain_definition = domain_declaration.domain
         if domain_definition is None:
           if domain_declaration.codomain is not None:
+            # C4E1 Inner domain is named with a codomain, codomains can only be used with transforms, error
             return ParseError(
                 error="Declaration '{}' specifies a codomain without defining a domain".format(
                     domain_declaration.id),
                 coord=domain_declaration._fcrd.levelup())
-          # domain OK
-          continue
+          else:
+            # Inner domain is only named, OK
+            continue
         else:
-          # check domain variables
+          # C5 check domain variables
           result = self.check_domain_variables(domain_definition, domain_scope)
           if not result:
             return result
-          # check codomain
+          # C6 check codomain
           if domain_declaration.codomain is not None:
             result = self.check_variable_domain(domain_declaration.codomain, domain_scope, domain_scope)
             if not result:
               return result
-          # recurse, check sub domains
+          # C7 recurse, check inner inner domains
           result = self.check_domain_declaration(domain_definition, domain_scope)
           if not result:
             return result
-          # todo check domain transforms (need codomain)
+          # todo C8 check domain transforms (need codomain)
     return True
-
+  
   def done_realm(self, realm_import_result, nocontext):
     try:
       if realm_import_result:
@@ -443,21 +455,22 @@ class VariableAnalysis(object):
         if self.get_current_realm_path() in self.checked_realms:
           return realm_import_result
         realm = getattr(realm_import_result.value, RealmLoader.LOADER_IMPORTED_ATTR, None)
-        # check domains in realm
+        # C1 check domains in realm
         result = self.check_domain_declaration(realm, self.get_current_realm_scope())
         if not result:
           result.causes.append(realm_import_result)
           return result
-        # check imported domains from realm
+        # C2 check imported domains from realm
         for imp in realm_import_result.value.domains:
           if imp.domain not in self.get_current_realm_scope().domains:
+            # C2E1 the imported domain does not exist, error
             return ParseError(
                 error="Import '{}' not found within realm '{}'".format(
                     imp.domain,
                     realm_import_result.value.realm),
                 coord=imp._fcrd.levelup())
           else:
-            # the domain exists, add it to the scope of the importer
+            # the imported domain exists, add it to the scope of the importer
             d_name = imp.domain if imp.as_domain is None else imp.as_domain
             self.get_parent_realm_scope().domains[d_name] = self.get_current_realm_scope().domains[imp.domain]
         # realm OK, remember it
